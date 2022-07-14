@@ -1,0 +1,9 @@
+# Do not include compiled files
+/target
+
+# Do not include lock files
+Cargo.lock
+
+# Ignore swp and swo files
+*.swp
+*.swo
