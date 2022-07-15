@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
-use bevy_framepace::FramepacePlugin;
+//use bevy_framepace::FramepacePlugin;
 use bevy_inspector_egui::WorldInspectorPlugin;
 
 const WINDOW_HEIGHT : f32 = 675.0f32;
@@ -29,11 +29,10 @@ fn setup_plugins(app: &mut App) {
     app
         .insert_resource(ClearColor(Color::MIDNIGHT_BLUE))
         .insert_resource(window_descriptor())
-        .add_plugins(DefaultPlugins)
-        .add_plugin(
-            FramepacePlugin::framerate(60)
-            .without_warnings()
-        );
+        .add_plugins(DefaultPlugins);
+
+    #[cfg(target_arch = "x86_64")]
+    app.add_plugin(FramepacePlugin::framerate(60).without_warnings());
     
     // TODO if debug
     app.add_plugin(WorldInspectorPlugin::new());
