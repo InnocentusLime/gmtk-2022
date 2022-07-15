@@ -1,5 +1,6 @@
 # Do not include compiled files
 /target
+/web-deploy
 
 # Do not include lock files
 Cargo.lock
