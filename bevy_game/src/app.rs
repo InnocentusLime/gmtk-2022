@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
-//use bevy_framepace::FramepacePlugin;
 use bevy_inspector_egui::WorldInspectorPlugin;
 
-const WINDOW_HEIGHT : f32 = 675.0f32;
-const WINDOW_WIDTH : f32 = 1200.0f32;
-//const ASPECT_RATIO : f32 = WINDOW_WIDTH / WINDOW_HEIGHT;
+#[cfg(target_arch = "x86_64")] use bevy_framepace::FramepacePlugin;
+
+const WINDOW_HEIGHT: f32 = 675.0f32;
+const WINDOW_WIDTH: f32 = 1200.0f32;
+//const ASPECT_RATIO: f32 = WINDOW_WIDTH / WINDOW_HEIGHT;
 
 static TITLE : &'static str = concat!("jam entry", " v. ", env!("CARGO_PKG_VERSION"));
 
@@ -34,7 +35,7 @@ fn setup_plugins(app: &mut App) {
     #[cfg(target_arch = "x86_64")]
     app.add_plugin(FramepacePlugin::framerate(60).without_warnings());
     
-    // TODO if debug
+    #[cfg(feature = "debugging")]
     app.add_plugin(WorldInspectorPlugin::new());
 }
 
