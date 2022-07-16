@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
 use bevy_inspector_egui::WorldInspectorPlugin;
+use crate::level::LevelPlugin;
 
 #[cfg(target_arch = "x86_64")] use bevy_framepace::FramepacePlugin;
 
@@ -30,7 +31,8 @@ fn setup_plugins(app: &mut App) {
     app
         .insert_resource(ClearColor(Color::MIDNIGHT_BLUE))
         .insert_resource(window_descriptor())
-        .add_plugins(DefaultPlugins);
+        .add_plugins(DefaultPlugins)
+        .add_plugin(LevelPlugin);
 
     #[cfg(target_arch = "x86_64")]
     app.add_plugin(FramepacePlugin::framerate(60).without_warnings());
@@ -40,20 +42,14 @@ fn setup_plugins(app: &mut App) {
 }
 
 pub fn create_app() -> App {
-    use bevy::render::camera::ScalingMode;
+    //use bevy::render::camera::ScalingMode;
     
     let mut app = App::new();
 
     setup_plugins(&mut app);
    
     app.world.spawn()
-        .insert_bundle(OrthographicCameraBundle {
-            orthographic_projection: OrthographicProjection {
-                scaling_mode: ScalingMode::FixedVertical,
-                ..OrthographicCameraBundle::new_2d().orthographic_projection
-            },
-            ..OrthographicCameraBundle::new_2d()
-        }).insert(Name::new("GameplayCamera")).insert(GameplayCamera);
+        .insert_bundle(OrthographicCameraBundle::new_2d()).insert(Name::new("GameplayCamera")).insert(GameplayCamera);
     app.world.spawn()
         .insert_bundle(UiCameraBundle::default())
         .insert(Name::new("Screen Camera")).insert(MenuCamera);

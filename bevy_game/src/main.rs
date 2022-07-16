@@ -1,4 +1,5 @@
 mod app;
+mod level;
 mod states;
 
 use crate::app::create_app;

@@ -1,6 +1,7 @@
 mod booting;
 mod ingame;
 mod main_menu;
+mod loading;
 mod splash_screen;
 
 use bevy::prelude::*;
@@ -16,6 +17,8 @@ pub enum GameState {
     SplashScreen,
     // The main menu
     MainMenu,
+    // The state which loads assets for InGame state
+    Loading,
     // The game
     InGame,
 }
@@ -27,5 +30,6 @@ pub fn setup_states(app: &mut App) {
     booting::setup_states(app);
     splash_screen::setup_states(app);
     main_menu::setup_states(app);
+    loading::setup_states(app);
     ingame::setup_states(app);
 }

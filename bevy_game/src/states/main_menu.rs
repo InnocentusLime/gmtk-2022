@@ -72,7 +72,7 @@ fn tick(
 
     for ev in events.iter() {
         if ev.state == ElementState::Pressed && ev.key_code == Some(KeyCode::Return) {
-            commands.insert_resource(NextState(GameState::InGame));
+            commands.insert_resource(NextState(GameState::Loading));
         }
     }
 }

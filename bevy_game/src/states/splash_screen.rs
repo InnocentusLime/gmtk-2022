@@ -32,7 +32,6 @@ fn enter(mut commands: Commands, assets: Res<ScreenAssets>) {
                     blue: 1.0f32,
                     alpha: 1.0f32,
                 },
-                custom_size: Some(Vec2::new(2.0f32, 2.0f32)),
                 ..default()
             },
             transform: Transform::from_scale(Vec3::new(0.5f32, 0.5f32, 1.0f32)),
