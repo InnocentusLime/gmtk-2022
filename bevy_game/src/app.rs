@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
 use bevy_inspector_egui::WorldInspectorPlugin;
+
 use crate::level::LevelPlugin;
+use crate::player::PlayerPlugin;
 
 #[cfg(target_arch = "x86_64")] use bevy_framepace::FramepacePlugin;
 
@@ -32,7 +34,8 @@ fn setup_plugins(app: &mut App) {
         .insert_resource(ClearColor(Color::MIDNIGHT_BLUE))
         .insert_resource(window_descriptor())
         .add_plugins(DefaultPlugins)
-        .add_plugin(LevelPlugin);
+        .add_plugin(LevelPlugin)
+        .add_plugin(PlayerPlugin);
 
     #[cfg(target_arch = "x86_64")]
     app.add_plugin(FramepacePlugin::framerate(60).without_warnings());

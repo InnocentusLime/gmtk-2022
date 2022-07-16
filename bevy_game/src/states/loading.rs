@@ -20,7 +20,7 @@ pub fn setup_states(app: &mut App) {
         .add_exit_system(GameState::Loading, exit);
 
     AssetLoader::new(GameState::Loading)
-        .continue_to_state(GameState::InGame)
+        .continue_to_state(GameState::Spawning)
         .with_collection::<InGameAssets>()
         .build(app);
 }
