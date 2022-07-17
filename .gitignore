@@ -9,3 +9,6 @@ Cargo.lock
 # Ignore swp and swo files
 *.swp
 *.swo
+
+# Ignore deploy script
+deploy.sh
