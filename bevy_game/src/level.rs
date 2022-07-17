@@ -6,6 +6,8 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy_ecs_tilemap::prelude::*;
 
+use crate::special_tiles::*;
+
 #[derive(Default)]
 pub struct LevelPlugin;
 
@@ -53,12 +55,6 @@ pub fn tile_pos_to_world_pos(
         0.0f32
     )).truncate()
 }
-
-#[derive(Component, Default)]
-pub struct StartTileTag;
-
-#[derive(Component, Default)]
-pub struct EndTileTag;
 
 #[derive(TypeUuid)]
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
@@ -146,14 +142,19 @@ impl Level {
                                         return;
                                     }
 
-                                    // TODO tile metadata (aka commands.entity().insert())
                                     if let Some(tile_meta) = tile.get_tile() {
                                         let entity = builder.get_tile_entity(commands, pos).unwrap();
                                         match tile_meta.tile_type.as_ref().map(|x| x.as_str()) {
                                             Some("player_start") => {
-                                                commands.entity(entity).insert(StartTileTag);
+                                                commands.entity(entity).insert(StartTileTag)
+                                                    .insert(SolidTileTag);
                                             },
-                                            _ => (),
+                                            Some("player_end") => {
+                                                commands.entity(entity).insert(EndTileTag);
+                                            },
+                                            _ => {
+                                                commands.entity(entity).insert(SolidTileTag);
+                                            },
                                         }
                                     }
 

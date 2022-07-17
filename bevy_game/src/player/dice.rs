@@ -15,10 +15,12 @@ pub struct DiceEncoding {
 
 impl DiceEncoding {
     pub fn new() -> Self {
-        DiceEncoding {
+        let mut res = DiceEncoding {
             horiz: [5, 1, 2, 6],
             vert: [4, 2, 3, 5],
-        }
+        };
+        res.apply_rotation(Direction::Up);
+        res
     }
 
     fn shift_array_front(arr: &mut [u8; 4]) {
