@@ -3,6 +3,7 @@ use bevy_asset_loader::*;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
+use crate::app::Progress;
 
 fn enter() {
     info!("Entered loading state");

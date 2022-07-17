@@ -6,15 +6,17 @@ use iyes_loopless::prelude::*;
 use super::GameState;
 
 use crate::level::*;
-use crate::app::{ GameplayCamera, MenuCamera };
+use crate::app::{ GameplayCamera, MenuCamera, Progress };
 use crate::special_tiles::{ EndReached, DangerReached };
 
 #[derive(AssetCollection)]
 pub struct InGameAssets {
-    #[asset(path = "maps/test_map.tmx")]
+    #[asset(key = "level")]
     pub level: Handle<Level>,
     #[asset(path = "Dice.glb")]
     pub player_gltf: Handle<bevy::gltf::Gltf>,
+    #[asset(path = "sound/beat.ogg")]
+    pub complete_sound: Handle<AudioSource>, 
 }
 
 fn enter() {
@@ -33,10 +35,15 @@ fn death_system(
 
 fn beat_system(
     mut commands: Commands,
-    mut events: EventReader<EndReached>
+    mut events: EventReader<EndReached>,
+    mut progress: ResMut<Progress>,
+    assets: Res<InGameAssets>,
+    audio: Res<Audio>,
 ) {
     for ev in events.iter() {
         info!("You win");
+        audio.play(assets.complete_sound.clone());
+        progress.level += 1;
         commands.insert_resource(NextState(GameState::MainMenu));
     }
 }

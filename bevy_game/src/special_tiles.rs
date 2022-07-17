@@ -14,16 +14,10 @@ impl Plugin for SpecialTilePlugin {
             .add_event::<DangerReached>()
             .add_system(solid_tile_logic.run_in_state(GameState::InGame))
             .add_system(end_tile_logic.run_in_state(GameState::InGame))
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(conveyor_logic.run_in_state(GameState::InGame))
-                    .with_system(conveyor_condition_logic.run_in_state(GameState::InGame).before(conveyor_logic))
-            )
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(fry_logic.run_in_state(GameState::InGame))
-                    .with_system(fry_condition_logic.run_in_state(GameState::InGame).before(fry_logic))
-            );
+            .add_system(conveyor_logic.run_in_state(GameState::InGame).label("conv_logic"))
+            .add_system(conveyor_condition_logic.run_in_state(GameState::InGame).before("conv_logic"))
+            .add_system(fry_logic.run_in_state(GameState::InGame).label("fry_logic"))
+            .add_system(fry_condition_logic.run_in_state(GameState::InGame).before("fry_logic"));
     }
 }
 
@@ -104,6 +98,7 @@ fn conveyor_condition_logic(
     mut map: MapQuery,
 ) {
     for ev in moves.iter() {
+        //info!("condition");
         for (e, mut tag, pos, tile_dat) in tiles.iter_mut() {
             let active = tag.cond.is_active(&ev.dice_state);
             if !active && tag.active {
@@ -126,6 +121,7 @@ fn conveyor_logic(
     mut decisions2: EventWriter<PlayerMoveAcknowledged>,
 ) {
     for ev in moves.iter() {
+        //info!("logic");
         if let Ok((_, tag)) = tiles.get(ev.cell) {
             if tag.active {
                 decisions.send(MovePlayer {

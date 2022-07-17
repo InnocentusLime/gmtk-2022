@@ -10,16 +10,29 @@ use crate::states::GameState;
 use crate::level::Level;
 use crate::app::GameplayCamera;
 
+#[derive(SystemLabel)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+struct PlayerControlsLabel;
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_system(player_controls.run_in_state(GameState::InGame))
-            .add_system(player_animation.run_in_state(GameState::InGame))
-            .add_system(player_camera.run_in_state(GameState::InGame))
-            .add_system(player_states.run_in_state(GameState::InGame))
-            .add_system(player_movement.run_in_state(GameState::InGame))
+            .add_system_to_stage(
+                CoreStage::PreUpdate, 
+                player_controls.run_in_state(GameState::InGame)
+                .label(PlayerControlsLabel)
+            )
+            .add_system_set_to_stage(
+                CoreStage::PreUpdate,
+                SystemSet::new()
+                    .with_system(player_animation.run_in_state(GameState::InGame))
+                    .with_system(player_camera.run_in_state(GameState::InGame)) 
+                    .with_system(player_states.run_in_state(GameState::InGame))
+                    .with_system(player_movement.run_in_state(GameState::InGame))
+                    .after(PlayerControlsLabel)
+            )
             .add_event::<PlayerMoved>()
             .add_event::<MovePlayer>()
             .add_event::<PlayerMoveAcknowledged>()

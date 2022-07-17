@@ -12,7 +12,11 @@ const WINDOW_HEIGHT: f32 = 675.0f32;
 const WINDOW_WIDTH: f32 = 1200.0f32;
 //const ASPECT_RATIO: f32 = WINDOW_WIDTH / WINDOW_HEIGHT;
 
-static TITLE : &'static str = concat!("jam entry", " v. ", env!("CARGO_PKG_VERSION"));
+static TITLE : &'static str = concat!("gluttony", " v. ", env!("CARGO_PKG_VERSION"));
+
+pub struct Progress {
+    pub level: u8,
+}
 
 #[derive(Clone, Copy, Component)]
 pub struct MenuCamera;
@@ -32,7 +36,8 @@ fn window_descriptor() -> WindowDescriptor {
 
 fn setup_plugins(app: &mut App) {
     app
-        .insert_resource(ClearColor(Color::MIDNIGHT_BLUE))
+        .insert_resource(Progress { level: 0u8 })
+        .insert_resource(ClearColor(Color::hex("263238").unwrap()))
         .insert_resource(window_descriptor())
         .add_plugins(DefaultPlugins)
         .add_plugin(LevelPlugin)
@@ -47,8 +52,6 @@ fn setup_plugins(app: &mut App) {
 }
 
 pub fn create_app() -> App {
-    //use bevy::render::camera::ScalingMode;
-    
     let mut app = App::new();
 
     setup_plugins(&mut app);

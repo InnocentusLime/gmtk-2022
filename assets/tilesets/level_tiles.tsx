@@ -3,7 +3,7 @@
  <image source="../tiles/level_tiles_new.png" width="448" height="64"/>
  <tile id="4" type="fry"/>
  <tile id="18" type="spin"/>
- <tile id="22" type="player_exit"/>
+ <tile id="22" type="player_end"/>
  <tile id="23" type="player_start"/>
  <tile id="24" type="conveyor">
   <properties>
