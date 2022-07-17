@@ -1,4 +1,4 @@
-mod dice;
+pub mod dice;
 
 use bevy::input::keyboard::KeyboardInput;
 use bevy::prelude::*;
@@ -27,7 +27,10 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-pub struct MovePlayer(dice::Direction);
+pub struct MovePlayer {
+    pub spin: bool,
+    pub dir: dice::Direction,
+}
 
 pub struct PlayerMoved {
     pub cell: Entity,
@@ -40,6 +43,11 @@ pub struct PlayerMoveAcknowledged;
 #[derive(Clone, Component)]
 pub enum PlayerState {
     AwaitingInput,
+    Sliding {
+        to: (u32, u32),
+        start_pos: Vec3,
+        timer: Timer,
+    },
     Rolling {
         to: (u32, u32),
         direction: dice::Direction,
@@ -112,13 +120,30 @@ pub fn player_animation(
                 if timer.finished() {
                     // TODO state transitions should be handled by someone else
                     player.current_cell = *to;
+                    player.state.apply_rotation(*direction);
+                    info!("New side: {}", player.state.upper_side());
                     move_event.send(PlayerMoved {
                         // TODO crash = bad
-                        cell: map.get_tile_entity(
-                            TilePos(to.0, to.1),
-                            0,
-                            0,
-                        ).unwrap(),
+                        cell: map.get_tile_entity(TilePos(to.0, to.1), 0, 0).unwrap(),
+                        dice_state: player.state,
+                    });
+                    *st = PlayerState::AwaitingAcknowledge;
+                }
+            },
+            PlayerState::Sliding { to, start_pos, timer } => {
+                timer.tick(time.delta());
+                for map_tf in map_entity.iter() {
+                    let world_pos = tile_pos_to_world_pos(*to, map_tf, &mut map, 0, 0).extend(1.0f32);
+                    let t = 1.0f32 - timer.percent_left();
+                    player_tf.translation = *start_pos + (world_pos - *start_pos) * t;
+                }
+
+                if timer.finished() {
+                    // TODO state transitions should be handled by someone else
+                    player.current_cell = *to;
+                    move_event.send(PlayerMoved {
+                        // TODO crash = bad
+                        cell: map.get_tile_entity(TilePos(to.0, to.1), 0, 0).unwrap(),
                         dice_state: player.state,
                     });
                     *st = PlayerState::AwaitingAcknowledge;
@@ -157,18 +182,18 @@ pub fn player_movement(
     let mut movement = None;
     for ev in events.iter() {
         for (_, _, st) in query.iter_mut() {
-            match ev.0 { 
-                Up => movement = Some(((0, 1), Up)),
-                Left => movement = Some(((-1, 0), Left)),
-                Down => movement = Some(((0, -1), Down)),
-                Right => movement = Some(((1, 0), Right)),
+            match ev.dir { 
+                Up => movement = Some(((0, 1), Up, ev.spin)),
+                Left => movement = Some(((-1, 0), Left, ev.spin)),
+                Down => movement = Some(((0, -1), Down, ev.spin)),
+                Right => movement = Some(((1, 0), Right, ev.spin)),
                 _ => (),
             }
         }
     }
 
     for (tf, mut pl, mut state) in query.iter_mut() {
-        if let Some(((dx, dy), dir)) = movement {
+        if let Some(((dx, dy), dir, spin)) = movement {
            let (nx, ny) = (
                     (pl.current_cell.0 as i32 + dx) as u32,
                     (pl.current_cell.1 as i32 + dy) as u32,
@@ -182,14 +207,21 @@ pub fn player_movement(
             ).is_ok();
                 
             if has_tile {
-                pl.apply_rotation(dir);
-                *state = PlayerState::Rolling {
-                    to: (nx, ny),
-                    direction: dir,
-                    start_rot: tf.rotation,
-                    start_pos: tf.translation,
-                    timer: Timer::from_seconds(0.8, false),
-                };
+                if spin {
+                    *state = PlayerState::Rolling {
+                        to: (nx, ny),
+                        direction: dir,
+                        start_rot: tf.rotation,
+                        start_pos: tf.translation,
+                        timer: Timer::from_seconds(0.8, false),
+                    };
+                } else {
+                    *state = PlayerState::Sliding {
+                        to: (nx, ny),
+                        start_pos: tf.translation,
+                        timer: Timer::from_seconds(0.5, false),
+                    };
+                }
             }
         }    
     }
@@ -221,6 +253,9 @@ pub fn player_controls(
     }
 
     if let Some(movement) = movement {
-        output.send(MovePlayer(movement));
+        output.send(MovePlayer {
+            spin: true,
+            dir: movement,
+        });
     }
 }

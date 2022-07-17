@@ -142,6 +142,7 @@ impl Level {
                                         return;
                                     }
 
+                                    let mut texture_index = tile.id() as u16;
                                     if let Some(tile_meta) = tile.get_tile() {
                                         let entity = builder.get_tile_entity(commands, pos).unwrap();
                                         match tile_meta.tile_type.as_ref().map(|x| x.as_str()) {
@@ -152,6 +153,49 @@ impl Level {
                                             Some("player_end") => {
                                                 commands.entity(entity).insert(EndTileTag);
                                             },
+                                            Some("conveyor") => {
+                                                let cond =
+                                                    match &tile_meta.properties["active"] {
+                                                        tiled::PropertyValue::StringValue(x) => {
+                                                            match x.as_str() {
+                                                                "odd" => ActivationCondition::Odd,
+                                                                "even" => ActivationCondition::Even,
+                                                                _ => panic!("Bad cond"),
+                                                            }
+                                                        },
+                                                        _ => panic!("Bad cond"),
+                                                    };
+                                                // FIXME EWWW HARDCODED TILES
+                                                texture_index = 0;
+                                                if cond.active_on_start() {
+                                                    commands.entity(entity).insert(GPUAnimated::new(0, 4, 8.0f32))
+                                                        .insert(ConveyorTag { cond, active: cond.active_on_start() });
+                                                } else {
+                                                    commands.entity(entity)
+                                                        .insert(ConveyorTag { cond, active: cond.active_on_start() });
+                                                }
+                                            },
+                                            Some("fry") => {
+                                                let cond =
+                                                    match &tile_meta.properties["active"] {
+                                                        tiled::PropertyValue::StringValue(x) => {
+                                                            match x.as_str() {
+                                                                "odd" => ActivationCondition::Odd,
+                                                                "even" => ActivationCondition::Even,
+                                                                _ => panic!("Bad cond"),
+                                                            }
+                                                        },
+                                                        _ => panic!("Bad cond"),
+                                                    };
+                                                // FIXME EWWW HARDCODED TILES
+                                                if cond.active_on_start() {
+                                                    texture_index = 8;
+                                                } else {
+                                                    texture_index = 4;
+                                                }
+                                                commands.entity(entity)
+                                                    .insert(FrierTag { cond, active: cond.active_on_start() });
+                                            },
                                             _ => {
                                                 commands.entity(entity).insert(SolidTileTag);
                                             },
@@ -160,7 +204,7 @@ impl Level {
 
                                     let tile = 
                                         Tile {
-                                            texture_index: tile.id() as u16,
+                                            texture_index,
                                             flip_x: tile.flip_h,
                                             flip_y: tile.flip_v,
                                             flip_d: tile.flip_d,

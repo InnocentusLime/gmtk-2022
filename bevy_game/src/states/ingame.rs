@@ -13,8 +13,6 @@ use crate::special_tiles::{ EndReached, DangerReached };
 pub struct InGameAssets {
     #[asset(path = "maps/test_map.tmx")]
     pub level: Handle<Level>,
-    #[asset(path = "tiles/level_tiles.png")]
-    pub _atlas: Handle<Image>,
     #[asset(path = "Dice.glb")]
     pub player_gltf: Handle<bevy::gltf::Gltf>,
 }

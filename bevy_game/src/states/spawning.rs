@@ -22,7 +22,7 @@ fn init_level(
     let level = levels.get(&assets.level).unwrap();
     let map_entity = level.spawn_map(&mut commands, meshes);
 
-    let map_tf = Transform::from_scale(Vec3::new(3.0f32, 3.0f32, 1.0f32));
+    let map_tf = Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.0f32));
     commands.entity(map_entity).insert_bundle(TransformBundle::from_transform(map_tf.clone()));
 
     commands.insert_resource(NextState(GameState::InGame));
