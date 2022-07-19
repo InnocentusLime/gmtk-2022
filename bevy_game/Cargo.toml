@@ -8,15 +8,19 @@ edition = "2021"
 [dependencies]
 # bevy deps
 bevy = "0.7"
-bevy-inspector-egui = "0.11.0"
 bevy_asset_loader = { version = "0.11.0", features = ["stageless"] }
 iyes_loopless = "0.5.1"
 anyhow = "1.0"
 bevy_ecs_tilemap = "0.6.0"
 tiled = { version = "0.10.1", default-features = false }
+# Debugging deps
+bevy-inspector-egui = { version = "0.11.0", optional = true }
+# Schedule-print deps
+bevy_mod_debugdump = { version = "0.4", optional = true }
 
 [features]
-debugging = []
+debugging = ["dep:bevy-inspector-egui"]
+schedule-print = ["dep:bevy_mod_debugdump"]
 
 [target.'cfg(target_arch = "wasm")'.dependencies]
 # Nothing

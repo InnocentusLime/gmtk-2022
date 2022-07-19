@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
+#[cfg(feature = "debugging")]
 use bevy_inspector_egui::WorldInspectorPlugin;
 
 use crate::level::LevelPlugin;
 use crate::player::PlayerPlugin;
-use crate::special_tiles::SpecialTilePlugin;
 
 #[cfg(target_arch = "x86_64")] use bevy_framepace::FramepacePlugin;
 
@@ -36,13 +36,20 @@ fn window_descriptor() -> WindowDescriptor {
 
 fn setup_plugins(app: &mut App) {
     app
-        .insert_resource(Progress { level: 0u8 })
         .insert_resource(ClearColor(Color::hex("263238").unwrap()))
-        .insert_resource(window_descriptor())
-        .add_plugins(DefaultPlugins)
+        .insert_resource(window_descriptor());
+
+    #[cfg(feature = "debugging")]
+    app.add_plugins(DefaultPlugins);
+    
+    #[cfg(not(feature = "debugging"))]
+    app.add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<bevy::log::LogPlugin>());
+
+    app.insert_resource(Progress { level: 0u8 });
+
+    app
         .add_plugin(LevelPlugin)
-        .add_plugin(PlayerPlugin)
-        .add_plugin(SpecialTilePlugin);
+        .add_plugin(PlayerPlugin);
 
     #[cfg(target_arch = "x86_64")]
     app.add_plugin(FramepacePlugin::framerate(60).without_warnings());
@@ -57,7 +64,8 @@ pub fn create_app() -> App {
     setup_plugins(&mut app);
    
     app.world.spawn()
-        .insert_bundle(OrthographicCameraBundle::new_2d()).insert(Name::new("GameplayCamera")).insert(GameplayCamera);
+        .insert_bundle(OrthographicCameraBundle::new_2d())
+        .insert(Name::new("GameplayCamera")).insert(GameplayCamera);
     app.world.spawn()
         .insert_bundle(UiCameraBundle::default())
         .insert(Name::new("Screen Camera")).insert(MenuCamera);

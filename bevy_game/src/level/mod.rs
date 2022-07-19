@@ -1,3 +1,6 @@
+mod special_tiles;
+mod tile_def;
+
 use std::collections::HashMap;
 use std::io::BufReader;
 
@@ -6,7 +9,11 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::special_tiles::*;
+use special_tiles::*;
+use tile_def::*;
+
+pub use tile_def::MapReady;
+pub use special_tiles::StartTileTag;
 
 #[derive(Default)]
 pub struct LevelPlugin;
@@ -14,9 +21,11 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<Level>()
+            .add_event::<MapReady>()
             .add_asset_loader(TiledLoader)
             .add_plugin(TilemapPlugin)
-            .add_system(add_set_texture_filter_to_nearest);
+            .add_system(add_set_texture_filter_to_nearest)
+            .add_plugin(special_tiles::SpecialTilePlugin);
     }
 }
 
@@ -64,10 +73,12 @@ pub struct Level {
 }
 
 impl Level {
+    /*
     fn find_geometry_layer_id(&self) -> Option<usize> {
         self.map.layers().find(|x| x.name == "geometry")
             .map(|x| x.id() as usize)
     }
+    */
     
     pub fn new(
         map: tiled::Map,
@@ -81,6 +92,7 @@ impl Level {
 
     pub fn spawn_map(
         &self,
+        mut ready: EventWriter<MapReady>,
         commands: &mut Commands, 
         mut meshes: ResMut<Assets<Mesh>>,
     ) -> Entity {
@@ -142,13 +154,11 @@ impl Level {
                                         return;
                                     }
 
-                                    let mut texture_index = tile.id() as u16;
                                     if let Some(tile_meta) = tile.get_tile() {
                                         let entity = builder.get_tile_entity(commands, pos).unwrap();
                                         match tile_meta.tile_type.as_ref().map(|x| x.as_str()) {
                                             Some("player_start") => {
-                                                commands.entity(entity).insert(StartTileTag)
-                                                    .insert(SolidTileTag);
+                                                commands.entity(entity).insert(StartTileTag);
                                             },
                                             Some("player_end") => {
                                                 commands.entity(entity).insert(EndTileTag);
@@ -165,15 +175,7 @@ impl Level {
                                                         },
                                                         _ => panic!("Bad cond"),
                                                     };
-                                                // FIXME EWWW HARDCODED TILES
-                                                texture_index = 0;
-                                                if cond.active_on_start() {
-                                                    commands.entity(entity).insert(GPUAnimated::new(0, 4, 8.0f32))
-                                                        .insert(ConveyorTag { cond, active: cond.active_on_start() });
-                                                } else {
-                                                    commands.entity(entity)
-                                                        .insert(ConveyorTag { cond, active: cond.active_on_start() });
-                                                }
+                                                commands.entity(entity).insert(ConveyorTag).insert(ActivatableTileTag::new(cond));
                                             },
                                             Some("fry") => {
                                                 let cond =
@@ -187,24 +189,16 @@ impl Level {
                                                         },
                                                         _ => panic!("Bad cond"),
                                                     };
-                                                // FIXME EWWW HARDCODED TILES
-                                                if cond.active_on_start() {
-                                                    texture_index = 8;
-                                                } else {
-                                                    texture_index = 4;
-                                                }
-                                                commands.entity(entity)
-                                                    .insert(FrierTag { cond, active: cond.active_on_start() });
+                                                commands.entity(entity).insert(ConveyorTag).insert(ActivatableTileTag::new(cond));
                                             },
-                                            _ => {
-                                                commands.entity(entity).insert(SolidTileTag);
-                                            },
+                                            Some(x) => error!("Unknown tile type: \"{}\"", x),
+                                            None => { commands.entity(entity).insert(SolidTileTag); },
                                         }
                                     }
 
                                     let tile = 
                                         Tile {
-                                            texture_index,
+                                            texture_index: tile.id() as u16,
                                             flip_x: tile.flip_h,
                                             flip_y: tile.flip_v,
                                             flip_d: tile.flip_d,
@@ -241,6 +235,7 @@ impl Level {
         }
 
         commands.entity(map_entity).insert(map);
+        ready.send(MapReady);
 
         map_entity
     }

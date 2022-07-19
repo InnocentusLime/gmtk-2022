@@ -4,8 +4,6 @@ use iyes_loopless::prelude::*;
 
 use super::GameState;
 
-const TEAM_CARD_DURATION: f32 = 2.0f32;
-
 #[derive(AssetCollection)]
 pub struct ScreenAssets {
     #[asset(path = "splash/team.png")]
@@ -21,17 +19,13 @@ struct SplashScreenState {
 
 fn enter(mut commands: Commands, assets: Res<ScreenAssets>) {
     info!("Entered splash screen state");
+    const TEAM_CARD_DURATION: f32 = 2.0f32;
 
     // Create the logo
     commands.spawn()
         .insert_bundle(SpriteBundle {
             sprite: Sprite {
-                color: Color::Rgba {
-                    red: 1.0f32,
-                    green: 1.0f32,
-                    blue: 1.0f32,
-                    alpha: 1.0f32,
-                },
+                color: Color::WHITE,
                 ..default()
             },
             transform: Transform::from_scale(Vec3::new(0.5f32, 0.5f32, 1.0f32)),

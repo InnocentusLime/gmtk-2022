@@ -7,42 +7,57 @@ use crate::level::tile_pos_to_world_pos;
 use iyes_loopless::prelude::*;
 
 use crate::states::GameState;
-use crate::level::Level;
 use crate::app::GameplayCamera;
+
+#[derive(StageLabel)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+struct PlayerUpdateStage;
 
 #[derive(SystemLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-struct PlayerControlsLabel;
+enum PlayerSystems {
+    Control,
+    Update,
+}
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_stage_after(
+                CoreStage::PreUpdate,
+                PlayerUpdateStage,
+                SystemStage::parallel()
+            )
             .add_system_to_stage(
-                CoreStage::PreUpdate, 
-                player_controls.run_in_state(GameState::InGame)
-                .label(PlayerControlsLabel)
+                PlayerUpdateStage,
+                player_controls.run_in_state(GameState::InGame).label(PlayerSystems::Control)
+            )
+            .add_system_to_stage(
+                PlayerUpdateStage,
+                player_update.run_in_state(GameState::InGame).label(PlayerSystems::Update)
+                    .after(PlayerSystems::Control)
             )
             .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .with_system(player_animation.run_in_state(GameState::InGame))
-                    .with_system(player_camera.run_in_state(GameState::InGame)) 
-                    .with_system(player_states.run_in_state(GameState::InGame))
-                    .with_system(player_movement.run_in_state(GameState::InGame))
-                    .after(PlayerControlsLabel)
+                PlayerUpdateStage,
+                ConditionSet::new()
+                    .after(PlayerSystems::Update).run_in_state(GameState::InGame)
+                    .with_system(player_animation).with_system(player_camera).into()
             )
             .add_event::<PlayerMoved>()
-            .add_event::<MovePlayer>()
-            .add_event::<PlayerMoveAcknowledged>()
+            .add_event::<PlayerModification>()
             /*.register_type::<PlayerState>()*/;
     }
 }
 
-pub struct MovePlayer {
-    pub spin: bool,
-    pub dir: dice::Direction,
+#[derive(Debug)]
+pub enum PlayerModification {
+    AcknowledgeMove,
+    Roll(dice::Direction),
+    Slide(dice::Direction),
+    Kill,
+    Escape,
 }
 
 pub struct PlayerMoved {
@@ -50,25 +65,30 @@ pub struct PlayerMoved {
     pub dice_state: dice::DiceEncoding,
 }
 
-pub struct PlayerMoveAcknowledged;
+#[derive(Debug, Clone)]
+pub enum MoveInfo {
+    Slide,
+    Rotate {
+        start_rot: Quat,
+        direction: dice::Direction,
+    },
+}
 
-// TODO implement animations procedurally
-#[derive(Clone, Component)]
+#[derive(Debug, Clone, Component)]
 pub enum PlayerState {
     AwaitingInput,
-    Sliding {
+    Moving {
         to: (u32, u32),
+        to_entity: Entity,
         start_pos: Vec3,
+        end_pos: Vec3,
         timer: Timer,
+        info: MoveInfo,
     },
-    Rolling {
-        to: (u32, u32),
-        direction: dice::Direction,
-        start_rot: Quat,
-        start_pos: Vec3,
-        timer: Timer,
+    AwaitingAcknowledge {
+        new_pos: Vec3,
+        new_rot: Quat,
     },
-    AwaitingAcknowledge,
 }
 
 #[derive(Clone, Component)]
@@ -89,88 +109,112 @@ impl Player {
     pub fn apply_rotation(&mut self, dir: dice::Direction) { self.state.apply_rotation(dir) }
 
     pub fn upper_side(&self) -> u8 { self.state.upper_side() }
-}
 
-pub fn player_states(
-    mut ack_events: EventReader<PlayerMoveAcknowledged>,
-    mut player_q: Query<&mut PlayerState>,
-) {
-    for e in ack_events.iter() {
-        for mut st in player_q.iter_mut() {
-            match &mut *st {
-                PlayerState::AwaitingAcknowledge => *st = PlayerState::AwaitingInput,
-                _ => continue,
-            }
-        }
+    pub fn next_cell(&self, off: (i32, i32)) -> (u32, u32) {
+        // FIXME MIGHT CRASH
+        (
+            (self.current_cell.0 as i32 + off.0) as u32,
+            (self.current_cell.1 as i32 + off.1) as u32
+        )
     }
 }
 
-pub fn player_animation(
+pub fn player_update(
     time: Res<Time>,
-    mut move_event: EventWriter<PlayerMoved>,
-    mut map: MapQuery,
+    mut events: EventReader<PlayerModification>,
+    mut player_q: Query<(&Transform, &mut Player, &mut PlayerState)>,
+    mut map_q: MapQuery,
     map_entity: Query<&Transform, With<Map>>,
-    mut player_q: Query<(&mut Transform, &mut Player, &mut PlayerState), Without<Map>>,
+    mut move_event: EventWriter<PlayerMoved>,
 ) {
-    for (mut player_tf, mut player, mut st) in player_q.iter_mut() {
-        match &mut *st {
-            PlayerState::Rolling { to, direction, start_rot, start_pos, timer } => {
-                timer.tick(time.delta());
-                for map_tf in map_entity.iter() {
-                    let world_pos = tile_pos_to_world_pos(*to, map_tf, &mut map, 0, 0).extend(1.0f32);
-                    // TODO retrieve geometry layer id
-                    let t = 1.0f32 - timer.percent_left();
-                    player_tf.translation = *start_pos + (world_pos - *start_pos) * t;
-                    // TODO this stacks rounding errors
-                    match direction {
-                        dice::Direction::Left => player_tf.rotation = Quat::from_rotation_y(-t * std::f32::consts::FRAC_PI_2) * *start_rot,
-                        dice::Direction::Right => player_tf.rotation = Quat::from_rotation_y(t * std::f32::consts::FRAC_PI_2) * *start_rot,
-                        dice::Direction::Up => player_tf.rotation = Quat::from_rotation_x(-t * std::f32::consts::FRAC_PI_2) * *start_rot,
-                        dice::Direction::Down => player_tf.rotation = Quat::from_rotation_x(t * std::f32::consts::FRAC_PI_2) * *start_rot,
-                    }
-                }
+    let map_tf = map_entity.single();
+    let (tf, mut pl, mut st) = player_q.single_mut();
 
-                if timer.finished() {
-                    // TODO state transitions should be handled by someone else
-                    player.current_cell = *to;
-                    player.state.apply_rotation(*direction);
-                    info!("New side: {}", player.state.upper_side());
-                    move_event.send(PlayerMoved {
-                        // TODO crash = bad
-                        cell: map.get_tile_entity(TilePos(to.0, to.1), 0, 0).unwrap(),
-                        dice_state: player.state,
-                    });
-                    *st = PlayerState::AwaitingAcknowledge;
+    // Event based state transitions
+    for e in events.iter() {
+        match (e, &mut *st) {
+            (PlayerModification::AcknowledgeMove, PlayerState::AwaitingAcknowledge { .. }) => *st = PlayerState::AwaitingInput,
+            (PlayerModification::Roll(dir), PlayerState::AwaitingAcknowledge { .. } | PlayerState::AwaitingInput) => {
+                let (nx, ny) = pl.next_cell(dir.to_offset());
+                match map_q.get_tile_entity(TilePos(nx, ny), 0, 0) {
+                    Ok(to_entity) => *st = PlayerState::Moving {
+                        to_entity,
+                        to: (nx, ny),
+                        start_pos: tf.translation,
+                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, 0, 0).extend(1.0f32),
+                        timer: Timer::from_seconds(0.8, false),
+                        info: MoveInfo::Rotate {
+                            direction: *dir,
+                            start_rot: tf.rotation,
+                        },
+                    },
+                    Err(e) => warn!("Can't roll player in dir: {:?}\nReason:{}", dir, e),
                 }
             },
-            PlayerState::Sliding { to, start_pos, timer } => {
-                timer.tick(time.delta());
-                for map_tf in map_entity.iter() {
-                    let world_pos = tile_pos_to_world_pos(*to, map_tf, &mut map, 0, 0).extend(1.0f32);
-                    let t = 1.0f32 - timer.percent_left();
-                    player_tf.translation = *start_pos + (world_pos - *start_pos) * t;
+            (PlayerModification::Slide(dir), PlayerState::AwaitingAcknowledge { .. } | PlayerState::AwaitingInput) => {
+                let (nx, ny) = pl.next_cell(dir.to_offset());
+                match map_q.get_tile_entity(TilePos(nx, ny), 0, 0) {
+                    Ok(to_entity) => *st = PlayerState::Moving {
+                        to_entity,
+                        to: (nx, ny),
+                        start_pos: tf.translation,
+                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, 0, 0).extend(1.0f32),
+                        timer: Timer::from_seconds(0.5, false),
+                        info: MoveInfo::Slide,
+                    },
+                    Err(e) => warn!("Can't slide player in dir: {:?}\nReason:{}", dir, e),
                 }
+            },
+            (PlayerModification::Kill, PlayerState::AwaitingAcknowledge { .. }) => (),
+            (PlayerModification::Escape, PlayerState::AwaitingAcknowledge { .. }) => (),
+            _ => error!("Modfication:\n{:?}\ndoesn't fit player's state\n{:?}", e, st),
+        }
+    }
 
-                if timer.finished() {
-                    // TODO state transitions should be handled by someone else
-                    player.current_cell = *to;
-                    move_event.send(PlayerMoved {
-                        // TODO crash = bad
-                        cell: map.get_tile_entity(TilePos(to.0, to.1), 0, 0).unwrap(),
-                        dice_state: player.state,
-                    });
-                    *st = PlayerState::AwaitingAcknowledge;
+    // Other state transitions
+    match &mut *st {
+        PlayerState::Moving { to, timer, info, to_entity, .. } => {
+            timer.tick(time.delta());
+            if timer.finished() {
+                match info {
+                    MoveInfo::Slide => (),
+                    MoveInfo::Rotate { direction, .. } => {
+                        pl.apply_rotation(*direction);
+                        trace!("New side: {}", pl.upper_side());
+                    },
                 }
-            },
-            PlayerState::AwaitingInput => {
-                for map_tf in map_entity.iter() {
-                    let world_pos = tile_pos_to_world_pos(player.current_cell, map_tf, &mut map, 0, 0).extend(1.0f32);
-                    // TODO retrieve geometry layer id
-                    player_tf.translation = world_pos;
-                }
-            },
-            _ => continue,
-        };
+                pl.current_cell = *to;
+                move_event.send(PlayerMoved {
+                    cell: *to_entity,
+                    dice_state: pl.state,
+                });
+                *st = PlayerState::AwaitingAcknowledge {
+                    new_rot: pl.state.rot_quat(),
+                    new_pos: tile_pos_to_world_pos(pl.current_cell, map_tf, &mut map_q, 0, 0)
+                        .extend(1.0f32),
+                };
+            }
+        },
+        _ => (),
+    }
+}
+
+pub fn player_animation(mut player_q: Query<(&mut Transform, &PlayerState)>) {
+    let (mut player_tf, st) = player_q.single_mut();
+    match st {
+        PlayerState::Moving { start_pos, end_pos, timer, info, .. } => {
+            let t = 1.0f32 - timer.percent_left();
+            player_tf.translation = *start_pos + (*end_pos - *start_pos) * t;
+            match info {
+                MoveInfo::Slide => (),
+                MoveInfo::Rotate { direction, start_rot } => player_tf.rotation = direction.to_quat(t) * *start_rot,
+            }
+        },
+        PlayerState::AwaitingAcknowledge { new_pos, new_rot } => {
+            player_tf.rotation = *new_rot;
+            player_tf.translation = *new_pos;
+        },
+        PlayerState::AwaitingInput => (),
     }
 }
 
@@ -178,76 +222,20 @@ pub fn player_camera(
     mut player_q: Query<&mut Transform, (With<Player>, Without<GameplayCamera>)>,
     mut gameplay_camera: Query<&mut Transform, With<GameplayCamera>>,
 ) {
-    for mut player_tf in player_q.iter_mut() {
+    for player_tf in player_q.iter_mut() {
         gameplay_camera.single_mut().translation = player_tf.translation.truncate().extend(50.0f32);
-    }
-}
-
-// TODO merge with "player_states"
-pub fn player_movement(
-    mut events: EventReader<MovePlayer>,
-    mut query: Query<(&Transform, &mut Player, &mut PlayerState)>,
-    mut map: MapQuery,
-) {
-    use bevy::input::ElementState;
-    use dice::Direction::*;
-    
-    let mut movement = None;
-    for ev in events.iter() {
-        for (_, _, st) in query.iter_mut() {
-            match ev.dir { 
-                Up => movement = Some(((0, 1), Up, ev.spin)),
-                Left => movement = Some(((-1, 0), Left, ev.spin)),
-                Down => movement = Some(((0, -1), Down, ev.spin)),
-                Right => movement = Some(((1, 0), Right, ev.spin)),
-                _ => (),
-            }
-        }
-    }
-
-    for (tf, mut pl, mut state) in query.iter_mut() {
-        if let Some(((dx, dy), dir, spin)) = movement {
-           let (nx, ny) = (
-                    (pl.current_cell.0 as i32 + dx) as u32,
-                    (pl.current_cell.1 as i32 + dy) as u32,
-                );
-            
-            // TODO player should know the layer
-            let has_tile = map.get_tile_entity(
-                TilePos(nx, ny),
-                0,
-                0,
-            ).is_ok();
-                
-            if has_tile {
-                if spin {
-                    *state = PlayerState::Rolling {
-                        to: (nx, ny),
-                        direction: dir,
-                        start_rot: tf.rotation,
-                        start_pos: tf.translation,
-                        timer: Timer::from_seconds(0.8, false),
-                    };
-                } else {
-                    *state = PlayerState::Sliding {
-                        to: (nx, ny),
-                        start_pos: tf.translation,
-                        timer: Timer::from_seconds(0.5, false),
-                    };
-                }
-            }
-        }    
     }
 }
 
 pub fn player_controls(
     mut events: EventReader<KeyboardInput>,
-    mut output: EventWriter<MovePlayer>,
-    mut query: Query<&PlayerState>,
+    mut output: EventWriter<PlayerModification>,
+    query: Query<&PlayerState>,
 ) {
     use bevy::input::ElementState;
     use dice::Direction::*;
-    
+   
+    // TODO pretify?
     let mut movement = None;
     for ev in events.iter() {
         if movement.is_some() { continue; }
@@ -266,9 +254,6 @@ pub fn player_controls(
     }
 
     if let Some(movement) = movement {
-        output.send(MovePlayer {
-            spin: true,
-            dir: movement,
-        });
+        output.send(PlayerModification::Roll(movement));
     }
 }

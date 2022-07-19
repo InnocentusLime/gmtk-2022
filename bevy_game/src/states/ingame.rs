@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 use bevy_asset_loader::*;
-use bevy_ecs_tilemap::prelude::*;
+use bevy::sprite::Mesh2dHandle;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
 
 use crate::level::*;
+use crate::player::PlayerModification;
 use crate::app::{ GameplayCamera, MenuCamera, Progress };
-use crate::special_tiles::{ EndReached, DangerReached };
 
 #[derive(AssetCollection)]
 pub struct InGameAssets {
@@ -19,32 +19,71 @@ pub struct InGameAssets {
     pub complete_sound: Handle<AudioSource>, 
 }
 
+// NOTE we can do this more cleanly in the new bevy_asset_loader version
+pub struct PlayerGraphicsResources {
+    pub model: Mesh2dHandle,
+    pub material: Handle<ColorMaterial>,
+}
+
+impl FromWorld for PlayerGraphicsResources {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.resource::<InGameAssets>();
+        let gltfs = world.resource::<Assets<bevy::gltf::Gltf>>();
+        let gltf_meshes = world.resource::<Assets<bevy::gltf::GltfMesh>>();
+        let std_materials = world.resource::<Assets<StandardMaterial>>();
+
+        let player_gltf = gltfs.get(&assets.player_gltf).unwrap();
+        let player_gltf = gltf_meshes.get(&player_gltf.meshes[0]).unwrap();
+        let player_gltf = &player_gltf.primitives[0];
+        let model = Mesh2dHandle(player_gltf.mesh.clone());
+
+        let material = ColorMaterial {
+            color: Color::WHITE,
+            texture: std_materials.get(&player_gltf.material.as_ref().unwrap().to_owned())
+                .unwrap().base_color_texture.to_owned(),
+        };
+        let material = world.resource_mut::<Assets<ColorMaterial>>().add(material);
+
+        PlayerGraphicsResources { material, model }
+    }
+}
+
 fn enter() {
     info!("Entered ingame state");
 }
 
 fn death_system(
     mut commands: Commands,
-    mut events: EventReader<DangerReached>
+    mut events: EventReader<PlayerModification>
 ) {
     for ev in events.iter() {
-        info!("You are dead");
-        commands.insert_resource(NextState(GameState::MainMenu));
+        match ev {
+            PlayerModification::Kill => {
+                info!("You are dead");
+                commands.insert_resource(NextState(GameState::MainMenu));
+            },
+            _ => (),
+        }
     }
 }
 
 fn beat_system(
     mut commands: Commands,
-    mut events: EventReader<EndReached>,
+    mut events: EventReader<PlayerModification>,
     mut progress: ResMut<Progress>,
     assets: Res<InGameAssets>,
     audio: Res<Audio>,
 ) {
     for ev in events.iter() {
-        info!("You win");
-        audio.play(assets.complete_sound.clone());
-        progress.level += 1;
-        commands.insert_resource(NextState(GameState::MainMenu));
+        match ev {
+            PlayerModification::Escape => {
+                info!("You win");
+                audio.play(assets.complete_sound.clone());
+                progress.level += 1;
+                commands.insert_resource(NextState(GameState::MainMenu));
+            },
+            _ => (),
+        }
     }
 }
 
@@ -62,7 +101,6 @@ fn exit(
 }
 
 pub fn setup_states(app: &mut App) {
-    use iyes_loopless::state::app::StateTransitionStageLabel;
     app
         .add_enter_system(GameState::InGame, enter)
         .add_system(beat_system.run_in_state(GameState::InGame))
