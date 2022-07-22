@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use bevy::ecs::query::{ WorldQuery, Fetch };
-use bevy_ecs_tilemap::prelude::*;
 use iyes_loopless::prelude::*;
+
+use super::cpu_tile_animation::CPUAnimated;
 
 use crate::states::GameState;
 use crate::player::dice::DiceEncoding;
@@ -36,17 +37,58 @@ impl ActivationCondition {
     }
 }
 
+#[derive(Clone, Copy)]
+pub enum ActivatableAnimating {
+    // Loops the `on_anim`, without looping the
+    // `off_anim`
+    //
+    // anim_type = switchable_machine
+    Switch {
+        on_anim: CPUAnimated,
+        off_anim: CPUAnimated,
+    },
+    // Loops the anim when the tile is on and
+    // stops it when off
+    //
+    // anim_type = stoppable_machine
+    Stop {
+        on_speed: f32
+    },
+}
+
+impl ActivatableAnimating {
+    fn update_cpu_anim(&self, anim: &mut CPUAnimated, active: bool) {
+        use ActivatableAnimating::*;
+        match self {
+            Switch { on_anim, off_anim } => if active {
+                *anim = *on_anim;
+            } else {
+                *anim = *off_anim;
+            },
+            Stop { on_speed } => if active {
+                anim.set_speed(*on_speed);
+            } else {
+                anim.set_speed(0.0f32);
+            },
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct ActivatableTileTag {
     state: bool,
     condition: ActivationCondition,
+    anim_info: ActivatableAnimating,
 }
 
 impl ActivatableTileTag {
-    pub fn new(condition: ActivationCondition) -> Self {
+    pub fn new(
+        condition: ActivationCondition,
+        anim_info: ActivatableAnimating,
+    ) -> Self {
         ActivatableTileTag {
             state: condition.active_on_start(),
-            condition,
+            condition, anim_info,
         }
     }
 
@@ -70,32 +112,23 @@ pub trait TileState: Sized + Component {
     fn react<'w, 's>(&mut self, extra: QueryMutElem<'w, 's, Self::UpdateData>) -> PlayerModification;
 }
 
-/// Extra state data for the activatable tiles.
-pub trait ActivatableTileState: TileState {
-    type SwitchData: bevy::ecs::query::WorldQuery;
-
-    /// Method to setup the internal data of the tile to be enabled. It is
-    /// guaranteed, that it will be called only when the tile **hasn't been** enabled yet.
-    fn enable<'w, 's>(&mut self, commands: &mut Commands, extra: QueryMutElem<'w, 's, Self::SwitchData>);
-    
-    /// Method to setup the internal data of the tile to be disabled. It is
-    /// guaranteed, that it will be called only when the tile **hasn't been** disabled yet.
-    fn disable<'w, 's>(&mut self, commands: &mut Commands, extra: QueryMutElem<'w, 's, Self::SwitchData>);
+fn toggle_activatable_tiles<F>(
+    mut filter: F,
+    mut query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
+) 
+where
+    F: FnMut(&mut ActivatableTileTag) -> bool
+{
+    for (mut cpu_anim, mut active_tag) in query.iter_mut() {
+        if filter(&mut *active_tag) {
+            active_tag.anim_info.update_cpu_anim(&mut *cpu_anim, active_tag.is_active());
+        }
+    }
 }
 
-pub fn activeatable_tile_setup_system<T: ActivatableTileState>(
-    mut query: Query<(&mut ActivatableTileTag, &TilePos, &mut T, T::SwitchData)>, 
-    mut commands: Commands,
-    mut map: MapQuery,
-) {
-    for (active_tag, pos, mut state, extra) in query.iter_mut() {
-        if active_tag.is_active() {
-            state.enable(&mut commands, extra);
-        } else {
-            state.disable(&mut commands, extra);
-        }
-        map.notify_chunk_for_tile(*pos, 0u16, 0u16);
-    }
+// TODO rename to setup
+pub fn activeatable_tile_setup_system(query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>) {
+    toggle_activatable_tiles(|_| true, query);
 }
 
 pub fn tile_reaction_system<T: TileState>(
@@ -112,43 +145,24 @@ pub fn tile_reaction_system<T: TileState>(
     }
 }
 
-pub fn tile_switch_system<T: ActivatableTileState>(
+pub fn tile_switch_system(
     mut moves: EventReader<PlayerMoved>,
-    mut query: Query<(&mut ActivatableTileTag, &TilePos, &mut T, T::SwitchData)>, 
-    mut commands: Commands,
-    mut map: MapQuery,
+    query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
 ) {
-    for e in moves.iter() {
-        for (mut active_tag, pos, mut state, extra) in query.iter_mut() {
-            if active_tag.update(&e.dice_state) {
-                if active_tag.is_active() {
-                    state.enable(&mut commands, extra);
-                } else {
-                    state.disable(&mut commands, extra);
-                }
-                map.notify_chunk_for_tile(*pos, 0u16, 0u16);
-            }
-        }
+    if let Some(e) = moves.iter().next() {
+        toggle_activatable_tiles(|tag| tag.update(&e.dice_state), query);
     }
+
+    // Drop all other events
+    moves.iter().for_each(|_| ());
 }
 
 pub trait AddTile {
     fn add_tile<T: TileState>(&mut self) -> &mut Self;
-    fn add_activatable_tile<T: ActivatableTileState>(&mut self) -> &mut Self;
 }
 
 impl AddTile for App {
     fn add_tile<T: TileState>(&mut self) -> &mut Self {
         self.add_system(tile_reaction_system::<T>.run_in_state(GameState::InGame))
-    }
-    
-    fn add_activatable_tile<T: ActivatableTileState>(&mut self) -> &mut Self {
-        self
-            .add_tile::<T>()
-            .add_system_to_stage(ActiveTileUpdateStage, tile_switch_system::<T>.run_in_state(GameState::InGame))
-            .add_system(
-                activeatable_tile_setup_system::<T>.run_in_state(GameState::Spawning)
-                .run_on_event::<MapReady>()
-            )
     }
 }

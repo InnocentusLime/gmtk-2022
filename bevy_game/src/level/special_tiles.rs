@@ -1,6 +1,7 @@
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
+use iyes_loopless::prelude::*;
 
+use crate::states::GameState;
 use crate::player::PlayerModification;
 use super::tile_def::*;
 
@@ -10,11 +11,16 @@ impl Plugin for SpecialTilePlugin {
     fn build(&self, app: &mut App) {
         app
             .add_stage_before(CoreStage::Update, ActiveTileUpdateStage, SystemStage::parallel())
-            .add_activatable_tile::<ConveyorTag>()
-            .add_activatable_tile::<FrierTag>()
+            .add_tile::<ConveyorTag>()
+            .add_tile::<FrierTag>()
             .add_tile::<StartTileTag>()
             .add_tile::<EndTileTag>()
-            .add_tile::<SolidTileTag>();
+            .add_tile::<SolidTileTag>()
+            .add_system_to_stage(ActiveTileUpdateStage, tile_switch_system.run_in_state(GameState::InGame))
+            .add_system(
+                activeatable_tile_setup_system.run_in_state(GameState::Spawning)
+                .run_on_event::<MapReady>()
+            );
     }
 }
 
@@ -33,20 +39,6 @@ impl TileState for ConveyorTag {
         } else {
             PlayerModification::AcknowledgeMove
         }
-    }
-}
-
-impl ActivatableTileState for ConveyorTag {
-    type SwitchData = (Entity, &'static mut Tile);
-    
-    fn enable<'w, 's>(&mut self, commands: &mut Commands, (me, _): (Entity, Mut<Tile>)) {
-        commands.entity(me).insert(GPUAnimated::new(0, 4, 8.0f32));
-    }
-    
-    fn disable<'w, 's>(&mut self, commands: &mut Commands, (me, mut tile_dat): (Entity, Mut<Tile>)) {
-        commands.entity(me).remove::<GPUAnimated>();
-        // FIXME EWWW HARDCODED TILES
-        tile_dat.texture_index = 0;
     }
 }
 
@@ -84,19 +76,6 @@ impl TileState for FrierTag {
         } else {
             PlayerModification::AcknowledgeMove
         }
-    }
-}
-
-// FIXME EWWW HARDCODED TILES
-impl ActivatableTileState for FrierTag {
-    type SwitchData = &'static mut Tile;
-    
-    fn enable<'w, 's>(&mut self, _commands: &mut Commands, mut tile_dat: Mut<Tile>) {
-        tile_dat.texture_index = 8;
-    }
-    
-    fn disable<'w, 's>(&mut self, _commands: &mut Commands, mut tile_dat: Mut<Tile>) {
-        tile_dat.texture_index = 4;
     }
 }
 
