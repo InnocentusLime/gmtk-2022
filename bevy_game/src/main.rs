@@ -4,6 +4,8 @@ mod app;
 mod level;
 mod states;
 mod player;
+mod save;
+mod level_info;
 
 use crate::app::create_app;
 use crate::states::setup_states;

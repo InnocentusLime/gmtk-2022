@@ -3,6 +3,7 @@ use bevy::window::WindowDescriptor;
 #[cfg(feature = "debugging")]
 use bevy_inspector_egui::WorldInspectorPlugin;
 
+use crate::level_info::{ LevelInfo, LevelInfoLoader };
 use crate::level::LevelPlugin;
 use crate::player::PlayerPlugin;
 
@@ -13,10 +14,6 @@ const WINDOW_WIDTH: f32 = 1200.0f32;
 //const ASPECT_RATIO: f32 = WINDOW_WIDTH / WINDOW_HEIGHT;
 
 static TITLE : &'static str = concat!("gluttony", " v. ", env!("CARGO_PKG_VERSION"));
-
-pub struct Progress {
-    pub level: u8,
-}
 
 #[derive(Clone, Copy, Component)]
 pub struct MenuCamera;
@@ -45,8 +42,6 @@ fn setup_plugins(app: &mut App) {
     #[cfg(not(feature = "debugging"))]
     app.add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<bevy::log::LogPlugin>());
 
-    app.insert_resource(Progress { level: 0u8 });
-
     app
         .add_plugin(LevelPlugin)
         .add_plugin(PlayerPlugin);
@@ -56,6 +51,10 @@ fn setup_plugins(app: &mut App) {
     
     #[cfg(feature = "debugging")]
     app.add_plugin(WorldInspectorPlugin::new());
+
+    app
+        .init_asset_loader::<LevelInfoLoader>()
+        .add_asset::<LevelInfo>();
 }
 
 pub fn create_app() -> App {

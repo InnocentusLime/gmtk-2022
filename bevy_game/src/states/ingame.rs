@@ -5,9 +5,12 @@ use iyes_loopless::prelude::*;
 
 use super::GameState;
 
+use crate::states::main_menu::MenuAssets;
+use crate::save::Save;
+use crate::level_info::LevelInfo;
 use crate::level::*;
 use crate::player::PlayerModification;
-use crate::app::{ GameplayCamera, MenuCamera, Progress };
+use crate::app::{ GameplayCamera, MenuCamera };
 
 #[derive(AssetCollection)]
 pub struct InGameAssets {
@@ -54,7 +57,7 @@ fn enter() {
 
 fn death_system(
     mut commands: Commands,
-    mut events: EventReader<PlayerModification>
+    mut events: EventReader<PlayerModification>,
 ) {
     for ev in events.iter() {
         match ev {
@@ -70,16 +73,25 @@ fn death_system(
 fn beat_system(
     mut commands: Commands,
     mut events: EventReader<PlayerModification>,
-    mut progress: ResMut<Progress>,
+    mut save: ResMut<Save>,
     assets: Res<InGameAssets>,
     audio: Res<Audio>,
+    menu_assets: Res<MenuAssets>,
+    level_infos: Res<Assets<LevelInfo>>,
 ) {
     for ev in events.iter() {
         match ev {
             PlayerModification::Escape => {
                 info!("You win");
+                let level_info = level_infos.get(&menu_assets.level_info).unwrap();
                 audio.play(assets.complete_sound.clone());
-                progress.level += 1;
+         
+                save.register_level_complete(&*level_info);
+                // TODO retry?
+                match save.save() {
+                    Ok(()) => (),
+                    Err(e) => error!("Error recording save: {}\nThe progress will be lost.", e),
+                }
                 commands.insert_resource(NextState(GameState::MainMenu));
             },
             _ => (),
