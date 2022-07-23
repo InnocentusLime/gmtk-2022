@@ -93,14 +93,18 @@ pub enum PlayerState {
 
 #[derive(Clone, Component)]
 pub struct Player {
+    map_id: u16, // The map ID the player traverses
+    layer_id: u16, // The layer ID 
     // TODO state -> dice_state
     state: dice::DiceEncoding,
     current_cell: (u32, u32),
 }
 
 impl Player {
-    pub fn new(start: (u32, u32)) -> Self {
+    pub fn new(start: (u32, u32), map_id: u16, layer_id: u16) -> Self {
         Player {
+            map_id,
+            layer_id,
             current_cell: start,
             state: dice::DiceEncoding::new(),
         }
@@ -136,12 +140,12 @@ pub fn player_update(
             (PlayerModification::AcknowledgeMove, PlayerState::AwaitingAcknowledge { .. }) => *st = PlayerState::AwaitingInput,
             (PlayerModification::Roll(dir), PlayerState::AwaitingAcknowledge { .. } | PlayerState::AwaitingInput) => {
                 let (nx, ny) = pl.next_cell(dir.to_offset());
-                match map_q.get_tile_entity(TilePos(nx, ny), 0, 0) {
+                match map_q.get_tile_entity(TilePos(nx, ny), pl.map_id, pl.layer_id) {
                     Ok(to_entity) => *st = PlayerState::Moving {
                         to_entity,
                         to: (nx, ny),
                         start_pos: tf.translation,
-                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, 0, 0).extend(1.0f32),
+                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, pl.map_id, pl.layer_id).extend(1.0f32),
                         timer: Timer::from_seconds(0.8, false),
                         info: MoveInfo::Rotate {
                             direction: *dir,
@@ -153,12 +157,12 @@ pub fn player_update(
             },
             (PlayerModification::Slide(dir), PlayerState::AwaitingAcknowledge { .. } | PlayerState::AwaitingInput) => {
                 let (nx, ny) = pl.next_cell(dir.to_offset());
-                match map_q.get_tile_entity(TilePos(nx, ny), 0, 0) {
+                match map_q.get_tile_entity(TilePos(nx, ny), pl.map_id, pl.layer_id) {
                     Ok(to_entity) => *st = PlayerState::Moving {
                         to_entity,
                         to: (nx, ny),
                         start_pos: tf.translation,
-                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, 0, 0).extend(1.0f32),
+                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, pl.map_id, pl.layer_id).extend(1.0f32),
                         timer: Timer::from_seconds(0.5, false),
                         info: MoveInfo::Slide,
                     },
@@ -173,7 +177,7 @@ pub fn player_update(
 
     // Other state transitions
     match &mut *st {
-        PlayerState::Moving { to, timer, info, to_entity, .. } => {
+        PlayerState::Moving { end_pos, to, timer, info, to_entity, .. } => {
             timer.tick(time.delta());
             if timer.finished() {
                 match info {
@@ -190,8 +194,7 @@ pub fn player_update(
                 });
                 *st = PlayerState::AwaitingAcknowledge {
                     new_rot: pl.state.rot_quat(),
-                    new_pos: tile_pos_to_world_pos(pl.current_cell, map_tf, &mut map_q, 0, 0)
-                        .extend(1.0f32),
+                    new_pos: *end_pos,
                 };
             }
         },

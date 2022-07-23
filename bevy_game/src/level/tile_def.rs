@@ -8,10 +8,13 @@ use crate::states::GameState;
 use crate::player::dice::DiceEncoding;
 use crate::player::{ PlayerModification, PlayerMoved };
 
+pub struct MapReady {
+    pub map_id: u16,
+    pub layer_id: u16,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 pub struct ActiveTileUpdateStage;
-
-pub struct MapReady;
 
 #[derive(Clone, Copy)]
 pub enum ActivationCondition {

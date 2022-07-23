@@ -7,6 +7,7 @@ mod loader;
 mod tile_animation;
 mod cpu_tile_animation;
 
+// TODO all tile_* files should be thrown into a `tile` submodule
 use cpu_tile_animation::CPUTileAnimationPlugin;
 use bevy_ecs_tilemap::prelude::*;
 use bevy::prelude::*;
@@ -60,9 +61,9 @@ pub fn tile_pos_to_world_pos(
     map_transform: &Transform,
     map: &mut MapQuery,
     map_id: u16,
-    layer_id: u32,
+    layer_id: u16,
 ) -> Vec2 {
-    let layer = map.get_layer(map_id as u16, layer_id as u16).unwrap().1;
+    let layer = map.get_layer(map_id, layer_id).unwrap().1;
     let settings = &layer.settings;
     map_transform.mul_vec3(Vec3::new(
         tile_pos.0 as f32 * settings.tile_size.0 + settings.tile_size.0 / 2.0f32, 

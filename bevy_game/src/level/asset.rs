@@ -17,17 +17,18 @@ pub struct Level {
 }
 
 impl Level {
-    /*
-    fn find_geometry_layer_id(&self) -> Option<usize> {
-        self.map.layers().find(|x| x.name == "geometry")
-            .map(|x| x.id() as usize)
+    pub fn find_geometry_layer_id(&self) -> Option<u16> {
+        self.map.layers().enumerate().find(|(_, x)| x.name == "geometry").map(|(x, _)| x as u16)
     }
-    */
+
     pub fn new(map: tiled::Map, tilesets: HashMap<usize, Handle<Image>>) -> Self {
         Level { map, tilesets }
     }
 
-    pub fn spawn_map(&self, commands: &mut Commands, mut meshes: ResMut<Assets<Mesh>>, mut animations: ResMut<Animations>) -> Entity {
+    // TODO consider shrinking the nested stuff
+    pub fn spawn_map(&self, commands: &mut Commands, mut meshes: ResMut<Assets<Mesh>>, mut animations: ResMut<Animations>) -> (u16, Entity) {
+        let map_id = 0;
+
         // Parse the map
         let attrs = tile_attributes::scan_tilesets(&self.map);
         let anims = tile_animation::scan_tilesets_for_animations(&self.map, &attrs);
@@ -36,7 +37,7 @@ impl Level {
 
         // Create the loaded map
         let map_entity = commands.spawn().insert(Name::new("Map")).id();
-        let mut map = Map::new(0, map_entity);
+        let mut map = Map::new(map_id, map_entity);
 
         // Account for each tileset
         for (tileset_index, tileset) in self.map.tilesets().iter().enumerate() {
@@ -135,6 +136,6 @@ impl Level {
 
         commands.entity(map_entity).insert(map);
 
-        map_entity
+        (map_id, map_entity)
     }
 }

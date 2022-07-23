@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 
-use super::special_tiles::*;
 use super::tile_def::*;
 
 #[derive(Clone, Copy, Debug)]

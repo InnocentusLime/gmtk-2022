@@ -1,13 +1,12 @@
 use std::collections::HashMap;
-use std::time::Duration;
 
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
 
-use super::cpu_tile_animation::{ Frame, Animation, Animations, CPUAnimated };
+use super::cpu_tile_animation::{ Animation, Animations };
 use super::special_tiles::*;
 use super::tile_def::*;
-use super::tile_attributes::{ TileAttributes, AnimationType };
+use super::tile_attributes::TileAttributes;
 use super::tile_animation::dispatch_anim_type;
 
 fn build_command(
