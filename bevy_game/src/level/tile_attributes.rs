@@ -17,12 +17,30 @@ pub struct TileAttributes {
     pub tile_ty: Option<String>,
     pub activation_cond: Option<ActivationCondition>,
     pub anim_speed: Option<f32>,
+    pub on_transition_graphics: Option<u32>,
+    pub off_transition_graphics: Option<u32>,
     pub on_graphics: Option<u32>,
     pub off_graphics: Option<u32>,
     pub anim_type: Option<AnimationType>,
 }
 
 pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
+    use std::collections::HashSet;
+
+    lazy_static::lazy_static! {
+        static ref ATTR_TABLE: HashSet<String> = {
+            let mut set = HashSet::new();
+            set.insert("on_transition".to_owned());
+            set.insert("off_transition".to_owned());
+            set.insert("anim_type".to_owned());
+            set.insert("active".to_owned());
+            set.insert("on_tile".to_owned());
+            set.insert("off_tile".to_owned());
+            set.insert("anim_speed".to_owned());
+            set
+        };
+    }
+
     let span = error_span!("Scanning tile properties", tile_id = id);
     let _guard = span.enter();
 
@@ -31,8 +49,29 @@ pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
     let mut on_graphics = None;
     let mut off_graphics = None;
     let mut anim_speed = None;
+    let mut on_transition_graphics = None;
+    let mut off_transition_graphics = None;
+
     for (name, prop) in tile.properties.iter() {
+        if !ATTR_TABLE.contains(name.as_str()) {
+            error!("Unknown property {}", name);
+            continue;
+        }
         match (name.as_str(), prop) {
+            ("on_transition", tiled::PropertyValue::IntValue(i)) => {
+                if *i < 0 { error!("Negative tile IDs are not allowed"); continue; }
+
+                if on_transition_graphics.replace(*i as u32).is_some() {
+                    warn!("On transition has been double-defined");
+                }
+            },
+            ("off_transition", tiled::PropertyValue::IntValue(i)) => {
+                if *i < 0 { error!("Negative tile IDs are not allowed"); continue; }
+
+                if off_transition_graphics.replace(*i as u32).is_some() {
+                    warn!("Off transition has been double-defined");
+                }
+            },
             ("anim_type", tiled::PropertyValue::StringValue(s)) => {
                 let x = match s.as_str() {
                     "switch" => AnimationType::Switch,
@@ -44,7 +83,6 @@ pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
                     warn!("Animation type has been double-defined");
                 }
             },
-            ("anim_type", _) => error!("Invalid data type for \"anim_type\" property"),
             ("active", tiled::PropertyValue::StringValue(s)) => {
                 let x = match s.as_str() {
                     "odd" => ActivationCondition::Odd,
@@ -56,7 +94,6 @@ pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
                     warn!("Activation condition has been double-defined");
                 }
             },
-            ("active", _) => error!("Invalid data type for \"active\" property"),
             ("on_tile", tiled::PropertyValue::IntValue(i)) => {
                 if *i < 0 { error!("Negative tile IDs are not allowed"); continue; }
 
@@ -64,7 +101,6 @@ pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
                     warn!("On graphics have been double-defined");
                 }
             },
-            ("on_tile", _) => error!("Invalid data type for \"on_tile\" property"),
             ("off_tile", tiled::PropertyValue::IntValue(i)) => {
                 if *i < 0 { error!("Negative tile IDs are not allowed"); continue; }
 
@@ -72,7 +108,6 @@ pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
                     warn!("Off graphics have been double-defined");
                 }
             },
-            ("off_tile", _) => error!("Invalid data type for \"off_tile\" property"),
             ("anim_speed", tiled::PropertyValue::FloatValue(f)) => {
                 if *f < 0.0f32 { error!("Negative speed is not allowed"); continue; }
 
@@ -80,8 +115,7 @@ pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
                     warn!("Off graphics have been double-defined");
                 }
             },
-            ("anim_speed", _) => error!("Invalid data type for \"anim_speed\" property"),
-            (x, _) => error!("Unknown property {}", x),
+            (x, _) => error!("Invalid data type for \"{}\" property", x),
         }
     }
 
@@ -93,6 +127,8 @@ pub fn scan_properties(id: u32, tile: tiled::Tile) -> TileAttributes {
             off_graphics,
             anim_type,
             anim_speed,
+            on_transition_graphics,
+            off_transition_graphics,
         };
 
     res

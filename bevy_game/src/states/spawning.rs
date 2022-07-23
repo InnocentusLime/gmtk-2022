@@ -19,9 +19,8 @@ fn init_level(
     info!("Initting level");
 
     let level = levels.get(&assets.level).unwrap();
-    match level.find_geomtry_layer_id() {
+    match level.find_geometry_layer_id() {
         Some(layer_id) => {
-            let layer_id = level.find_geometry_layer_id().unwrap(); 
             let (map_id, map_entity) = level.spawn_map(&mut commands, meshes, animations);
             let map_tf = Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.0f32));
             commands.entity(map_entity).insert_bundle(TransformBundle::from_transform(map_tf.clone()));

@@ -6,7 +6,7 @@ use super::cpu_tile_animation::CPUAnimated;
 
 use crate::states::GameState;
 use crate::player::dice::DiceEncoding;
-use crate::player::{ PlayerModification, PlayerMoved };
+use crate::player::{ PlayerModification, PlayerMoved, PlayerChangingSide };
 
 pub struct MapReady {
     pub map_id: u16,
@@ -47,6 +47,8 @@ pub enum ActivatableAnimating {
     //
     // anim_type = switchable_machine
     Switch {
+        on_transition: CPUAnimated,
+        off_transition: CPUAnimated,
         on_anim: CPUAnimated,
         off_anim: CPUAnimated,
     },
@@ -55,7 +57,7 @@ pub enum ActivatableAnimating {
     //
     // anim_type = stoppable_machine
     Stop {
-        on_speed: f32
+        on_speed: f32,
     },
 }
 
@@ -63,7 +65,7 @@ impl ActivatableAnimating {
     fn update_cpu_anim(&self, anim: &mut CPUAnimated, active: bool) {
         use ActivatableAnimating::*;
         match self {
-            Switch { on_anim, off_anim } => if active {
+            Switch { on_anim, off_anim, .. } => if active {
                 *anim = *on_anim;
             } else {
                 *anim = *off_anim;
@@ -95,12 +97,16 @@ impl ActivatableTileTag {
         }
     }
 
+    fn will_be_active(&self, player_state: &DiceEncoding) -> bool {
+        self.condition.is_active(player_state)
+    }
+
     pub fn is_active(&self) -> bool { self.state }
 
     /// Updated the state of the tile, returning `true` if the internal
     /// logic needs to be updated.
     fn update(&mut self, player_state: &DiceEncoding) -> bool {
-        let new_state = self.condition.is_active(player_state);
+        let new_state = self.will_be_active(player_state);
         let result = self.state != new_state;
         self.state = new_state;
         result
@@ -129,12 +135,35 @@ where
     }
 }
 
-// TODO rename to setup
 pub fn activeatable_tile_setup_system(query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>) {
     toggle_activatable_tiles(|_| true, query);
 }
 
-pub fn tile_reaction_system<T: TileState>(
+pub fn activeatable_tile_transition_system(
+    mut change_side: EventReader<PlayerChangingSide>,
+    mut query: Query<(&mut CPUAnimated, &ActivatableTileTag)>
+) {
+    if let Some(e) = change_side.iter().next() {
+        for (mut anim, tag) in query.iter_mut() {
+            if tag.is_active() == tag.will_be_active(&e.dice_state) { continue; }
+            match tag.anim_info {
+                ActivatableAnimating::Switch { on_transition, off_transition, .. } => {
+                    if tag.is_active() {
+                        *anim = off_transition;
+                    } else {
+                        *anim = on_transition;
+                    }
+                },
+                _ => (),
+            }
+        }
+    }
+
+    // Drop all other events
+    change_side.iter().for_each(|_| ());
+}
+
+fn tile_reaction_system<T: TileState>(
     mut moves: EventReader<PlayerMoved>,
     mut query: Query<(&mut T, T::UpdateData)>,
     mut response: EventWriter<PlayerModification>,

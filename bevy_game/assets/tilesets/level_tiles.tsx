@@ -14,7 +14,9 @@
    <property name="active" value="odd"/>
    <property name="anim_type" value="switch"/>
    <property name="off_tile" type="int" value="4"/>
+   <property name="off_transition" type="int" value="11"/>
    <property name="on_tile" type="int" value="7"/>
+   <property name="on_transition" type="int" value="13"/>
   </properties>
  </tile>
  <tile id="6" type="fry">
@@ -22,7 +24,9 @@
    <property name="active" value="even"/>
    <property name="anim_type" value="switch"/>
    <property name="off_tile" type="int" value="4"/>
+   <property name="off_transition" type="int" value="11"/>
    <property name="on_tile" type="int" value="7"/>
+   <property name="on_transition" type="int" value="13"/>
   </properties>
  </tile>
  <tile id="7">
@@ -32,6 +36,20 @@
    <frame tileid="9" duration="200"/>
    <frame tileid="10" duration="150"/>
    <frame tileid="11" duration="200"/>
+  </animation>
+ </tile>
+ <tile id="11">
+  <animation>
+   <frame tileid="11" duration="125"/>
+   <frame tileid="12" duration="125"/>
+   <frame tileid="13" duration="125"/>
+  </animation>
+ </tile>
+ <tile id="13">
+  <animation>
+   <frame tileid="13" duration="125"/>
+   <frame tileid="12" duration="125"/>
+   <frame tileid="11" duration="125"/>
   </animation>
  </tile>
  <tile id="18" type="spin"/>

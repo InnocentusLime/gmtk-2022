@@ -9,6 +9,8 @@ use iyes_loopless::prelude::*;
 use crate::states::GameState;
 use crate::app::GameplayCamera;
 
+pub use dice::Direction;
+
 #[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct PlayerUpdateStage;
@@ -25,6 +27,9 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_event::<PlayerMoved>()
+            .add_event::<PlayerChangingSide>()
+            .add_event::<PlayerModification>()
             .add_stage_after(
                 CoreStage::PreUpdate,
                 PlayerUpdateStage,
@@ -45,8 +50,6 @@ impl Plugin for PlayerPlugin {
                     .after(PlayerSystems::Update).run_in_state(GameState::InGame)
                     .with_system(player_animation).with_system(player_camera).into()
             )
-            .add_event::<PlayerMoved>()
-            .add_event::<PlayerModification>()
             /*.register_type::<PlayerState>()*/;
     }
 }
@@ -62,6 +65,10 @@ pub enum PlayerModification {
 
 pub struct PlayerMoved {
     pub cell: Entity,
+    pub dice_state: dice::DiceEncoding,
+}
+
+pub struct PlayerChangingSide {
     pub dice_state: dice::DiceEncoding,
 }
 
@@ -110,7 +117,7 @@ impl Player {
         }
     }
 
-    pub fn apply_rotation(&mut self, dir: dice::Direction) { self.state.apply_rotation(dir) }
+    pub fn apply_rotation(&mut self, dir: dice::Direction) -> dice::DiceEncoding { self.state.apply_rotation(dir) }
 
     pub fn upper_side(&self) -> u8 { self.state.upper_side() }
 
@@ -130,6 +137,7 @@ pub fn player_update(
     mut map_q: MapQuery,
     map_entity: Query<&Transform, With<Map>>,
     mut move_event: EventWriter<PlayerMoved>,
+    mut changing_side: EventWriter<PlayerChangingSide>, 
 ) {
     let map_tf = map_entity.single();
     let (tf, mut pl, mut st) = player_q.single_mut();
@@ -140,6 +148,9 @@ pub fn player_update(
             (PlayerModification::AcknowledgeMove, PlayerState::AwaitingAcknowledge { .. }) => *st = PlayerState::AwaitingInput,
             (PlayerModification::Roll(dir), PlayerState::AwaitingAcknowledge { .. } | PlayerState::AwaitingInput) => {
                 let (nx, ny) = pl.next_cell(dir.to_offset());
+                changing_side.send(PlayerChangingSide {
+                    dice_state: pl.apply_rotation(*dir),
+                });
                 match map_q.get_tile_entity(TilePos(nx, ny), pl.map_id, pl.layer_id) {
                     Ok(to_entity) => *st = PlayerState::Moving {
                         to_entity,
@@ -183,7 +194,7 @@ pub fn player_update(
                 match info {
                     MoveInfo::Slide => (),
                     MoveInfo::Rotate { direction, .. } => {
-                        pl.apply_rotation(*direction);
+                        pl.state = pl.apply_rotation(*direction);
                         trace!("New side: {}", pl.upper_side());
                     },
                 }
@@ -236,7 +247,7 @@ pub fn player_controls(
     query: Query<&PlayerState>,
 ) {
     use bevy::input::ElementState;
-    use dice::Direction::*;
+    use Direction::*;
    
     // TODO pretify?
     let mut movement = None;

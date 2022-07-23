@@ -49,33 +49,45 @@ pub fn dispatch_anim_type(
     anim_ids: &mut HashMap<tiled::TileId, usize>,
     animations: &mut Animations,
 ) -> Option<(ActivatableAnimating, CPUAnimated)> {
-    match (ty, attr.on_graphics, attr.off_graphics) {
-        (AnimationType::Switch, Some(tile_on), Some(tile_off)) => {
+    match (ty, attr.on_graphics, attr.off_graphics, attr.on_transition_graphics, attr.off_transition_graphics) {
+        (AnimationType::Switch, Some(tile_on), Some(tile_off), Some(on_transition), Some(off_transition)) => {
             let (on_anim_speed, on_anim) = &anims[&tile_on];
             let (off_anim_speed, off_anim) = &anims[&tile_off];
+            let (on_transition_speed, on_transition_anim) = &anims[&on_transition];
+            let (off_transition_speed, off_transition_anim) = &anims[&off_transition];
             let on_anim_id = *anim_ids.entry(tile_on)
-                .or_insert_with(|| animations.add_animation(on_anim.clone()));
+                .or_insert_with(|| animations.add_animation(on_anim.to_owned()));
             let off_anim_id = *anim_ids.entry(tile_off)
-                .or_insert_with(|| animations.add_animation(off_anim.clone()));
+                .or_insert_with(|| animations.add_animation(off_anim.to_owned()));
+            let on_transition_id = *anim_ids.entry(on_transition)
+                .or_insert_with(|| animations.add_animation(on_transition_anim.to_owned()));
+            let off_transition_id = *anim_ids.entry(off_transition)
+                .or_insert_with(|| animations.add_animation(off_transition_anim.to_owned()));
 
             let on_anim = animations.new_cpu_animated(on_anim_id, *on_anim_speed, true);
             let off_anim = animations.new_cpu_animated(off_anim_id, *off_anim_speed, true);
+            let on_transition = animations.new_cpu_animated(on_transition_id, *on_transition_speed, false);
+            let off_transition = animations.new_cpu_animated(off_transition_id, *off_transition_speed, false);
             Some((ActivatableAnimating::Switch {
-                on_anim, off_anim
+                on_anim, off_anim,
+                on_transition, off_transition
             }, on_anim))
         },
-        (AnimationType::Switch, _, _) => { error!("Missing some data for \"switchable_machine\" tile type"); None },
-        (AnimationType::Stop, Some(tile_on), x) => {
-            if x.is_some() { warn!("\"stoppable_machine\" animation type ignores \"tile_off\"") }
+        (AnimationType::Switch, _, _, _, _) => { error!("Missing some data for \"switchable_machine\" tile type"); None },
+        (AnimationType::Stop, Some(tile_on), x1, x2, x3) => {
+            if x1.is_some() { warn!("\"stop\" animation type ignores \"off_tile\"") }
+            if x2.is_some() { warn!("\"stop\" animation type ignores \"on_transition\"") }
+            if x3.is_some() { warn!("\"stop\" animation type ignores \"off_transition\"") }
+
             let (on_anim_speed, on_anim) = &anims[&tile_on];
             let on_anim_id = *anim_ids.entry(tile_on)
-                .or_insert_with(|| animations.add_animation(on_anim.clone()));
+                .or_insert_with(|| animations.add_animation(on_anim.to_owned()));
 
             let on_anim = animations.new_cpu_animated(on_anim_id, *on_anim_speed, true);
             Some((ActivatableAnimating::Stop {
                 on_speed: *on_anim_speed,
             }, on_anim))
         },
-        (AnimationType::Stop, _, _) => { error!("Missing some data for \"stoppable_machine\" tile type"); None },
+        (AnimationType::Stop, _, _, _, _) => { error!("Missing some data for \"stoppable_machine\" tile type"); None },
     }
 } 

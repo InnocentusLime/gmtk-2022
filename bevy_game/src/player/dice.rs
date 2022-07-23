@@ -97,10 +97,12 @@ impl DiceEncoding {
         }
     }
 
-    pub fn apply_rotation(&mut self, d: Direction) {
-        let (new_ortho_rot, new_rot) = Self::rot_comp(self.flat_rot, Self::dir_to_rot(d));
-        self.ortho_rot = (self.ortho_rot + new_ortho_rot) % 4;
-        self.flat_rot = new_rot;
+    pub fn apply_rotation(&self, d: Direction) -> Self {
+        let (delta_ortho_rot, flat_rot) = Self::rot_comp(self.flat_rot, Self::dir_to_rot(d));
+        DiceEncoding {
+            ortho_rot: (self.ortho_rot + delta_ortho_rot) % 4,
+            flat_rot,
+        }
     }
 
     pub fn rot_quat(&self) -> Quat {
