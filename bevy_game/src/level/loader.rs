@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::BufReader;
 
 use bevy::asset::{ AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset, FileAssetIo };
+use bevy_ecs_tilemap::prelude::TileAtlasBuilder;
 use bevy::prelude::*;
 
 use super::asset::*;
@@ -27,14 +28,26 @@ impl AssetLoader for TiledLoader {
             let mut handles = HashMap::default();
 
             for (tileset_index, tileset) in map.tilesets().iter().enumerate() {
-                // TODO mhm
-                let tile_path = tileset.image.as_ref().unwrap().source.strip_prefix(&root).unwrap();
-                let asset_path = AssetPath::new(tile_path.to_path_buf(), None);
-                let texture: Handle<Image> = load_context.get_handle(asset_path.clone());
-
-                handles.insert(tileset_index, texture.clone());
-
-                dependencies.push(asset_path);
+                match tileset.image.as_ref() {
+                    Some(image) => {
+                        //warn!("Atlased tileset is not recommended. Please split your tileset into many tile files.");
+                        let tile_path = image.source.strip_prefix(&root).unwrap();
+                        let asset_path = AssetPath::new(tile_path.to_path_buf(), None);
+                        let texture: Handle<Image> = load_context.get_handle(asset_path.clone());
+                        handles.insert(tileset_index, texture.clone());
+                        dependencies.push(asset_path);
+                    },
+                    None => {
+                        /*
+                        let mut atlas_builder = TileAtlasBuilder::new(
+                            Vec2::new(map.tile_width, map.tile_height)
+                        );
+                        // Hmmm
+                        for (_, tile) in tileset.tiles {}
+                        */
+                        todo!()
+                    },
+                }
             }
 
             let loaded_asset = LoadedAsset::new(Level::new(

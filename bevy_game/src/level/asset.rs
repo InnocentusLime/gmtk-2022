@@ -9,6 +9,8 @@ use super::tile_attributes;
 use super::tile_animation;
 use super::tile_commands;
 
+use tile_commands::TileCommands;
+
 #[derive(TypeUuid)]
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
 pub struct Level {
@@ -17,6 +19,51 @@ pub struct Level {
 }
 
 impl Level {
+    fn spawn_layer_tiles(
+        &self,
+        tileset_index: usize,
+        layer: tiled::Layer,
+        commands: &mut Commands,
+        builder: &mut LayerBuilder<TileBundle>,
+        tile_init: &TileCommands,
+    ) {
+        for x in 0..self.map.width {
+            for y in 0..self.map.height {
+                match layer.layer_type() {
+                    tiled::LayerType::TileLayer(tile_layer) => {
+                        tile_layer.get_tile(x as i32, y as i32).map(|tile| {
+                            let y = (self.map.height - 1) as u32 - y;
+                            let pos = TilePos(x, y);
+
+                            // Skip tiles which don't use the tileset we 
+                            // are considering on the current iteration
+                            if tile.tileset_index() != tileset_index {
+                                return;
+                            }
+
+                            let entity = builder.get_tile_entity(commands, pos).unwrap();
+                            tile_init[tileset_index as usize][&tile.id()](commands.entity(entity));
+
+                            // NOTE who told me that this is correct? Nobody. I am going to
+                            // research if it's possible to break this code or not
+                            let tile = 
+                                Tile {
+                                    texture_index: tile.id() as u16,
+                                    flip_x: tile.flip_h,
+                                    flip_y: tile.flip_v,
+                                    flip_d: tile.flip_d,
+                                    ..Default::default()
+                                };
+
+                            builder.set_tile(pos, TileBundle { tile, ..default() }).unwrap();
+                        });
+                    },
+                    _ => panic!("Unsupported layer type"),
+                }
+            }
+        }
+    }
+
     pub fn find_geometry_layer_id(&self) -> Option<u16> {
         self.map.layers().enumerate().find(|(_, x)| x.name == "geometry").map(|(x, _)| x as u16)
     }
@@ -75,43 +122,11 @@ impl Level {
                 let (mut builder, layer_entity) = LayerBuilder::<TileBundle>::new(
                     commands,
                     map_settings.clone(),
-                    0u16,
+                    map_id,
                     layer_index as u16
                 );
 
-                for x in 0..self.map.width {
-                    for y in 0..self.map.height {
-                        match layer.layer_type() {
-                            tiled::LayerType::TileLayer(tile_layer) => {
-                                tile_layer.get_tile(x as i32, y as i32).map(|tile| {
-                                    let y = (self.map.height - 1) as u32 - y;
-                                    let pos = TilePos(x, y);
-
-                                    // Skip tiles which don't use the tileset we 
-                                    // are considering on the current iteration
-                                    if tile.tileset_index() != tileset_index {
-                                        return;
-                                    }
-
-                                    let entity = builder.get_tile_entity(commands, pos).unwrap();
-                                    tile_init[tileset_index as usize][&tile.id()](commands.entity(entity));
-
-                                    let tile = 
-                                        Tile {
-                                            texture_index: tile.id() as u16,
-                                            flip_x: tile.flip_h,
-                                            flip_y: tile.flip_v,
-                                            flip_d: tile.flip_d,
-                                            ..Default::default()
-                                        };
-
-                                    builder.set_tile(pos, TileBundle { tile, ..default() }).unwrap();
-                                });
-                            },
-                            _ => panic!("Unsupported layer type"),
-                        }
-                    }
-                }
+                self.spawn_layer_tiles(tileset_index, layer, commands, &mut builder, &tile_init);
 
                 let layer_bundle = 
                     builder.build(

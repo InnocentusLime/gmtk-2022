@@ -40,6 +40,8 @@ fn build_command(
                         
     Box::new(move |mut x| { active_tagger(tagger(&mut x)); })
 }
+   
+pub type TileCommands = Vec<HashMap<tiled::TileId, Box<dyn Fn(EntityCommands)>>>;
 
 /// Parsees tile attributes, converting them into commands, which map
 /// tile ID into tile initialization routine
@@ -48,7 +50,7 @@ pub fn build_commands(
     anims: &Vec<HashMap<tiled::TileId, (f32, Animation)>>,
     anim_ids: &mut Vec<HashMap<tiled::TileId, usize>>,
     animations: &mut Animations,
-) -> Vec<HashMap<tiled::TileId, Box<dyn Fn(EntityCommands)>>> {
+) -> TileCommands {
     let span = error_span!("Building commands");
     let _guard = span.enter();
     attrs.iter().enumerate().map(|(tileset_id, attrs)| {
@@ -61,4 +63,3 @@ pub fn build_commands(
         }).collect()
     }).collect()
 }
-    
