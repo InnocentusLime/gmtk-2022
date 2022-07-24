@@ -36,7 +36,7 @@ impl Save {
     pub fn next_level(&self, info: &LevelInfo) -> Option<(u8, u8)> {
         let (mut world, mut level) = (self.world, self.level);
 
-        if world as usize >= info.world_count() { return None; }
+        if world >= info.world_count() { return None; }
 
         // Check if we have beaten the last level of the world
         if info.level_count_in_world(world) - 1 <= level {
