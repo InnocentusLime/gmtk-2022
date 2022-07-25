@@ -96,10 +96,14 @@ pub enum PlayerState {
         new_pos: Vec3,
         new_rot: Quat,
     },
+    Escaping {
+        timer: Timer,
+    },
 }
 
 #[derive(Clone, Component)]
 pub struct Player {
+    picked_anim: u8,
     map_id: u16, // The map ID the player traverses
     layer_id: u16, // The layer ID 
     // TODO state -> dice_state
@@ -110,6 +114,7 @@ pub struct Player {
 impl Player {
     pub fn new(start: (u32, u32), map_id: u16, layer_id: u16) -> Self {
         Player {
+            picked_anim: 0,
             map_id,
             layer_id,
             current_cell: start,
@@ -157,7 +162,7 @@ pub fn player_update(
                         to: (nx, ny),
                         start_pos: tf.translation,
                         end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, pl.map_id, pl.layer_id).extend(1.0f32),
-                        timer: Timer::from_seconds(0.8, false),
+                        timer: Timer::from_seconds(0.52, false),
                         info: MoveInfo::Rotate {
                             direction: *dir,
                             start_rot: tf.rotation,
@@ -181,13 +186,20 @@ pub fn player_update(
                 }
             },
             (PlayerModification::Kill, PlayerState::AwaitingAcknowledge { .. }) => (),
-            (PlayerModification::Escape, PlayerState::AwaitingAcknowledge { .. }) => (),
+            (PlayerModification::Escape, PlayerState::AwaitingAcknowledge { .. }) => *st = PlayerState::Escaping {
+                timer: Timer::from_seconds(0.31, false),
+            },
             _ => error!("Modfication:\n{:?}\ndoesn't fit player's state\n{:?}", e, st),
         }
+
+        return;
     }
 
     // Other state transitions
     match &mut *st {
+        PlayerState::Escaping { timer } => {
+            timer.tick(time.delta());
+        },
         PlayerState::Moving { end_pos, to, timer, info, to_entity, .. } => {
             timer.tick(time.delta());
             if timer.finished() {
@@ -213,20 +225,46 @@ pub fn player_update(
     }
 }
 
-pub fn player_animation(mut player_q: Query<(&mut Transform, &PlayerState)>) {
-    let (mut player_tf, st) = player_q.single_mut();
+pub fn player_animation(
+    //mut player_q: Query<(&mut Transform, &PlayerState)>,
+    mut col_mats: ResMut<Assets<ColorMaterial>>,
+    mut player_q: Query<(&mut Transform, &PlayerState, &Player, &mut Handle<ColorMaterial>)>,
+) {
+    let (mut player_tf, st, pl, mat_handle) = player_q.single_mut();
     match st {
         PlayerState::Moving { start_pos, end_pos, timer, info, .. } => {
             let t = 1.0f32 - timer.percent_left();
-            player_tf.translation = *start_pos + (*end_pos - *start_pos) * t;
             match info {
-                MoveInfo::Slide => (),
-                MoveInfo::Rotate { direction, start_rot } => player_tf.rotation = direction.to_quat(t) * *start_rot,
+                MoveInfo::Slide => {
+                    player_tf.translation = *start_pos + (*end_pos - *start_pos) * t;
+                },
+                MoveInfo::Rotate { direction, start_rot } => {
+                    let mut t = t;
+                    match pl.picked_anim {
+                        0 => (),
+                        1 => t = ((2.0f32 * t - 1.0f32).powi(3) + 1.0f32) / 2.0f32,
+                        2 => t = 2.0 * t.powi(3) - t,
+                        _ => error!("Weird anim ID"),
+                    }
+                    player_tf.translation = *start_pos + (*end_pos - *start_pos) * t;
+                    player_tf.rotation = direction.to_quat(t) * *start_rot
+                },
             }
         },
         PlayerState::AwaitingAcknowledge { new_pos, new_rot } => {
             player_tf.rotation = *new_rot;
             player_tf.translation = *new_pos;
+        },
+        PlayerState::Escaping { timer } => {
+            let t = timer.percent_left();
+            // TODO hardcoded player size
+            player_tf.scale = Vec3::new(25.0f32, 25.0f32, 25.0f32) * t;
+            col_mats.get_mut(&*mat_handle).unwrap().color = Color::Rgba {
+                red: t,
+                green: t,
+                blue: t,
+                alpha: 1.0,
+            };
         },
         PlayerState::AwaitingInput => (),
     }
@@ -244,7 +282,8 @@ pub fn player_camera(
 pub fn player_controls(
     mut events: EventReader<KeyboardInput>,
     mut output: EventWriter<PlayerModification>,
-    query: Query<&PlayerState>,
+//    query: Query<&PlayerState>,
+    mut query: Query<(&PlayerState, &mut Player)>,
 ) {
     use bevy::input::ElementState;
     use Direction::*;
@@ -255,9 +294,13 @@ pub fn player_controls(
         if movement.is_some() { continue; }
         if ev.state != ElementState::Pressed { continue; }
 
-        for st in query.iter() {
+        for (st, mut pl) in query.iter_mut() {
             if !matches!(*st, PlayerState::AwaitingInput) { continue; }
             match ev.key_code { 
+                Some(KeyCode::Space) => {
+                    pl.picked_anim = (pl.picked_anim + 1) % 3;
+                    info!("Anim mode: {}", pl.picked_anim);
+                },
                 Some(KeyCode::W) => movement = Some(Up),
                 Some(KeyCode::A) => movement = Some(Left),
                 Some(KeyCode::S) => movement = Some(Down),

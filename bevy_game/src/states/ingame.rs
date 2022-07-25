@@ -12,6 +12,8 @@ use crate::level::*;
 use crate::player::PlayerModification;
 use crate::app::{ GameplayCamera, MenuCamera };
 
+struct LevelCompleteCountdown(Timer);
+
 #[derive(AssetCollection)]
 pub struct InGameAssets {
     #[asset(key = "level")]
@@ -92,9 +94,23 @@ fn beat_system(
                     Ok(()) => (),
                     Err(e) => error!("Error recording save: {}\nThe progress will be lost.", e),
                 }
-                commands.insert_resource(NextState(GameState::MainMenu));
+                commands.insert_resource(LevelCompleteCountdown(Timer::from_seconds(2.0f32, false)));
             },
             _ => (),
+        }
+    }
+}
+
+fn level_complete_system(
+    mut commands: Commands,
+    mut timer: Option<ResMut<LevelCompleteCountdown>>,
+    time: Res<Time>,
+) {
+    if let Some(timer) = timer.as_mut() {
+        timer.0.tick(time.delta());
+        if timer.0.finished() {
+            commands.remove_resource::<LevelCompleteCountdown>();
+            commands.insert_resource(NextState(GameState::MainMenu));
         }
     }
 }
@@ -115,6 +131,7 @@ fn exit(
 pub fn setup_states(app: &mut App) {
     app
         .add_enter_system(GameState::InGame, enter)
+        .add_system(level_complete_system.run_in_state(GameState::InGame))
         .add_system(beat_system.run_in_state(GameState::InGame))
         .add_system(death_system.run_in_state(GameState::InGame))
         .add_exit_system(GameState::InGame, exit);

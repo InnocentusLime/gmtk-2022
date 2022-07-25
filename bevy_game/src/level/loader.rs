@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::BufReader;
 
 use bevy::asset::{ AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset, FileAssetIo };
-use bevy_ecs_tilemap::prelude::TileAtlasBuilder;
+//use bevy_ecs_tilemap::prelude::TileAtlasBuilder;
 use bevy::prelude::*;
 
 use super::asset::*;
@@ -17,8 +17,6 @@ impl AssetLoader for TiledLoader {
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
-            use std::path::Path; 
-
             let mut loader = tiled::Loader::new();
             // TODO not entirely correct
             let root = FileAssetIo::get_root_path().join("assets");

@@ -59,6 +59,7 @@ fn init_objects(
                 .insert_bundle(MaterialMesh2dBundle {
                     mesh: player_gfx.model.clone(),
                     material: player_gfx.material.clone(),
+                    // TODO hardcoded player size
                     transform: Transform::from_translation(world_pos.extend(1.0f32))
                         .with_scale(Vec3::new(25.0f32, 25.0f32, 25.0f32)),
                     ..default()
