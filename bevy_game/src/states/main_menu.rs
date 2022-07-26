@@ -21,6 +21,9 @@ pub struct MenuAssets {
 #[derive(Clone, Copy, Component)]
 struct WaitingSaveTag;
 
+#[derive(Component)]
+struct SaveLoading(Task<Save>);
+
 fn spawn_text(
     commands: &mut Commands,
     save: &Save,
@@ -69,7 +72,7 @@ fn enter(
     }
 
     commands.spawn()
-        .insert(io_pool.spawn(async move {
+        .insert(SaveLoading(io_pool.spawn(async move {
             match Save::load() {
                 Ok(x) => x,
                 Err(e) => {
@@ -81,7 +84,7 @@ fn enter(
                     res
                 },
             }
-        }));
+        })));
 
 
     let font = menu_assets.main_font.clone();
@@ -133,11 +136,11 @@ fn enter(
 fn save_await(
     mut commands: Commands,
     menu_assets: Res<MenuAssets>,
-    mut q: Query<(Entity, &mut Task<Save>)>,
+    mut q: Query<(Entity, &mut SaveLoading)>,
     waiting: Query<Entity, With<WaitingSaveTag>>,
 ) {
     match q.get_single_mut() {
-        Ok((e, mut task)) => if let Some(save) = future::block_on(future::poll_once(&mut *task)) {
+        Ok((e, mut task)) => if let Some(save) = future::block_on(future::poll_once(&mut task.0)) {
             commands.entity(e).despawn();
             for e in waiting.iter() {
                 commands.entity(e).despawn();

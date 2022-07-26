@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::io::BufReader;
+use std::path::PathBuf;
 
-use bevy::asset::{ AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset, FileAssetIo };
+use bevy::asset::{ AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset };
 //use bevy_ecs_tilemap::prelude::TileAtlasBuilder;
 use bevy::prelude::*;
 
@@ -9,6 +10,14 @@ use super::asset::*;
 
 #[derive(Clone, Copy, Default)]
 pub struct TiledLoader;
+
+fn asset_dir_root() -> PathBuf {
+    #[cfg(target_arch = "x86_64")]
+    return bevy::asset::FileAssetIo::get_root_path();
+
+    #[cfg(target_arch = "wasm32")]
+    return PathBuf::new();
+}
 
 impl AssetLoader for TiledLoader {
     fn load<'a>(
@@ -19,7 +28,7 @@ impl AssetLoader for TiledLoader {
         Box::pin(async move {
             let mut loader = tiled::Loader::new();
             // TODO not entirely correct
-            let root = FileAssetIo::get_root_path().join("assets");
+            let root = asset_dir_root().join("assets");
             let map = loader.load_tmx_map_from(BufReader::new(bytes), &root.join(load_context.path()))?;
 
             let mut dependencies = Vec::new();
