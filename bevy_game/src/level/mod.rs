@@ -14,9 +14,9 @@ use bevy::prelude::*;
 
 use loader::*;
 
-pub use cpu_tile_animation::Animations;
-pub use asset::Level;
-pub use tile_def::MapReady;
+pub use cpu_tile_animation::{ Animations, CPUAnimated };
+pub use asset::{ Level, BaseLevelAssets };
+pub use tile_def::{ ActivatableTileTag, MapReady, activeatable_tile_setup };
 pub use special_tiles::StartTileTag;
 
 #[derive(Default)]

@@ -13,7 +13,6 @@ impl Plugin for SpecialTilePlugin {
             .add_stage_before(CoreStage::Update, ActiveTileUpdateStage, SystemStage::parallel())
             .add_system_to_stage(ActiveTileUpdateStage, tile_switch_system.run_in_state(GameState::InGame))
             .add_system_to_stage(ActiveTileUpdateStage, activeatable_tile_transition_system.run_in_state(GameState::InGame))
-            .add_system(activeatable_tile_setup_system.run_in_state(GameState::Spawning).run_on_event::<MapReady>())
             .add_tile::<ConveyorTag>()
             .add_tile::<FrierTag>()
             .add_tile::<StartTileTag>()

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bevy_asset_loader::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
@@ -10,6 +11,12 @@ use super::tile_animation;
 use super::tile_commands;
 
 use tile_commands::TileCommands;
+
+#[derive(AssetCollection)]
+pub struct BaseLevelAssets {
+    #[asset(key = "level")]
+    pub level: Handle<Level>,
+}
 
 #[derive(TypeUuid)]
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
