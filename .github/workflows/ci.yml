@@ -1,8 +1,8 @@
 name: CI
-
 on:
   pull_request:
   push:
+  
 
 jobs:
   check:
@@ -19,11 +19,13 @@ jobs:
             ~/.cargo/git/db/
             target/
         key: $${{ runner.os }}-cargo-build-stable-${{ hasFiles('**/Cargo.toml') }}
-      - name: Typecheck linux
-        run: cargo check
+      - name: Typecheck linux release
+        run: cargo check --release
+      - name: Typecheck linux debug
         run: cargo check --features debugging
-      - name: Typecheck windows
-        run: cargo check --target x86_64-pc-windows-gnu 
+      - name: Typecheck windows release
+        run: cargo check --target x86_64-pc-windows-gnu --release
+      - name: Typecheck windows debug
         run: cargo check --target x86_64-pc-windows-gnu --features debugging
         #      - name: Typecheck wasm
         #        run: cargo check
