@@ -5,7 +5,7 @@ on:
   
 
 jobs:
-  check:
+  check-linux:
     runs-on: ubuntu-latest
     name: Type-check code
     steps:
@@ -25,6 +25,22 @@ jobs:
         run: cargo check --release
       - name: Typecheck linux debug
         run: cargo check --features debugging
+        #      - name: Typecheck wasm
+        #        run: cargo check
+  check-windows:
+    runs-on: windows-latest
+    name: Type-check code
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: $${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - name: Typecheck windows release
         run: cargo check --target x86_64-pc-windows-gnu --release
       - name: Typecheck windows debug
