@@ -135,7 +135,7 @@ where
     }
 }
 
-pub fn activeatable_tile_setup_system(query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>) {
+pub fn activeatable_tile_setup(query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>) {
     toggle_activatable_tiles(|_| true, query);
 }
 

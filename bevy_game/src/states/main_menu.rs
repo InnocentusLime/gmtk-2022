@@ -6,6 +6,7 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
+use super::loading::LoadingLevelSubstate;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
 use crate::app::{ GameplayCamera, MenuCamera };
@@ -172,7 +173,7 @@ fn tick(
                         path: format!("maps/level{}-{}.tmx", world, level),
                     }
                 );
-                commands.insert_resource(NextState(GameState::Loading));
+                commands.insert_resource(NextState(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets)));
             }
         }
     }
