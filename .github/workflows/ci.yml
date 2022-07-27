@@ -20,7 +20,7 @@ jobs:
             target/
           key: $${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - name: Install alsa and udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libudev-dev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Typecheck linux release
         run: cargo check --release
       - name: Typecheck linux debug
