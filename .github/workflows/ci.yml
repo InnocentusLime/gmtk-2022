@@ -42,8 +42,8 @@ jobs:
             target/
           key: $${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - name: Typecheck windows release
-        run: cargo check --target x86_64-pc-windows-gnu --release
+        run: cargo check --release
       - name: Typecheck windows debug
-        run: cargo check --target x86_64-pc-windows-gnu --features debugging
+        run: cargo check --features debugging
         #      - name: Typecheck wasm
         #        run: cargo check
