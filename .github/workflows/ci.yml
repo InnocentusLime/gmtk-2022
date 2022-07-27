@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: Type-check code
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+        key: $${{ runner.os }}-cargo-build-stable-${{ hasFiles('**/Cargo.toml') }}
+      - name: Typecheck linux
+        run: cargo check
+        run: cargo check --features debugging
+      - name: Typecheck windows
+        run: cargo check --target x86_64-pc-windows-gnu 
+        run: cargo check --target x86_64-pc-windows-gnu --features debugging
+        #      - name: Typecheck wasm
+        #        run: cargo check
