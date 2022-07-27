@@ -18,7 +18,6 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-        key: $${{ runner.os }}-cargo-build-stable-${{ hasFiles('**/Cargo.toml') }}
       - name: Typecheck linux release
         run: cargo check --release
       - name: Typecheck linux debug
