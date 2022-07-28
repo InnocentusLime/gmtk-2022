@@ -12,7 +12,7 @@ pub struct CPUTileAnimationPlugin;
 impl Plugin for CPUTileAnimationPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(Animations::new())
+            .insert_resource(CPUTileAnimations::new())
             .add_stage_after(
                 CoreStage::Update,
                 CPUTileAnimateStage,
@@ -29,21 +29,21 @@ pub struct Frame {
 }
 
 #[derive(Clone, Debug)]
-pub struct Animation(Vec<Frame>);
+pub struct CPUTileAnimation(Vec<Frame>);
 
-impl Animation {
+impl CPUTileAnimation {
     pub fn from_frames(it: impl IntoIterator<Item = Frame>) -> Self {
-        Animation(it.into_iter().collect())
+        CPUTileAnimation(it.into_iter().collect())
     }
 }
 
 // TODO Animations -> CPUTileAnimations
-pub struct Animations(Vec<Animation>);
+pub struct CPUTileAnimations(Vec<CPUTileAnimation>);
 
-impl Animations {
-    pub fn new() -> Self { Animations(vec![]) }
+impl CPUTileAnimations {
+    fn new() -> Self { CPUTileAnimations(vec![]) }
 
-    pub fn add_animation(&mut self, anim: Animation) -> usize {
+    pub fn add_animation(&mut self, anim: CPUTileAnimation) -> usize {
         let id = self.0.len();
         self.0.push(anim);
         id
@@ -73,7 +73,7 @@ pub struct CPUAnimated {
 }
 
 impl CPUAnimated {
-    fn update(&mut self, animation: &Animation) -> bool {
+    fn update(&mut self, animation: &CPUTileAnimation) -> bool {
         let old_frame = self.current_frame;
         while self.passed_time > animation.0[self.current_frame].duration {
             if self.current_frame == animation.0.len() - 1 && !self.looping {
@@ -86,7 +86,7 @@ impl CPUAnimated {
         old_frame == self.current_frame
     }
 
-    fn update_from_anims(&mut self, animations: &Animations) -> bool { 
+    fn update_from_anims(&mut self, animations: &CPUTileAnimations) -> bool { 
         self.update(&animations.0[self.anim_id])
     }
 
@@ -94,7 +94,7 @@ impl CPUAnimated {
         self.passed_time += dt.mul_f32(self.speed);
     }
 
-    pub fn set_animation(&mut self, id: usize, animations: &Animations) {
+    pub fn set_animation(&mut self, id: usize, animations: &CPUTileAnimations) {
         if animations.0.len() <= id { panic!("Bad animation ID"); }
         self.speed = 0.0f32;
         self.anim_id = id;
@@ -109,7 +109,7 @@ impl CPUAnimated {
 
 pub fn update_animation_frames(
     time: Res<Time>,
-    animations: Res<Animations>,
+    animations: Res<CPUTileAnimations>,
     mut animated_tile_q: Query<(&mut CPUAnimated, &mut Tile, &TilePos, &TileParent)>,
     mut map: MapQuery,
 ) {

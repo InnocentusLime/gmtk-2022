@@ -2,29 +2,29 @@ use bevy::prelude::Quat;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
-pub enum Direction {
+pub enum DiceRollDirection {
     Up = 0,
     Left = 1,
     Down = 2,
     Right = 3,
 }
 
-impl Direction {
+impl DiceRollDirection {
     pub fn to_offset(self) -> (i32, i32) {
         match self {
-            Direction::Up => (0, 1),
-            Direction::Left => (-1, 0),
-            Direction::Down => (0, -1),
-            Direction::Right => (1, 0),
+            Self::Up => (0, 1),
+            Self::Left => (-1, 0),
+            Self::Down => (0, -1),
+            Self::Right => (1, 0),
         }
     }
 
     pub fn to_quat(self, t: f32) -> Quat {
         match self {
-            Direction::Left => Quat::from_rotation_y(-t * std::f32::consts::FRAC_PI_2),
-            Direction::Right => Quat::from_rotation_y(t * std::f32::consts::FRAC_PI_2),
-            Direction::Up => Quat::from_rotation_x(-t * std::f32::consts::FRAC_PI_2),
-            Direction::Down => Quat::from_rotation_x(t * std::f32::consts::FRAC_PI_2),
+            Self::Left => Quat::from_rotation_y(-t * std::f32::consts::FRAC_PI_2),
+            Self::Right => Quat::from_rotation_y(t * std::f32::consts::FRAC_PI_2),
+            Self::Up => Quat::from_rotation_x(-t * std::f32::consts::FRAC_PI_2),
+            Self::Down => Quat::from_rotation_x(t * std::f32::consts::FRAC_PI_2),
         }
     }
 }
@@ -70,7 +70,7 @@ impl DiceEncoding {
         MUL_TABLE[y as usize][x as usize]
     }
 
-    fn dir_to_rot(x: Direction) -> FlatDiceRot {
+    fn dir_to_rot(x: DiceRollDirection) -> FlatDiceRot {
         static MAP_TABLE: [FlatDiceRot; 4] = [
             FlatDiceRot::ToUp,
             FlatDiceRot::ToLeft,
@@ -97,7 +97,7 @@ impl DiceEncoding {
         }
     }
 
-    pub fn apply_rotation(&self, d: Direction) -> Self {
+    pub fn apply_rotation(&self, d: DiceRollDirection) -> Self {
         let (delta_ortho_rot, flat_rot) = Self::rot_comp(self.flat_rot, Self::dir_to_rot(d));
         DiceEncoding {
             ortho_rot: (self.ortho_rot + delta_ortho_rot) % 4,

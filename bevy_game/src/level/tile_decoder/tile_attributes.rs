@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 
-use super::tile_def::*;
+use crate::tile::ActivationCondition;
 
 #[derive(Clone, Copy, Debug)]
 pub enum AnimationType {

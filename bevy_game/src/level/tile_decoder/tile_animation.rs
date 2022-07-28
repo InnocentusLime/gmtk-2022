@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use bevy::prelude::*;
+use bevy_ecs_tilemap_cpu_anim::{ Frame, CPUTileAnimation, CPUTileAnimations, CPUAnimated };
 
+use crate::tile::ActivatableAnimating;
 use super::tile_attributes::{ TileAttributes, AnimationType };
-use super::cpu_tile_animation::{ Frame, Animation, Animations, CPUAnimated };
-use super::tile_def::*;
 
 // TODO be able to suggest looping
 /// Gets tile animation with a suggested speed
@@ -14,13 +14,13 @@ fn get_tile_animation(
     id: u32, 
     tile: tiled::Tile,
     attr: &TileAttributes,
-) -> (f32, Animation) {
+) -> (f32, CPUTileAnimation) {
     let anim = match tile.animation.as_ref() {
-        None => Animation::from_frames(std::iter::once(Frame { 
+        None => CPUTileAnimation::from_frames(std::iter::once(Frame { 
             texture_id: id as u16,
             duration: Duration::new(1, 1),
         })),
-        Some(x) => Animation::from_frames(x.iter().map(|frame| Frame {
+        Some(x) => CPUTileAnimation::from_frames(x.iter().map(|frame| Frame {
             texture_id: frame.tile_id as u16,
             duration: Duration::from_millis(frame.duration as u64),
         })),
@@ -33,7 +33,7 @@ fn get_tile_animation(
 pub fn scan_tilesets_for_animations(
     map: &tiled::Map, 
     attributes: &Vec<HashMap<tiled::TileId, TileAttributes>>,
-) -> Vec<HashMap<tiled::TileId, (f32, Animation)>> {
+) -> Vec<HashMap<tiled::TileId, (f32, CPUTileAnimation)>> {
     map.tilesets().iter().enumerate().map(|(tileset_id, tileset)| { 
         let span = error_span!("Scanning tileset", tileset_id = tileset_id);
         let _guard = span.enter();
@@ -45,9 +45,9 @@ pub fn scan_tilesets_for_animations(
 pub fn dispatch_anim_type(
     ty: AnimationType,
     attr: &TileAttributes,
-    anims: &HashMap<tiled::TileId, (f32, Animation)>,
+    anims: &HashMap<tiled::TileId, (f32, CPUTileAnimation)>,
     anim_ids: &mut HashMap<tiled::TileId, usize>,
-    animations: &mut Animations,
+    animations: &mut CPUTileAnimations,
 ) -> Option<(ActivatableAnimating, CPUAnimated)> {
     match (ty, attr.on_graphics, attr.off_graphics, attr.on_transition_graphics, attr.off_transition_graphics) {
         (AnimationType::Switch, Some(tile_on), Some(tile_off), Some(on_transition), Some(off_transition)) => {

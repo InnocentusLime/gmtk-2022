@@ -5,6 +5,7 @@ mod level;
 mod states;
 mod player;
 mod save;
+mod tile;
 mod level_info;
 
 use crate::app::create_app;

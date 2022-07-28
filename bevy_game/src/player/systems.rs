@@ -1,11 +1,10 @@
-use crate::app::GameplayCamera;
-use super::dice;
-use super::{ Player, PlayerState, PlayerModification, MoveInfo, Direction, PlayerMoved, PlayerChangingSide };
-
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use crate::level::tile_pos_to_world_pos;
 use bevy::input::keyboard::KeyboardInput;
+
+use crate::app::GameplayCamera;
+use super::{ Player, PlayerState, PlayerModification, MoveInfo, PlayerMoved, PlayerChangingSide };
 
 pub fn player_update(
     time: Res<Time>,
@@ -25,32 +24,36 @@ pub fn player_update(
             (PlayerModification::AcknowledgeMove, PlayerState::AwaitingAcknowledge { .. }) => *st = PlayerState::AwaitingInput,
             (PlayerModification::Roll(dir), PlayerState::AwaitingAcknowledge { .. } | PlayerState::AwaitingInput) => {
                 let (nx, ny) = pl.next_cell(dir.to_offset());
-                changing_side.send(PlayerChangingSide {
-                    dice_state: pl.apply_rotation(*dir),
-                });
-                match map_q.get_tile_entity(TilePos(nx, ny), pl.map_id, pl.layer_id) {
-                    Ok(to_entity) => *st = PlayerState::Moving {
-                        to_entity,
-                        to: (nx, ny),
-                        start_pos: tf.translation,
-                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, pl.map_id, pl.layer_id).extend(1.0f32),
-                        timer: Timer::from_seconds(0.52, false),
-                        info: MoveInfo::Rotate {
-                            direction: *dir,
-                            start_rot: tf.rotation,
-                        },
+                // TODO hide bevy_ecs_tilemap API from `player`
+                match map_q.get_tile_entity(TilePos(nx, ny), pl.map_id(), pl.layer_id()) {
+                    Ok(to_entity) => {
+                        changing_side.send(PlayerChangingSide {
+                            dice_state: pl.apply_rotation(*dir),
+                        });
+                        *st = PlayerState::Moving {
+                            to_entity,
+                            to: (nx, ny),
+                            start_pos: tf.translation,
+                            end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, pl.map_id(), pl.layer_id()).extend(1.0f32),
+                            timer: Timer::from_seconds(0.52, false),
+                            info: MoveInfo::Rotate {
+                                direction: *dir,
+                                start_rot: tf.rotation,
+                            },
+                        }
                     },
                     Err(e) => warn!("Can't roll player in dir: {:?}\nReason:{}", dir, e),
                 }
             },
             (PlayerModification::Slide(dir), PlayerState::AwaitingAcknowledge { .. } | PlayerState::AwaitingInput) => {
                 let (nx, ny) = pl.next_cell(dir.to_offset());
-                match map_q.get_tile_entity(TilePos(nx, ny), pl.map_id, pl.layer_id) {
+                // TODO hide bevy_ecs_tilemap API from `player`
+                match map_q.get_tile_entity(TilePos(nx, ny), pl.map_id(), pl.layer_id()) {
                     Ok(to_entity) => *st = PlayerState::Moving {
                         to_entity,
                         to: (nx, ny),
                         start_pos: tf.translation,
-                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, pl.map_id, pl.layer_id).extend(1.0f32),
+                        end_pos: tile_pos_to_world_pos((nx, ny), map_tf, &mut map_q, pl.map_id(), pl.layer_id()).extend(1.0f32),
                         timer: Timer::from_seconds(0.5, false),
                         info: MoveInfo::Slide,
                     },
@@ -82,6 +85,7 @@ pub fn player_update(
                         trace!("New side: {}", pl.upper_side());
                     },
                 }
+                // TODO I am not sure if we can freely set that
                 pl.current_cell = *to;
                 move_event.send(PlayerMoved {
                     cell: *to_entity,
@@ -158,7 +162,7 @@ pub fn player_controls(
     mut query: Query<(&PlayerState, &mut Player)>,
 ) {
     use bevy::input::ElementState;
-    use Direction::*;
+    use super::DiceRollDirection::*;
    
     // TODO pretify?
     let mut movement = None;

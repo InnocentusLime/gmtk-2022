@@ -1,6 +1,4 @@
 use bevy::prelude::*;
-use bevy_asset_loader::*;
-use bevy::sprite::Mesh2dHandle;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
@@ -8,7 +6,6 @@ use super::GameState;
 use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::level::*;
 use crate::player::PlayerModification;
 use crate::app::{ GameplayCamera, MenuCamera };
 
