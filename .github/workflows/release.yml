@@ -19,9 +19,13 @@ jobs:
           override: true
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
-      - name: Call the build
-        run: cargo build --release && mv ./target/release/bevy_game ./ && mv ./bevy_game/assets ./
+      - name: Build
+        run: cargo build --release
+      - name: Package the build
+        run: mv ./target/release/bevy_game ./game && mv ./bevy_game/assets ./
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: assets
+          files: |
+            assets
+            game
