@@ -2,18 +2,18 @@ use std::collections::HashMap;
 
 use bevy::ecs::system::EntityCommands;
 use bevy::prelude::*;
+use bevy_ecs_tilemap_cpu_anim::{ CPUTileAnimation, CPUTileAnimations };
 
-use super::cpu_tile_animation::{ Animation, Animations };
-use super::special_tiles::*;
-use super::tile_def::*;
 use super::tile_attributes::TileAttributes;
 use super::tile_animation::dispatch_anim_type;
 
+use crate::tile::*;
+
 fn build_command(
     attr: &TileAttributes,
-    anims: &HashMap<tiled::TileId, (f32, Animation)>,
+    anims: &HashMap<tiled::TileId, (f32, CPUTileAnimation)>,
     anim_ids: &mut HashMap<tiled::TileId, usize>,
-    animations: &mut Animations,
+    animations: &mut CPUTileAnimations,
 ) -> Box<dyn Fn(EntityCommands)> {
     type CommandPart = Box<dyn for<'a, 'b, 'c, 'd> Fn(&'d mut EntityCommands<'a, 'b, 'c>) -> &'d mut EntityCommands<'a, 'b, 'c> + 'static>;
 
@@ -47,9 +47,9 @@ pub type TileCommands = Vec<HashMap<tiled::TileId, Box<dyn Fn(EntityCommands)>>>
 /// tile ID into tile initialization routine
 pub fn build_commands(
     attrs: &Vec<HashMap<tiled::TileId, TileAttributes>>,
-    anims: &Vec<HashMap<tiled::TileId, (f32, Animation)>>,
+    anims: &Vec<HashMap<tiled::TileId, (f32, CPUTileAnimation)>>,
     anim_ids: &mut Vec<HashMap<tiled::TileId, usize>>,
-    animations: &mut Animations,
+    animations: &mut CPUTileAnimations,
 ) -> TileCommands {
     let span = error_span!("Building commands");
     let _guard = span.enter();

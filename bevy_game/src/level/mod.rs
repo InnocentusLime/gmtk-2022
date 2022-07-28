@@ -1,23 +1,19 @@
 mod asset;
-mod tile_attributes;
-mod special_tiles;
-mod tile_def;
-mod tile_commands;
-mod loader;
-mod tile_animation;
-mod cpu_tile_animation;
+mod components;
+mod resources;
+mod tile_decoder;
 
-// TODO all tile_* files should be thrown into a `tile` submodule
-use cpu_tile_animation::CPUTileAnimationPlugin;
+use std::collections::HashMap;
+
 use bevy_ecs_tilemap::prelude::*;
+use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use bevy::prelude::*;
 
-use loader::*;
+pub use resources::*;
+pub use components::*;
+pub use asset::*;
 
-pub use cpu_tile_animation::{ Animations, CPUAnimated };
-pub use asset::{ Level, BaseLevelAssets };
-pub use tile_def::{ ActivatableTileTag, MapReady, activeatable_tile_setup };
-pub use special_tiles::StartTileTag;
+use crate::tile::TilePlugin;
 
 #[derive(Default)]
 pub struct LevelPlugin;
@@ -25,12 +21,10 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<Level>()
-            .add_event::<MapReady>()
-            .add_asset_loader(TiledLoader)
+            .add_asset_loader(LevelLoader)
             .add_plugin(TilemapPlugin)
             .add_system(add_set_texture_filter_to_nearest)
-            .add_plugin(special_tiles::SpecialTilePlugin)
-            .add_plugin(CPUTileAnimationPlugin);
+            .add_plugin(TilePlugin);
     }
 }
 
@@ -70,4 +64,144 @@ pub fn tile_pos_to_world_pos(
         tile_pos.1 as f32 * settings.tile_size.1 + settings.tile_size.1 / 2.0f32, 
         0.0f32
     )).truncate()
+}
+    
+fn spawn_layer_tiles(
+    level: &Level,
+    tileset_index: usize,
+    layer: tiled::Layer,
+    commands: &mut Commands,
+    builder: &mut LayerBuilder<TileBundle>,
+    tile_init: &tile_decoder::TileCommands,
+) {
+    for x in 0..level.map.width {
+        for y in 0..level.map.height {
+            match layer.layer_type() {
+                tiled::LayerType::TileLayer(tile_layer) => {
+                    tile_layer.get_tile(x as i32, y as i32).map(|tile| {
+                        let y = (level.map.height - 1) as u32 - y;
+                        let pos = TilePos(x, y);
+
+                        // Skip tiles which don't use the tileset we 
+                        // are considering on the current iteration
+                        if tile.tileset_index() != tileset_index {
+                            return;
+                        }
+
+                        let entity = builder.get_tile_entity(commands, pos).unwrap();
+                        tile_init[tileset_index as usize][&tile.id()](commands.entity(entity));
+
+                        // NOTE who told me that this is correct? Nobody. I am going to
+                        // research if it's possible to break this code or not
+                        let tile = 
+                            Tile {
+                                texture_index: tile.id() as u16,
+                                flip_x: tile.flip_h,
+                                flip_y: tile.flip_v,
+                                flip_d: tile.flip_d,
+                                ..Default::default()
+                            };
+
+                        builder.set_tile(pos, TileBundle { tile, ..default() }).unwrap();
+                    });
+                },
+                _ => panic!("Unsupported layer type"),
+            }
+        }
+    }
+}
+
+// TODO consider shrinking the nested stuff
+pub fn spawn_level(
+    mut commands: Commands, 
+    base_level_assets: Res<BaseLevelAssets>,
+    levels: Res<Assets<Level>>,
+    mut meshes: ResMut<Assets<Mesh>>, 
+    mut animations: ResMut<CPUTileAnimations>,
+) {
+    // The data we start with
+    let map_id = 0;
+    let level = levels.get(&base_level_assets.level).unwrap();
+
+    // Parse the map
+    let attrs = tile_decoder::scan_tilesets(&level.map);
+    let anims = tile_decoder::scan_tilesets_for_animations(&level.map, &attrs);
+    let mut anim_ids = vec![HashMap::new(); attrs.len()];
+    let tile_init = tile_decoder::build_commands(&attrs, &anims, &mut anim_ids, &mut *animations);
+
+    // Create the loaded map
+    let map_entity = commands.spawn().insert(Name::new("Map")).id();
+    let mut map = Map::new(map_id, map_entity);
+
+    // Account for each tileset
+    for (tileset_index, tileset) in level.map.tilesets().iter().enumerate() {
+        // Loop through each layer
+        for (layer_index, layer) in level.map.layers().enumerate() {
+            let tile_width = tileset.tile_width as f32;
+            let tile_height = tileset.tile_height as f32;
+
+            let offset_x = layer.offset_x;
+            let offset_y = layer.offset_y;
+
+            let mut map_settings = LayerSettings::new(
+                MapSize(
+                    (level.map.width as f32 / 64.0).ceil() as u32,
+                    (level.map.height as f32 / 64.0).ceil() as u32,
+                ),
+                ChunkSize(64, 64),
+                TileSize(tile_width, tile_height),
+                TextureSize(
+                    tileset.image.as_ref().unwrap().width as f32,
+                    tileset.image.as_ref().unwrap().height as f32,
+                ),
+            );
+
+            map_settings.grid_size = Vec2::new(
+                level.map.tile_width as f32,
+                level.map.tile_height as f32,
+            );
+
+            map_settings.mesh_type = match level.map.orientation {
+                tiled::Orientation::Orthogonal => TilemapMeshType::Square,
+                _ => panic!("Bad tile format"),
+            };
+
+            let (mut builder, layer_entity) = LayerBuilder::<TileBundle>::new(
+                &mut commands,
+                map_settings.clone(),
+                map_id,
+                layer_index as u16
+            );
+
+            spawn_layer_tiles(&*level, tileset_index, layer, &mut commands, &mut builder, &tile_init);
+
+            let layer_bundle = 
+                builder.build(
+                    &mut commands,
+                    &mut meshes,
+                    level.tilesets
+                    .get(&tileset_index)
+                    .unwrap()
+                    .clone_weak()
+                );
+
+            commands.entity(layer_entity)
+            .insert_bundle(layer_bundle).insert(Transform::from_xyz(
+                offset_x,
+                -offset_y,
+                layer_index as f32,
+            ));
+            map.add_layer(&mut commands, layer_index as u16, layer_entity);
+        }
+    }
+
+    commands.entity(map_entity)
+        .insert(map)
+        .insert(LevelInfo {
+            map: map_id,
+            geometry_layer: level.find_geometry_layer().expect("No starting point for player"),
+        })
+        .insert_bundle(TransformBundle::from_transform(
+            Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32))
+        ));
 }

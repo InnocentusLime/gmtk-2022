@@ -1,23 +1,43 @@
+mod activatable_tile_data;
+mod tile_state;
+
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
+use crate::player::{ PlayerModification, DiceEncoding, DiceRollDirection };
 
-use crate::states::GameState;
-use crate::player::PlayerModification;
-use super::tile_def::*;
+pub use activatable_tile_data::*;
+pub use tile_state::*;
 
-pub struct SpecialTilePlugin;
+#[derive(Component)]
+pub struct ActivatableTileTag {
+    state: bool,
+    pub condition: ActivationCondition,
+    pub anim_info: ActivatableAnimating,
+}
 
-impl Plugin for SpecialTilePlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_stage_before(CoreStage::Update, ActiveTileUpdateStage, SystemStage::parallel())
-            .add_system_to_stage(ActiveTileUpdateStage, tile_switch_system.run_in_state(GameState::InGame))
-            .add_system_to_stage(ActiveTileUpdateStage, activeatable_tile_transition_system.run_in_state(GameState::InGame))
-            .add_tile::<ConveyorTag>()
-            .add_tile::<FrierTag>()
-            .add_tile::<StartTileTag>()
-            .add_tile::<EndTileTag>()
-            .add_tile::<SolidTileTag>();
+impl ActivatableTileTag {
+    pub fn new(
+        condition: ActivationCondition,
+        anim_info: ActivatableAnimating,
+    ) -> Self {
+        ActivatableTileTag {
+            state: condition.active_on_start(),
+            condition, anim_info,
+        }
+    }
+
+    pub fn is_active(&self) -> bool { self.state }
+
+    pub fn will_be_active(&self, player_state: &DiceEncoding) -> bool {
+        self.condition.is_active(player_state)
+    }
+
+    /// Updated the state of the tile, returning `true` if the internal
+    /// logic needs to be updated.
+    pub(super) fn update(&mut self, player_state: &DiceEncoding) -> bool {
+        let new_state = self.will_be_active(player_state);
+        let result = self.state != new_state;
+        self.state = new_state;
+        result
     }
 }
 
@@ -28,11 +48,8 @@ impl TileState for ConveyorTag {
     type UpdateData = &'static ActivatableTileTag;
 
     fn react<'w, 's>(&mut self, extra: &ActivatableTileTag) -> PlayerModification {
-        // TODO player should re-import Direction
-        use crate::player::dice::Direction;
-
         if extra.is_active() {
-            PlayerModification::Slide(Direction::Up)
+            PlayerModification::Slide(DiceRollDirection::Up)
         } else {
             PlayerModification::AcknowledgeMove
         }

@@ -5,6 +5,7 @@ mod level;
 mod states;
 mod player;
 mod save;
+mod tile;
 mod level_info;
 
 use crate::app::create_app;
@@ -16,6 +17,8 @@ fn print_schedule(app: &mut bevy::app::App) {
 }
 
 fn main() {
+    println!("Gluttony by Septem Modi");
+
     let mut app = create_app();
     setup_states(&mut app);
 
