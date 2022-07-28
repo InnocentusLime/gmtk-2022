@@ -22,10 +22,9 @@ jobs:
       - name: Build
         run: cargo build --release
       - name: Package the build
-        run: mv ./target/release/bevy_game ./game && mv ./bevy_game/assets ./
+        run: mkdir linux && mv ./target/release/bevy_game ./linux && cp -r ./bevy_game/assets ./linux && zip -r linux linux/
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            assets
-            game
+            linux.zip
