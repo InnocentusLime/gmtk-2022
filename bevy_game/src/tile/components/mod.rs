@@ -2,6 +2,7 @@ mod activatable_tile_data;
 mod tile_state;
 
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 use crate::player::{ PlayerModification, DiceEncoding, DiceRollDirection };
 
 pub use activatable_tile_data::*;
@@ -45,11 +46,13 @@ impl ActivatableTileTag {
 pub struct ConveyorTag;
 
 impl TileState for ConveyorTag {
-    type UpdateData = &'static ActivatableTileTag;
+    type UpdateData = (&'static ActivatableTileTag, &'static Tile);
 
-    fn react<'w, 's>(&mut self, extra: &ActivatableTileTag) -> PlayerModification {
-        if extra.is_active() {
-            PlayerModification::Slide(DiceRollDirection::Up)
+    fn react<'w, 's>(&mut self, (tag, tile): (&ActivatableTileTag, &Tile)) -> PlayerModification {
+        if tag.is_active() {
+            PlayerModification::Slide(
+                DiceRollDirection::Up.apply_flipping_flags(tile.flip_x, tile.flip_y, tile.flip_d)
+            )
         } else {
             PlayerModification::AcknowledgeMove
         }

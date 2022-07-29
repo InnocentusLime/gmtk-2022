@@ -199,7 +199,7 @@ pub fn spawn_level(
         .insert(map)
         .insert(LevelInfo {
             map: map_id,
-            geometry_layer: level.find_geometry_layer().expect("No starting point for player"),
+            geometry_layer: level.find_geometry_layer().expect("No geometry_layer"),
         })
         .insert_bundle(TransformBundle::from_transform(
             Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32))

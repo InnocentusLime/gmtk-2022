@@ -27,6 +27,43 @@ impl DiceRollDirection {
             Self::Down => Quat::from_rotation_x(t * std::f32::consts::FRAC_PI_2),
         }
     }
+
+    /// Flip direction along x axis
+    pub fn flip_x(self) -> Self {
+        match self {
+            Self::Up => Self::Down,
+            Self::Down => Self::Up,
+            _ => self,
+        }
+    }
+
+    /// Flip direction along y axis
+    pub fn flip_y(self) -> Self {
+        match self {
+            Self::Left => Self::Right,
+            Self::Right => Self::Left,
+            _ => self,
+        }
+    }
+
+    /// Flip direction anti-diagonally
+    pub fn flip_d(self) -> Self {
+        match self {
+            Self::Up => Self::Right,
+            Self::Left => Self::Down,
+            Self::Down => Self::Left,
+            Self::Right => Self::Up,
+        }
+    }
+
+    /// Apply the flipping flags
+    pub fn apply_flipping_flags(mut self, flip_x: bool, flip_y: bool, flip_d: bool) -> Self {
+        if flip_d { self = self.flip_d() }
+        if flip_y { self = self.flip_y() }
+        if flip_x { self = self.flip_x() }
+
+        self
+    }
 }
 
 #[derive(Clone, Copy)]
