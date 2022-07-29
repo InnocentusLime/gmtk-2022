@@ -28,6 +28,8 @@ jobs:
         with:
           files: |
             linux.zip
+  release-windows:
+    runs-on: ubuntu-latest
     name: Build the windows pre-release
     steps:
       - name: Checkout
