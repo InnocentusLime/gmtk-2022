@@ -3,58 +3,42 @@ use bevy_asset_loader::*;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
-use crate::level::{ BaseLevelAssets, spawn_level };
+use crate::level::{ LevelTilesetImages, BaseLevelAssets, queue_level_tileset_images, spawn_level, prepare_level_tileset_images };
 use crate::player::{ GeneratedPlayerAssets, BasePlayerAssets, spawn_player };
 use crate::tile::activeatable_tile_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LoadingLevelSubstate {
     LoadingBaseAssets,
+    LoadingLevelTiles,
     SpawningLevel,
     SpawningPlayer,
     InittingTiles,
+    Cleanup,
 }
 
 pub fn setup_states(app: &mut App) {
+    // Loading base assets
     AssetLoader::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets))
-        .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel))
+        .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
         .with_collection::<BasePlayerAssets>()
         .with_collection::<BaseLevelAssets>()
         .init_resource::<GeneratedPlayerAssets>()
         .build(app);
-
-    /*
-    app.add_enter_system_set(
-        GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel),
-        SystemSet::new()
-            .with_system(|mut commands: Commands| commands.insert_resource(NextState(
-                GameState::LoadingLevel(
-                    LoadingLevelSubstate::SpawningPlayer
-                )
-            )))
-            .with_system(spawn_level)
+    app.add_exit_system(
+        GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
+        queue_level_tileset_images
     );
 
-    app.add_enter_system_set(
-        GameState::LoadingLevel(LoadingLevelSubstate::SpawningPlayer), 
-        SystemSet::new()
-            .with_system(|mut commands: Commands| commands.insert_resource(NextState(
-                GameState::LoadingLevel(
-                    LoadingLevelSubstate::InittingTiles
-                )
-            )))
-            .with_system(spawn_player)
+    // Loading level tiles
+    AssetLoader::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
+        .with_collection::<LevelTilesetImages>()
+        .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel))
+        .build(app);
+    app.add_exit_system(
+        GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles),
+        prepare_level_tileset_images
     );
-
-    app.add_enter_system_set(
-        GameState::LoadingLevel(LoadingLevelSubstate::InittingTiles), 
-        SystemSet::new()
-            .with_system(|mut commands: Commands| commands.insert_resource(NextState(
-                GameState::InGame
-            )))
-            .with_system(activeatable_tile_setup)
-    );
-    */
    
     // Spawning level
     app.add_enter_system(
@@ -88,11 +72,25 @@ pub fn setup_states(app: &mut App) {
     app.add_enter_system(
         GameState::LoadingLevel(LoadingLevelSubstate::InittingTiles), 
         |mut commands: Commands| commands.insert_resource(NextState(
-            GameState::InGame
+            GameState::LoadingLevel(
+                LoadingLevelSubstate::Cleanup
+            )
         ))
     );
     app.add_enter_system(
         GameState::LoadingLevel(LoadingLevelSubstate::InittingTiles), 
         activeatable_tile_setup
+    );
+
+    // Cleanup
+    app.add_enter_system(
+        GameState::LoadingLevel(LoadingLevelSubstate::Cleanup),
+        |server: Res<AssetServer>| server.free_unused_assets()
+    );
+    app.add_enter_system(
+        GameState::LoadingLevel(LoadingLevelSubstate::Cleanup),
+        |mut commands: Commands| commands.insert_resource(NextState(
+            GameState::InGame
+        ))
     );
 }
