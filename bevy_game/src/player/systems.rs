@@ -4,7 +4,7 @@ use crate::level::tile_pos_to_world_pos;
 use bevy::input::keyboard::KeyboardInput;
 
 use crate::app::GameplayCamera;
-use super::{ Player, PlayerState, PlayerModification, MoveInfo, PlayerMoved, PlayerChangingSide };
+use super::{ Player, PlayerState, PlayerModification, MoveInfo, PlayerMoved, PlayerChangingSide, BasePlayerAssets };
 
 pub fn player_update(
     time: Res<Time>,
@@ -143,6 +143,21 @@ pub fn player_animation(
             };
         },
         PlayerState::AwaitingInput => (),
+    }
+}
+
+pub fn player_sound(
+    audio: Res<Audio>,
+    assets: Res<BasePlayerAssets>,
+    mut events: EventReader<PlayerModification>,
+) {
+    for e in events.iter() {
+        match e {
+            PlayerModification::Escape => {
+                audio.play(assets.complete_sound.clone());
+            },
+            _ => (),
+        }
     }
 }
 

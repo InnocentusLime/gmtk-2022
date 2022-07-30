@@ -58,6 +58,7 @@ impl Plugin for PlayerPlugin {
                 ConditionSet::new()
                     .after(PlayerSystems::Update).run_in_state(GameState::InGame)
                     .with_system(player_animation)
+                    .with_system(player_sound)
                     .with_system(player_camera)
                     .into()
             );
