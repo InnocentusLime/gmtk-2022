@@ -19,7 +19,7 @@ impl TilesetType {
     pub fn ready_image(&self) -> Handle<Image> {
         match self {
             Self::Ready(image) => image.clone(),
-            _ => panic!("The image turned out to be not ready"),
+            _ => panic!("The image wasn't in a `ready` state. Make sure all assets have been initialized at this point"),
         }
     }
 }

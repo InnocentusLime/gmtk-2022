@@ -17,8 +17,6 @@ fn print_schedule(app: &mut bevy::app::App) {
 }
 
 fn main() {
-    println!("Gluttony by Septem Modi");
-
     let mut app = create_app();
     setup_states(&mut app);
 

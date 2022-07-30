@@ -163,9 +163,14 @@ pub fn spawn_level(
         let tileset_handle = 
             level.tilesets
                 .get(&tileset_index)
-                .unwrap()
+                .expect("The tileset seems to be absent in the level data")
                 .ready_image();
-        let texture_size = textures.get(&tileset_handle).unwrap().size().to_array();
+        let texture_size = 
+            textures.get(&tileset_handle)
+            .expect("The tileset image hasn't been loaded")
+            .size()
+            .to_array()
+        ;
         // Loop through each layer
         for (layer_index, layer) in level.map.layers().enumerate() {
             let tile_width = tileset.tile_width as f32;
