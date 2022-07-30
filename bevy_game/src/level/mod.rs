@@ -1,17 +1,18 @@
-mod asset;
+mod assets;
 mod components;
 mod resources;
 mod tile_decoder;
 
 use std::collections::HashMap;
 
+use bevy_asset_loader::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use bevy::prelude::*;
 
 pub use resources::*;
 pub use components::*;
-pub use asset::*;
+pub use assets::*;
 
 use crate::tile::TilePlugin;
 
@@ -65,6 +66,29 @@ pub fn tile_pos_to_world_pos(
         0.0f32
     )).truncate()
 }
+
+pub fn prepare_level_tileset_images(
+    mut textures: ResMut<Assets<Image>>,
+    base_level_assets: Res<BaseLevelAssets>,
+    mut levels: ResMut<Assets<Level>>,
+) {
+    let level = levels.get_mut(&base_level_assets.level).unwrap();
+    level.prepare_tilesets(&mut *textures);
+}
+
+pub fn queue_level_tileset_images(
+    base_level_assets: Res<BaseLevelAssets>,
+    levels: Res<Assets<Level>>,
+    mut asset_keys: ResMut<DynamicAssets>,
+) {
+    let level = levels.get(&base_level_assets.level).unwrap();
+    asset_keys.register_asset(
+        "tileset_images",
+        DynamicAsset::Files {
+            paths: level.get_used_images(),
+        }
+    );
+}
     
 fn spawn_layer_tiles(
     level: &Level,
@@ -95,7 +119,7 @@ fn spawn_layer_tiles(
                         // research if it's possible to break this code or not
                         let tile = 
                             Tile {
-                                texture_index: tile.id() as u16,
+                                texture_index: level.get_tile_texture(tileset_index, tile.id()),
                                 flip_x: tile.flip_h,
                                 flip_y: tile.flip_v,
                                 flip_d: tile.flip_d,
@@ -114,6 +138,7 @@ fn spawn_layer_tiles(
 // TODO consider shrinking the nested stuff
 pub fn spawn_level(
     mut commands: Commands, 
+    textures: Res<Assets<Image>>,
     base_level_assets: Res<BaseLevelAssets>,
     levels: Res<Assets<Level>>,
     mut meshes: ResMut<Assets<Mesh>>, 
@@ -135,6 +160,17 @@ pub fn spawn_level(
 
     // Account for each tileset
     for (tileset_index, tileset) in level.map.tilesets().iter().enumerate() {
+        let tileset_handle = 
+            level.tilesets
+                .get(&tileset_index)
+                .expect("The tileset seems to be absent in the level data")
+                .ready_image();
+        let texture_size = 
+            textures.get(&tileset_handle)
+            .expect("The tileset image hasn't been loaded")
+            .size()
+            .to_array()
+        ;
         // Loop through each layer
         for (layer_index, layer) in level.map.layers().enumerate() {
             let tile_width = tileset.tile_width as f32;
@@ -150,10 +186,7 @@ pub fn spawn_level(
                 ),
                 ChunkSize(64, 64),
                 TileSize(tile_width, tile_height),
-                TextureSize(
-                    tileset.image.as_ref().unwrap().width as f32,
-                    tileset.image.as_ref().unwrap().height as f32,
-                ),
+                TextureSize(texture_size[0], texture_size[1]),
             );
 
             map_settings.grid_size = Vec2::new(
@@ -179,10 +212,7 @@ pub fn spawn_level(
                 builder.build(
                     &mut commands,
                     &mut meshes,
-                    level.tilesets
-                    .get(&tileset_index)
-                    .unwrap()
-                    .clone_weak()
+                    tileset_handle.clone()
                 );
 
             commands.entity(layer_entity)
@@ -197,9 +227,10 @@ pub fn spawn_level(
 
     commands.entity(map_entity)
         .insert(map)
+        // TODO make the crash into a `warn!(...)`
         .insert(LevelInfo {
             map: map_id,
-            geometry_layer: level.find_geometry_layer().expect("No starting point for player"),
+            geometry_layer: level.find_geometry_layer().expect("No geometry layer"),
         })
         .insert_bundle(TransformBundle::from_transform(
             Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32))

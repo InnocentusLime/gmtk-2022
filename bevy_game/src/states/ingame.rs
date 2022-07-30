@@ -34,7 +34,6 @@ fn beat_system(
     mut commands: Commands,
     mut events: EventReader<PlayerModification>,
     mut save: ResMut<Save>,
-    audio: Res<Audio>,
     menu_assets: Res<MenuAssets>,
     level_infos: Res<Assets<LevelInfo>>,
 ) {
@@ -43,7 +42,6 @@ fn beat_system(
             PlayerModification::Escape => {
                 info!("You win");
                 let level_info = level_infos.get(&menu_assets.level_info).unwrap();
-                //audio.play(assets.complete_sound.clone());
          
                 save.register_level_complete(&*level_info);
                 // TODO retry?

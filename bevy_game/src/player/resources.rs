@@ -6,6 +6,8 @@ use bevy::prelude::*;
 pub struct BasePlayerAssets {
     #[asset(path = "models/Dice.glb")]
     pub player_gltf: Handle<bevy::gltf::Gltf>,
+    #[asset(path = "sound/beat.ogg")]
+    pub complete_sound: Handle<AudioSource>,
 }
 
 pub struct GeneratedPlayerAssets {
