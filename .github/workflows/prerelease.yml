@@ -48,7 +48,7 @@ jobs:
       - name: Build
         run: cargo build --release --target x86_64-pc-windows-gnu
       - name: Package the build
-        run: mkdir windows && mv ./target/x86_64-pc-windows-gnu/release/bevy_game ./windows && cp -r ./bevy_game/assets ./windows && zip -r windows windows/
+        run: mkdir windows && mv ./target/x86_64-pc-windows-gnu/release/bevy_game.exe ./windows && cp -r ./bevy_game/assets ./windows && zip -r windows windows/
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
