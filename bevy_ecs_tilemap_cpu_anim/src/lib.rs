@@ -61,6 +61,8 @@ impl CPUTileAnimations {
             current_frame: 0,
         }
     }
+
+    pub fn clear(&mut self) { self.0.clear() }
 }
 
 #[derive(Clone, Copy, Component, Debug)]

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_asset_loader::*;
+use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
@@ -19,6 +20,10 @@ pub enum LoadingLevelSubstate {
 
 pub fn setup_states(app: &mut App) {
     // Loading base assets
+    app.add_enter_system(
+        GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
+        |mut anims: ResMut<CPUTileAnimations>| anims.clear()
+    );
     AssetLoader::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets))
         .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
         .with_collection::<BasePlayerAssets>()
