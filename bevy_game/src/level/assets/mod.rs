@@ -156,7 +156,7 @@ impl AssetLoader for LevelLoader {
 
             let loaded_asset = LoadedAsset::new(Level::new(
                 map, handles
-            )); //.with_dependencies(dependencies);
+            )).with_dependencies(dependencies);
 
             load_context.set_default_asset(loaded_asset);
             Ok(())
