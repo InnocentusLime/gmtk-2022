@@ -22,14 +22,15 @@ use systems::*;
 
 #[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-struct PlayerUpdateStage;
+struct PlayerInputStage;
 
-#[derive(SystemLabel)]
+#[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-enum PlayerSystems {
-    Control,
-    Update,
-}
+struct PlayerPostStage;
+
+#[derive(StageLabel)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+struct PlayerUpdateStage;
 
 pub struct PlayerPlugin;
 
@@ -39,24 +40,21 @@ impl Plugin for PlayerPlugin {
             .add_event::<PlayerMoved>()
             .add_event::<PlayerChangingSide>()
             .add_event::<PlayerModification>()
-            .add_stage_after(
-                CoreStage::PreUpdate,
-                PlayerUpdateStage,
-                SystemStage::parallel()
+            .add_stage_after(CoreStage::PreUpdate, PlayerInputStage, SystemStage::parallel())
+            .add_stage_before(CoreStage::PostUpdate, PlayerPostStage, SystemStage::parallel())
+            .add_stage_after(CoreStage::Update, PlayerUpdateStage, SystemStage::parallel())
+            .add_system_to_stage(
+                PlayerInputStage,
+                player_controls.run_in_state(GameState::InGame)
             )
             .add_system_to_stage(
                 PlayerUpdateStage,
-                player_controls.run_in_state(GameState::InGame).label(PlayerSystems::Control)
-            )
-            .add_system_to_stage(
-                PlayerUpdateStage,
-                player_update.run_in_state(GameState::InGame).label(PlayerSystems::Update)
-                    .after(PlayerSystems::Control)
+                player_update.run_in_state(GameState::InGame)
             )
             .add_system_set_to_stage(
-                PlayerUpdateStage,
+                PlayerPostStage,
                 ConditionSet::new()
-                    .after(PlayerSystems::Update).run_in_state(GameState::InGame)
+                    .run_in_state(GameState::InGame)
                     .with_system(player_animation)
                     .with_system(player_sound)
                     .with_system(player_camera)

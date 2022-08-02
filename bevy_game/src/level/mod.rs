@@ -143,9 +143,6 @@ pub fn spawn_level(
     levels: Res<Assets<Level>>,
     mut meshes: ResMut<Assets<Mesh>>, 
     mut animations: ResMut<CPUTileAnimations>,
-
-    tileset_images: Res<LevelTilesetImages>,
-    asset_server: Res<AssetServer>,
 ) {
     // The data we start with
     let map_id = 0;

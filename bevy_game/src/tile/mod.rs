@@ -12,7 +12,7 @@ use systems::*;
 use crate::states::GameState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
-pub struct ActiveTileUpdateStage;
+pub struct ActiveTileSwitchStage;
 
 pub struct TilePlugin;
 
@@ -20,9 +20,9 @@ impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugin(CPUTileAnimationPlugin)
-            .add_stage_before(CoreStage::Update, ActiveTileUpdateStage, SystemStage::parallel())
-            .add_system_to_stage(ActiveTileUpdateStage, tile_switch_system.run_in_state(GameState::InGame))
-            .add_system_to_stage(ActiveTileUpdateStage, activeatable_tile_transition_system.run_in_state(GameState::InGame));
+            .add_stage_before(CoreStage::Update, ActiveTileSwitchStage, SystemStage::parallel())
+            .add_system_to_stage(ActiveTileSwitchStage, tile_switch_system.run_in_state(GameState::InGame))
+            .add_system_to_stage(ActiveTileSwitchStage, activeatable_tile_transition_system.run_in_state(GameState::InGame));
         add_tile::<ConveyorTag>(app);
         add_tile::<FrierTag>(app);
         add_tile::<StartTileTag>(app);
