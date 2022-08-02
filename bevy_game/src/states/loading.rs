@@ -90,7 +90,10 @@ pub fn setup_states(app: &mut App) {
     // Cleanup
     app.add_enter_system(
         GameState::LoadingLevel(LoadingLevelSubstate::Cleanup),
-        |server: Res<AssetServer>| server.free_unused_assets()
+        |server: Res<AssetServer>| {
+            server.mark_unused_assets();
+            server.free_unused_assets();
+        }
     );
     app.add_enter_system(
         GameState::LoadingLevel(LoadingLevelSubstate::Cleanup),

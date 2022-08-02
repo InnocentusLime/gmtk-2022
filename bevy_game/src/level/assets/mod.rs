@@ -10,7 +10,7 @@ use bevy_ecs_tilemap::prelude::TileAtlasBuilder;
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 
-pub use tileset_type::TilesetType;
+pub use tileset_type::TilesetState;
 pub use tileset_indexing::TilesetIndexing;
 
 #[derive(TypeUuid)]
@@ -18,11 +18,11 @@ pub use tileset_indexing::TilesetIndexing;
 pub struct Level {
     pub map: tiled::Map,
     pub tileset_indexing: HashMap<usize, TilesetIndexing>,
-    pub tilesets: HashMap<usize, TilesetType>,
+    pub tilesets: HashMap<usize, TilesetState>,
 }
 
 impl Level {
-    pub fn new(map: tiled::Map, tilesets: HashMap<usize, TilesetType>) -> Self {
+    pub fn new(map: tiled::Map, tilesets: HashMap<usize, TilesetState>) -> Self {
         Level { 
             map, 
             tilesets,
@@ -43,12 +43,15 @@ impl Level {
 
         for (_, v) in &self.tilesets {
             match v {
-                TilesetType::Ready(_) => (),
-                TilesetType::ImageAtlas { image, .. } => {
+                TilesetState::Ready { origin, .. } => res.extend(
+                    origin.iter()
+                    .map(|x| x.path().to_str().unwrap().to_owned())
+                ),
+                TilesetState::ImageAtlas { image, .. } => {
                     assert!(image.label().is_none());
                     res.push(image.path().to_str().unwrap().to_owned());
                 },
-                TilesetType::ImageCollection { collection, .. } => res.extend(
+                TilesetState::ImageCollection { collection, .. } => res.extend(
                     collection.iter()
                     .map(|(_, x)| {
                         assert!(x.label().is_none());
@@ -65,13 +68,17 @@ impl Level {
     pub fn prepare_tilesets(&mut self, textures: &mut Assets<Image>) {
         for (k, v) in &mut self.tilesets {
             match v {
-                TilesetType::Ready(_) => (),
-                TilesetType::ImageAtlas { image, .. } => {
+                TilesetState::Ready { .. } => (),
+                TilesetState::ImageAtlas { image, .. } => {
                     self.tileset_indexing.insert(*k, TilesetIndexing::Continious);
-                    *v = TilesetType::Ready(textures.get_handle(image.to_owned()))
+                    *v = TilesetState::Ready {
+                        handle: textures.get_handle(image.to_owned()),
+                        origin: vec![image.to_owned()],
+                    }
                 },
-                TilesetType::ImageCollection { collection, tile_size } => {
+                TilesetState::ImageCollection { collection, tile_size } => {
                     let mut map = HashMap::new();
+                    let mut origin = Vec::new();
                     let mut builder = TileAtlasBuilder::new(*tile_size);
 
                     for (tile_id, path) in collection {
@@ -83,12 +90,17 @@ impl Level {
                                 textures.get(&handle).expect("Image should be loaded"),
                             ).unwrap() as u16
                         );
+                        origin.push(path.to_owned());
                     }
+
                     self.tileset_indexing.insert(*k, TilesetIndexing::Special(map));
     
                     let atlas = builder.finish(textures).unwrap();
 
-                    *v = TilesetType::Ready(atlas.texture)
+                    *v = TilesetState::Ready {
+                        origin,
+                        handle: atlas.texture,
+                    };
                 },
             }
         }
@@ -105,6 +117,8 @@ impl AssetLoader for LevelLoader {
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
+            trace!("Loading map {:?}...", load_context.path());
+
             let mut loader = tiled::Loader::new();
             // TODO not entirely correct
             let root = asset_dir_root().join("assets");
@@ -114,18 +128,19 @@ impl AssetLoader for LevelLoader {
             let mut dependencies = Vec::new();
             let mut handles = HashMap::default();
 
+            trace!("Discovering tilesets...");
             for (tileset_index, tileset) in map.tilesets().iter().enumerate() {
+                trace!("Discovered tileset {}...", tileset_index);
                 let tile_size = Vec2::new(tileset.tile_width as f32, tileset.tile_height as f32);
 
                 match tileset.image.as_ref() {
                     Some(image) => {
-                        warn!("Atlased tileset is not recommended. Please split your tileset into many tile files.");
                         let asset_path = fix_asset_path(&image.source);
                         
                         dependencies.push(asset_path.clone());
                         handles.insert(
                             tileset_index, 
-                            TilesetType::ImageAtlas {
+                            TilesetState::ImageAtlas {
                                 tile_size,
                                 image: asset_path,
                             }
@@ -145,7 +160,7 @@ impl AssetLoader for LevelLoader {
 
                         handles.insert(
                             tileset_index, 
-                            TilesetType::ImageCollection {
+                            TilesetState::ImageCollection {
                                 tile_size,
                                 collection,
                             }
