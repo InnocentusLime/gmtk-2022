@@ -9,6 +9,7 @@ use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use iyes_loopless::prelude::*;
 
+use crate::moveable::Moveable;
 use crate::tile::StartTileTag;
 use crate::states::GameState;
 use crate::level::{ LevelInfo, tile_pos_to_world_pos };
@@ -28,10 +29,6 @@ struct PlayerInputStage;
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct PlayerPostStage;
 
-#[derive(StageLabel)]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-struct PlayerUpdateStage;
-
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -42,21 +39,14 @@ impl Plugin for PlayerPlugin {
             .add_event::<PlayerModification>()
             .add_stage_after(CoreStage::PreUpdate, PlayerInputStage, SystemStage::parallel())
             .add_stage_before(CoreStage::PostUpdate, PlayerPostStage, SystemStage::parallel())
-            .add_stage_after(CoreStage::Update, PlayerUpdateStage, SystemStage::parallel())
             .add_system_to_stage(
                 PlayerInputStage,
                 player_controls.run_in_state(GameState::InGame)
-            )
-            .add_system_to_stage(
-                PlayerUpdateStage,
-                player_update.run_in_state(GameState::InGame)
             )
             .add_system_set_to_stage(
                 PlayerPostStage,
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
-                    .with_system(player_animation)
-                    .with_system(player_sound)
                     .with_system(player_camera)
                     .into()
             );
@@ -81,9 +71,9 @@ pub fn spawn_player(
         level_info.geometry_layer()
     );
     commands.spawn()
+        .insert(PlayerTag)
         .insert(Name::new("Player"))
-        .insert(PlayerState::AwaitingInput)
-        .insert(Player::new(tile_pos, level_info.map(), level_info.geometry_layer()))
+        .insert(Moveable::new(tile_pos))
         .insert_bundle(MaterialMesh2dBundle {
             mesh: generated_assets.model.clone(),
             material: generated_assets.material.clone(),

@@ -2,6 +2,7 @@
 
 mod app;
 mod level;
+mod moveable;
 mod states;
 mod player;
 mod save;
