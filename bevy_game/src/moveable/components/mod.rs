@@ -27,6 +27,9 @@ impl Moveable {
         }
     }
 
+    /// Gets the current upper side of a moveable
+    pub fn upper_side(&self) -> u8 { self.rot.upper_side() }
+
     /// Gets the current rotation of a moveable.
     #[inline]
     pub fn rotation(&self) -> DecomposedRotation { self.rot }
@@ -81,6 +84,16 @@ impl Moveable {
         match &self.state {
             MoveableState::Idle => None,
             MoveableState::Moving { dir, .. } => dir.apply_on_pos(self.pos),
+        }
+    }
+
+    #[inline]
+    pub fn next_side(&self) -> Option<u8> {
+        match &self.state {
+            MoveableState::Moving { dir, ty, .. } if *ty == MoveTy::Flip => {
+                Some(self.rot.rotate_in_dir(*dir).upper_side())
+            }, 
+            _ => None,
         }
     }
 }

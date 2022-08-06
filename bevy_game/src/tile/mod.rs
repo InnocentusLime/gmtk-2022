@@ -29,6 +29,6 @@ impl Plugin for TilePlugin {
     }
 }
 
-pub fn activeatable_tile_setup(query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>) {
-    toggle_activatable_tiles(|_| true, query);
+pub fn activeatable_tile_setup(mut query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>) {
+    toggle_activatable_tiles(|_| true, &mut query);
 }

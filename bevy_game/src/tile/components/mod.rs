@@ -26,14 +26,14 @@ impl ActivatableTileTag {
 
     pub fn is_active(&self) -> bool { self.state }
 
-    pub fn will_be_active(&self, player_state: &DiceEncoding) -> bool {
-        self.condition.is_active(player_state)
+    pub fn will_be_active(&self, side: u8) -> bool {
+        self.condition.is_active(side)
     }
 
     /// Updated the state of the tile, returning `true` if the internal
     /// logic needs to be updated.
-    pub(super) fn update(&mut self, player_state: &DiceEncoding) -> bool {
-        let new_state = self.will_be_active(player_state);
+    pub(super) fn update(&mut self, side: u8) -> bool {
+        let new_state = self.will_be_active(side);
         let result = self.state != new_state;
         self.state = new_state;
         result
