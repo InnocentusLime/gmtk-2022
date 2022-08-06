@@ -9,7 +9,7 @@ pub fn player_win_sound(
     assets: Res<BasePlayerAssets>,
     mut events: EventReader<PlayerEscapedEvent>,
 ) {
-    for e in events.iter() {
+    for _ in events.iter() {
         audio.play(assets.complete_sound.clone());
     }
 }
@@ -35,7 +35,7 @@ pub fn player_win_anim(
 }
 
 pub fn player_camera(
-    mut player_q: Query<&mut Transform, (With<PlayerTag>, Without<GameplayCamera>)>,
+    player_q: Query<&mut Transform, (With<PlayerTag>, Without<GameplayCamera>)>,
     mut gameplay_camera: Query<&mut Transform, With<GameplayCamera>>,
 ) {
     player_q.for_each(|player_tf| {
@@ -44,7 +44,7 @@ pub fn player_camera(
 }
 
 pub fn player_controls(
-    mut key_input: Res<Input<KeyCode>>,
+    key_input: Res<Input<KeyCode>>,
     mut query: Query<&mut Moveable, With<PlayerTag>>,
 ) {
     use crate::moveable::MoveDirection::*;

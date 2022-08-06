@@ -1,8 +1,6 @@
 mod activatable_tile_data;
 
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
-use crate::player::{ DiceEncoding };
 
 pub use activatable_tile_data::*;
 

@@ -2,13 +2,13 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 use crate::moveable::{ TileInteractionEvent, Moveable, MoveDirection, DecomposedRotation };
-use crate::player::{ PlayerMoved, PlayerChangingSide, PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
+use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
 use super::{ ActivatableTileTag, ActivatableAnimating, FrierTag, ConveyorTag, EndTileTag };
 
 pub(super) fn toggle_activatable_tiles<F>(
     mut filter: F,
-    mut query: &mut Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
+    query: &mut Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
 ) 
 where
     F: FnMut(&mut ActivatableTileTag) -> bool

@@ -1,4 +1,3 @@
-mod dice;
 mod events;
 mod components;
 mod resources;
@@ -14,7 +13,6 @@ use crate::tile::StartTileTag;
 use crate::states::GameState;
 use crate::level::{ LevelInfo, tile_pos_to_world_pos };
 
-pub use dice::*;
 pub use resources::*;
 pub use components::*;
 pub use events::*;
@@ -35,8 +33,6 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_event::<PlayerEscapedEvent>()
-            .add_event::<PlayerMoved>()
-            .add_event::<PlayerChangingSide>()
             .add_stage_after(CoreStage::Update, PlayerInputStage, SystemStage::parallel())
             .add_stage_before(CoreStage::PostUpdate, PlayerPostStage, SystemStage::parallel())
             .add_system_to_stage(

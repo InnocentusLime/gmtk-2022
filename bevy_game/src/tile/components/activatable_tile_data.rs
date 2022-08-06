@@ -1,7 +1,5 @@
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 
-use crate::player::DiceEncoding;
-
 #[derive(Clone, Copy)]
 pub enum ActivationCondition {
     Odd,
