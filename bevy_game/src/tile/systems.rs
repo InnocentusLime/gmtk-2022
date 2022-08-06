@@ -1,71 +1,118 @@
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
-
-use crate::player::{ PlayerMoved, PlayerModification, PlayerChangingSide };
-
-use super::{ ActivatableTileTag, ActivatableAnimating, TileState };
+use crate::moveable::{ TileInteractionEvent, Moveable, MoveDirection, DecomposedRotation };
+use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
+use std::time::Duration;
+use super::{ ActivatableTileTag, ActivatableAnimating, FrierTag, ConveyorTag, EndTileTag };
 
 pub(super) fn toggle_activatable_tiles<F>(
     mut filter: F,
-    mut query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
+    query: &mut Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
 ) 
 where
     F: FnMut(&mut ActivatableTileTag) -> bool
 {
-    for (mut cpu_anim, mut active_tag) in query.iter_mut() {
+    query.for_each_mut(|(mut cpu_anim, mut active_tag)| {
         if filter(&mut *active_tag) {
             active_tag.anim_info.update_cpu_anim(&mut *cpu_anim, active_tag.is_active());
         }
-    }
+    })
+}
+
+pub struct LastPlayerSide(u8);
+
+impl Default for LastPlayerSide {
+    fn default() -> Self { Self(DecomposedRotation::new().upper_side()) }
 }
 
 pub fn activeatable_tile_transition_system(
-    mut change_side: EventReader<PlayerChangingSide>,
-    mut query: Query<(&mut CPUAnimated, &ActivatableTileTag)>
+    mut last_next_side: Local<LastPlayerSide>,
+    player_q: Query<&Moveable, With<PlayerTag>>,
+    mut tile_q: Query<(&mut CPUAnimated, &ActivatableTileTag)>,
 ) {
-    if let Some(e) = change_side.iter().next() {
-        for (mut anim, tag) in query.iter_mut() {
-            if tag.is_active() == tag.will_be_active(&e.dice_state) { continue; }
-            match tag.anim_info {
-                ActivatableAnimating::Switch { on_transition, off_transition, .. } => {
-                    if tag.is_active() {
-                        *anim = off_transition;
-                    } else {
-                        *anim = on_transition;
+    player_q.for_each(|moveable| {
+        if let Some(next_side) = moveable.next_side() {
+            if last_next_side.0 != next_side {
+                last_next_side.0 = next_side;
+
+                tile_q.for_each_mut(|(mut anim, tag)| {
+                    if tag.is_active() == tag.will_be_active(next_side) { return; }
+                    match tag.anim_info {
+                        ActivatableAnimating::Switch { on_transition, off_transition, .. } => {
+                            if tag.is_active() {
+                                *anim = off_transition;
+                            } else {
+                                *anim = on_transition;
+                            }
+                        },
+                        _ => (),
                     }
-                },
-                _ => (),
+                })
             }
         }
-    }
-
-    // Drop all other events
-    change_side.iter().for_each(|_| ());
-}
-
-pub fn tile_reaction_system<T: TileState>(
-    mut moves: EventReader<PlayerMoved>,
-    mut query: Query<(&mut T, T::UpdateData)>,
-    mut response: EventWriter<PlayerModification>,
-) {
-    use std::any::type_name;
-    for e in moves.iter() {
-        if let Ok((mut state, extra)) = query.get_mut(e.cell) {
-            trace!("{} reacted to player", type_name::<T>());
-            response.send(state.react(extra));
-        }
-    }
+    });
 }
 
 pub fn tile_switch_system(
-    mut moves: EventReader<PlayerMoved>,
-    query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
+    mut last_side: Local<LastPlayerSide>,
+    player_q: Query<&Moveable, With<PlayerTag>>,
+    mut query: Query<(&mut CPUAnimated, &mut ActivatableTileTag)>, 
 ) {
-    if let Some(e) = moves.iter().next() {
-        toggle_activatable_tiles(|tag| tag.update(&e.dice_state), query);
-    }
-
-    // Drop all other events
-    moves.iter().for_each(|_| ());
+    player_q.for_each(|moveable| {
+        if last_side.0 != moveable.upper_side() {
+            last_side.0 = moveable.upper_side();
+            toggle_activatable_tiles(|tag| tag.update(last_side.0), &mut query);
+        }
+    });
 }
 
+pub fn fry_logic(
+    mut interactions: EventReader<TileInteractionEvent>,
+    mut tile_query: Query<&ActivatableTileTag, With<FrierTag>>,
+    mut move_query: Query<(), With<Moveable>>,
+    mut commands: Commands,
+) {
+    for e in interactions.iter() {
+        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
+            (Ok(state), Ok(_)) if state.is_active() => commands.entity(e.interactor_id).despawn(),
+            _ => (),
+        }
+    }
+}
+
+pub fn conveyor_logic(
+    mut interactions: EventReader<TileInteractionEvent>,
+    mut tile_query: Query<(&ActivatableTileTag, &Tile), With<ConveyorTag>>,
+    mut move_query: Query<&mut Moveable>,
+) {
+    for e in interactions.iter() {
+        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
+            (Ok((state, tile)), Ok(mut moveable)) if state.is_active() => {
+                let dir = MoveDirection::Up.apply_flipping_flags(tile.flip_x, tile.flip_y, tile.flip_d);
+                moveable.slide(dir, Duration::from_millis(132));
+            },
+            _ => (),
+        }
+    }
+}
+
+pub fn exit_logic(
+    mut interactions: EventReader<TileInteractionEvent>,
+    mut tile_query: Query<(), With<EndTileTag>>,
+    mut move_query: Query<(), (With<PlayerTag>, With<Moveable>)>,
+    mut escape_event: EventWriter<PlayerEscapedEvent>,
+    mut commands: Commands,
+) {
+    for e in interactions.iter() {
+        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
+            (Ok(_), Ok(_)) => {
+                commands.entity(e.interactor_id)
+                    .remove::<Moveable>()
+                    .insert(PlayerWinnerTag::new());
+                escape_event.send(PlayerEscapedEvent);
+            },
+            _ => (),
+        }
+    }
+}

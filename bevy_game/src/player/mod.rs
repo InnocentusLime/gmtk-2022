@@ -1,4 +1,3 @@
-mod dice;
 mod events;
 mod components;
 mod resources;
@@ -9,11 +8,11 @@ use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use iyes_loopless::prelude::*;
 
+use crate::moveable::Moveable;
 use crate::tile::StartTileTag;
 use crate::states::GameState;
 use crate::level::{ LevelInfo, tile_pos_to_world_pos };
 
-pub use dice::*;
 pub use resources::*;
 pub use components::*;
 pub use events::*;
@@ -22,44 +21,31 @@ use systems::*;
 
 #[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-struct PlayerUpdateStage;
+struct PlayerInputStage;
 
-#[derive(SystemLabel)]
+#[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-enum PlayerSystems {
-    Control,
-    Update,
-}
+struct PlayerPostStage;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_event::<PlayerMoved>()
-            .add_event::<PlayerChangingSide>()
-            .add_event::<PlayerModification>()
-            .add_stage_after(
-                CoreStage::PreUpdate,
-                PlayerUpdateStage,
-                SystemStage::parallel()
-            )
+            .add_event::<PlayerEscapedEvent>()
+            .add_stage_after(CoreStage::Update, PlayerInputStage, SystemStage::parallel())
+            .add_stage_before(CoreStage::PostUpdate, PlayerPostStage, SystemStage::parallel())
             .add_system_to_stage(
-                PlayerUpdateStage,
-                player_controls.run_in_state(GameState::InGame).label(PlayerSystems::Control)
-            )
-            .add_system_to_stage(
-                PlayerUpdateStage,
-                player_update.run_in_state(GameState::InGame).label(PlayerSystems::Update)
-                    .after(PlayerSystems::Control)
+                PlayerInputStage,
+                player_controls.run_in_state(GameState::InGame)
             )
             .add_system_set_to_stage(
-                PlayerUpdateStage,
+                PlayerPostStage,
                 ConditionSet::new()
-                    .after(PlayerSystems::Update).run_in_state(GameState::InGame)
-                    .with_system(player_animation)
-                    .with_system(player_sound)
+                    .run_in_state(GameState::InGame)
                     .with_system(player_camera)
+                    .with_system(player_win_anim)
+                    .with_system(player_win_sound)
                     .into()
             );
     }
@@ -83,9 +69,9 @@ pub fn spawn_player(
         level_info.geometry_layer()
     );
     commands.spawn()
+        .insert(PlayerTag)
         .insert(Name::new("Player"))
-        .insert(PlayerState::AwaitingInput)
-        .insert(Player::new(tile_pos, level_info.map(), level_info.geometry_layer()))
+        .insert(Moveable::new(tile_pos))
         .insert_bundle(MaterialMesh2dBundle {
             mesh: generated_assets.model.clone(),
             material: generated_assets.material.clone(),

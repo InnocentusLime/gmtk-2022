@@ -1,7 +1,5 @@
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 
-use crate::player::DiceEncoding;
-
 #[derive(Clone, Copy)]
 pub enum ActivationCondition {
     Odd,
@@ -17,8 +15,7 @@ impl ActivationCondition {
         }
     }
 
-    pub(super) fn is_active(self, player_state: &DiceEncoding) -> bool {
-        let side = player_state.upper_side();
+    pub(super) fn is_active(self, side: u8) -> bool {
         match self {
             ActivationCondition::Odd => side % 2 == 1,
             ActivationCondition::Even => side % 2 == 0,

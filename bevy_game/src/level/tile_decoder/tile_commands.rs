@@ -23,7 +23,7 @@ fn build_command(
         Some("conveyor") => Box::new(|x| { x.insert(ConveyorTag) }),    
         Some("fry") => Box::new(|x| { x.insert(FrierTag) }),    
         Some(x) => { error!("Unknown tile type \"{}\"", x); Box::new(|x| x) },
-        None => Box::new(|x| { x.insert(SolidTileTag) }),
+        _ => Box::new(|x| x),
     };
 
     let active_tagger: CommandPart = match (attr.activation_cond, attr.anim_type) {

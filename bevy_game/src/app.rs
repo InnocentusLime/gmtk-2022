@@ -3,6 +3,7 @@ use bevy::window::WindowDescriptor;
 #[cfg(feature = "debugging")]
 use bevy_inspector_egui::WorldInspectorPlugin;
 
+use crate::moveable::MoveablePlugin;
 use crate::level_info::{ LevelInfo, LevelInfoLoader };
 use crate::level::LevelPlugin;
 use crate::player::PlayerPlugin;
@@ -43,6 +44,7 @@ fn setup_plugins(app: &mut App) {
     app.add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<bevy::log::LogPlugin>());
 
     app
+        .add_plugin(MoveablePlugin)
         .add_plugin(LevelPlugin)
         .add_plugin(PlayerPlugin);
 

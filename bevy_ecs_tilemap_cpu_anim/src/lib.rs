@@ -13,8 +13,8 @@ impl Plugin for CPUTileAnimationPlugin {
     fn build(&self, app: &mut App) {
         app
             .insert_resource(CPUTileAnimations::new())
-            .add_stage_after(
-                CoreStage::Update,
+            .add_stage_before(
+                bevy_ecs_tilemap::TilemapStage,
                 CPUTileAnimateStage,
                 SystemStage::parallel()
             )
@@ -116,6 +116,8 @@ pub fn update_animation_frames(
     mut map: MapQuery,
 ) {
     let dt = time.delta();
+
+    // TODO `par_iter_*`
     for (mut state, mut tile, pos, parent_info) in animated_tile_q.iter_mut() {
         state.tick(dt);
         if state.update_from_anims(&*animations) {
