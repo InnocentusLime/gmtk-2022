@@ -1,12 +1,10 @@
 mod activatable_tile_data;
-mod tile_state;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use crate::player::{ PlayerModification, DiceEncoding, DiceRollDirection };
+use crate::player::{ DiceEncoding };
 
 pub use activatable_tile_data::*;
-pub use tile_state::*;
 
 #[derive(Component)]
 pub struct ActivatableTileTag {
@@ -45,64 +43,11 @@ impl ActivatableTileTag {
 #[derive(Component)]
 pub struct ConveyorTag;
 
-impl TileState for ConveyorTag {
-    type UpdateData = (&'static ActivatableTileTag, &'static Tile);
-
-    fn react<'w, 's>(&mut self, (tag, tile): (&ActivatableTileTag, &Tile)) -> PlayerModification {
-        if tag.is_active() {
-            PlayerModification::Slide(
-                DiceRollDirection::Up.apply_flipping_flags(tile.flip_x, tile.flip_y, tile.flip_d)
-            )
-        } else {
-            PlayerModification::AcknowledgeMove
-        }
-    }
-}
-
-#[derive(Component)]
-pub struct SolidTileTag;
-
-impl TileState for SolidTileTag {
-    type UpdateData = ();
-
-    fn react<'w, 's>(&mut self, _extra: ()) -> PlayerModification {
-        PlayerModification::AcknowledgeMove
-    }
-}
-
 #[derive(Component)]
 pub struct StartTileTag;
-
-impl TileState for StartTileTag {
-    type UpdateData = ();
-
-    fn react<'w, 's>(&mut self, _extra: ()) -> PlayerModification {
-        PlayerModification::AcknowledgeMove
-    }
-}
 
 #[derive(Component)]
 pub struct FrierTag;
 
-impl TileState for FrierTag {
-    type UpdateData = &'static ActivatableTileTag;
-
-    fn react<'w, 's>(&mut self, extra: &ActivatableTileTag) -> PlayerModification {
-        if extra.is_active() {
-            PlayerModification::Kill
-        } else {
-            PlayerModification::AcknowledgeMove
-        }
-    }
-}
-
 #[derive(Component)]
 pub struct EndTileTag;
-
-impl TileState for EndTileTag {
-    type UpdateData = ();
-
-    fn react<'w, 's>(&mut self, _extra: ()) -> PlayerModification {
-        PlayerModification::Escape
-    }
-}

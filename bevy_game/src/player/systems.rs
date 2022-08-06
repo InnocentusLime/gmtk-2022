@@ -1,50 +1,46 @@
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
-use crate::level::tile_pos_to_world_pos;
-use bevy::input::keyboard::KeyboardInput;
-
 use std::time::Duration;
 use crate::app::GameplayCamera;
 use crate::moveable::Moveable;
-use super::{ PlayerTag };
+use super::{ PlayerTag, PlayerWinnerTag, PlayerEscapedEvent, BasePlayerAssets };
 
-/*
- 
-            let t = timer.percent_left();
-            // TODO hardcoded player size
-            player_tf.scale = Vec3::new(25.0f32, 25.0f32, 25.0f32) * t;
-            col_mats.get_mut(&*mat_handle).unwrap().color = Color::Rgba {
-                red: t,
-                green: t,
-                blue: t,
-                alpha: 1.0,
-            };
-*/
-
-/*
-pub fn player_sound(
+pub fn player_win_sound(
     audio: Res<Audio>,
     assets: Res<BasePlayerAssets>,
-    mut events: EventReader<PlayerModification>,
+    mut events: EventReader<PlayerEscapedEvent>,
 ) {
     for e in events.iter() {
-        match e {
-            PlayerModification::Escape => {
-                audio.play(assets.complete_sound.clone());
-            },
-            _ => (),
-        }
+        audio.play(assets.complete_sound.clone());
     }
 }
-*/
+
+pub fn player_win_anim(
+    time: Res<Time>,
+    mut col_mats: ResMut<Assets<ColorMaterial>>,
+    mut player_q: Query<(&mut Transform, &mut PlayerWinnerTag, &Handle<ColorMaterial>), With<PlayerTag>>,
+) {
+    player_q.for_each_mut(|(mut tf, mut win_tag, mat_handle)| {
+        win_tag.timer.tick(time.delta());
+        let t = win_tag.timer.percent_left();
+
+        // TODO hardcoded player size
+        tf.scale = Vec3::new(25.0f32, 25.0f32, 25.0f32) * t;
+        col_mats.get_mut(&*mat_handle).unwrap().color = Color::Rgba {
+            red: t,
+            green: t,
+            blue: t,
+            alpha: 1.0,
+        };
+    });
+}
 
 pub fn player_camera(
     mut player_q: Query<&mut Transform, (With<PlayerTag>, Without<GameplayCamera>)>,
     mut gameplay_camera: Query<&mut Transform, With<GameplayCamera>>,
 ) {
-    for player_tf in player_q.iter_mut() {
+    player_q.for_each(|player_tf| {
         gameplay_camera.single_mut().translation = player_tf.translation.truncate().extend(50.0f32);
-    }
+    })
 }
 
 pub fn player_controls(

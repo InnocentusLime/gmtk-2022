@@ -6,7 +6,7 @@ use super::GameState;
 use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::player::PlayerModification;
+use crate::player::{ PlayerTag, PlayerEscapedEvent };
 use crate::app::{ GameplayCamera, MenuCamera };
 
 struct LevelCompleteCountdown(Timer);
@@ -15,44 +15,31 @@ fn enter() {
     info!("Entered ingame state");
 }
 
-fn death_system(
-    mut commands: Commands,
-    mut events: EventReader<PlayerModification>,
-) {
-    for ev in events.iter() {
-        match ev {
-            PlayerModification::Kill => {
-                info!("You are dead");
-                commands.insert_resource(NextState(GameState::MainMenu));
-            },
-            _ => (),
-        }
+fn death_system(mut commands: Commands, player_q: Query<(), With<PlayerTag>>) {
+    if player_q.is_empty() {
+        info!("You are dead");
+        commands.insert_resource(NextState(GameState::MainMenu));
     }
 }
 
 fn beat_system(
     mut commands: Commands,
-    mut events: EventReader<PlayerModification>,
+    mut escape_event: EventReader<PlayerEscapedEvent>,
     mut save: ResMut<Save>,
     menu_assets: Res<MenuAssets>,
     level_infos: Res<Assets<LevelInfo>>,
 ) {
-    for ev in events.iter() {
-        match ev {
-            PlayerModification::Escape => {
-                info!("You win");
-                let level_info = level_infos.get(&menu_assets.level_info).unwrap();
+    for _ in escape_event.iter() {
+        info!("You win");
+        let level_info = level_infos.get(&menu_assets.level_info).unwrap();
          
-                save.register_level_complete(&*level_info);
-                // TODO retry?
-                match save.save() {
-                    Ok(()) => (),
-                    Err(e) => error!("Error recording save: {}\nThe progress will be lost.", e),
-                }
-                commands.insert_resource(LevelCompleteCountdown(Timer::from_seconds(2.0f32, false)));
-            },
-            _ => (),
+        save.register_level_complete(&*level_info);
+        // TODO retry?
+        match save.save() {
+            Ok(()) => (),
+            Err(e) => error!("Error recording save: {}\nThe progress will be lost.", e),
         }
+        commands.insert_resource(LevelCompleteCountdown(Timer::from_seconds(2.0f32, false)));
     }
 }
 

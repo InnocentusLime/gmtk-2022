@@ -103,7 +103,10 @@ pub fn moveable_animation(
                 ).extend(1.0f32);
                 
                 tf.translation = start_pos + (end_pos - start_pos) * t;
-                tf.rotation = dir.to_quat(t) * moveable.rotation().rot_quat();
+            
+                if *ty == MoveTy::Flip {
+                    tf.rotation = dir.to_quat(t) * moveable.rotation().rot_quat();
+                }
             },
             (MoveableState::Idle, _) => {
                 tf.translation = current_pos;

@@ -34,10 +34,10 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_event::<PlayerEscapedEvent>()
             .add_event::<PlayerMoved>()
             .add_event::<PlayerChangingSide>()
-            .add_event::<PlayerModification>()
-            .add_stage_after(CoreStage::PreUpdate, PlayerInputStage, SystemStage::parallel())
+            .add_stage_after(CoreStage::Update, PlayerInputStage, SystemStage::parallel())
             .add_stage_before(CoreStage::PostUpdate, PlayerPostStage, SystemStage::parallel())
             .add_system_to_stage(
                 PlayerInputStage,
@@ -48,6 +48,8 @@ impl Plugin for PlayerPlugin {
                 ConditionSet::new()
                     .run_in_state(GameState::InGame)
                     .with_system(player_camera)
+                    .with_system(player_win_anim)
+                    .with_system(player_win_sound)
                     .into()
             );
     }

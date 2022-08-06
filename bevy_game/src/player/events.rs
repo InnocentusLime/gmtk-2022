@@ -2,14 +2,7 @@ use bevy::prelude::*;
 
 use super::{ DiceRollDirection, DiceEncoding };
 
-#[derive(Debug)]
-pub enum PlayerModification {
-    AcknowledgeMove,
-    Roll(DiceRollDirection),
-    Slide(DiceRollDirection),
-    Kill,
-    Escape,
-}
+pub struct PlayerEscapedEvent;
 
 pub struct PlayerMoved {
     pub cell: Entity,
