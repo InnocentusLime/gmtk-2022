@@ -18,6 +18,13 @@ jobs:
     name: Check ${{matrix.osname}} build code
     steps:
       - uses: actions/checkout@v3
+      - name: Install latest rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{matrix.target}}
+          default: true
+          override: true
       - uses: actions/cache@v3
         with:
           path: |
