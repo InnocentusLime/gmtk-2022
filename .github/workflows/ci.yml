@@ -5,9 +5,17 @@ on:
   
 
 jobs:
-  check-linux:
+  check:
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-gnu, x86_64-pc-windows-gnu]
+        include:
+          - target: x86_64-unknown-linux-gnu
+            osname: linux
+          - target: x86_64-pc-windows-gnu
+            osname: windows
     runs-on: ubuntu-latest
-    name: Type-check code for linux
+    name: Check ${{matrix.osname}} build code
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -22,28 +30,6 @@ jobs:
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Typecheck linux release
-        run: cargo check --release
+        run: cargo check --release --target ${{martix.target}}
       - name: Typecheck linux debug
-        run: cargo check --features debugging
-        #      - name: Typecheck wasm
-        #        run: cargo check
-  check-windows:
-    runs-on: windows-latest
-    name: Type-check code for windows
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: $${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
-      - name: Typecheck windows release
-        run: cargo check --release
-      - name: Typecheck windows debug
-        run: cargo check --features debugging
-        #      - name: Typecheck wasm
-        #        run: cargo check
+        run: cargo check --target ${{martix.target}}
