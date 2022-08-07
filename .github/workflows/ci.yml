@@ -30,6 +30,6 @@ jobs:
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Typecheck linux release
-        run: cargo check --release --target ${{martix.target}}
+        run: cargo check --release --target ${{matrix.target}}
       - name: Typecheck linux debug
-        run: cargo check --target ${{martix.target}}
+        run: cargo check --target ${{matrix.target}}

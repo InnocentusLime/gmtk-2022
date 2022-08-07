@@ -31,7 +31,7 @@ jobs:
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Build
-        run: cargo build --release --target ${{martix.target}}
+        run: cargo build --release --target ${{matrix.target}}
       - name: Package the build
         run: mkdir ${{matrix.osname}} && mv ./target/release/${{matrix.executable}} ./${{matrix.osname}} && cp -r ./bevy_game_bootstrap/assets ./${{matrix.osname}} && zip -r ${{matrix.osname}} ${{matrix.osname}}/
       - name: Release
