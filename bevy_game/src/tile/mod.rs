@@ -2,6 +2,7 @@ mod components;
 mod systems;
 
 use bevy::prelude::*;
+use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
 use bevy_ecs_tilemap_cpu_anim::{ CPUTileAnimationPlugin, CPUAnimated };
 use iyes_loopless::prelude::*;
 
@@ -18,6 +19,10 @@ pub struct TilePlugin;
 
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
+        if app.world.get_resource::<InspectableRegistry>().is_some() {
+            app.register_inspectable::<ActivatableTileTag>();
+        }
+
         app
             .add_plugin(CPUTileAnimationPlugin)
             .add_stage_before(CoreStage::Update, ActiveTileSwitchStage, SystemStage::parallel())

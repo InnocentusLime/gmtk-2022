@@ -1,14 +1,18 @@
 mod activatable_tile_data;
 
 use bevy::prelude::*;
+use bevy_inspector_egui::Inspectable;
 
 pub use activatable_tile_data::*;
 
-#[derive(Component)]
+#[derive(Component, Inspectable)]
 pub struct ActivatableTileTag {
+    #[inspectable(read_only)]
     state: bool,
-    pub condition: ActivationCondition,
-    pub anim_info: ActivatableAnimating,
+    #[inspectable(collapse)]
+    pub(super) condition: ActivationCondition,
+    #[inspectable(ignore)]
+    pub(super) anim_info: ActivatableAnimating,
 }
 
 impl ActivatableTileTag {

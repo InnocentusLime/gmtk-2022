@@ -1,6 +1,14 @@
+mod level;
+mod moveable;
+mod states;
+mod player;
+mod save;
+mod tile;
+mod level_info;
+
+use crate::states::setup_states;
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
-#[cfg(feature = "debugging")]
 use bevy_inspector_egui::WorldInspectorPlugin;
 
 use crate::moveable::MoveablePlugin;
@@ -14,7 +22,15 @@ const WINDOW_HEIGHT: f32 = 675.0f32;
 const WINDOW_WIDTH: f32 = 1200.0f32;
 //const ASPECT_RATIO: f32 = WINDOW_WIDTH / WINDOW_HEIGHT;
 
-static TITLE : &'static str = concat!("gluttony", " v. ", env!("CARGO_PKG_VERSION"));
+macro_rules! game_strings {
+    (version) => { env!("CARGO_PKG_VERSION") };
+    (game_name) => { "gluttony" };
+    (title) => { concat!(game_strings!(game_name), "v. ", game_strings!(version)) };
+}
+
+pub static VERSION: &'static str = game_strings!(version);
+pub static GAME_NAME: &'static str = game_strings!(game_name);
+static TITLE: &'static str = game_strings!(title);
 
 #[derive(Clone, Copy, Component)]
 pub struct MenuCamera;
@@ -32,16 +48,20 @@ fn window_descriptor() -> WindowDescriptor {
     }
 }
 
-fn setup_plugins(app: &mut App) {
+pub fn create_app(log: bool, inspector: bool) -> App {
+    let mut app = App::new();
+
     app
         .insert_resource(ClearColor(Color::hex("263238").unwrap()))
         .insert_resource(window_descriptor());
 
-    #[cfg(feature = "debugging")]
-    app.add_plugins(DefaultPlugins);
-    
-    #[cfg(not(feature = "debugging"))]
-    app.add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<bevy::log::LogPlugin>());
+    if log {
+        app.add_plugins(DefaultPlugins); 
+    } else {
+        app.add_plugins_with(DefaultPlugins, |plugins| plugins.disable::<bevy::log::LogPlugin>());
+    }
+
+    if inspector { app.add_plugin(WorldInspectorPlugin::new()); }
 
     app
         .add_plugin(MoveablePlugin)
@@ -50,19 +70,10 @@ fn setup_plugins(app: &mut App) {
 
     #[cfg(target_arch = "x86_64")]
     app.add_plugin(FramepacePlugin::framerate(60).without_warnings());
-    
-    #[cfg(feature = "debugging")]
-    app.add_plugin(WorldInspectorPlugin::new());
 
     app
         .init_asset_loader::<LevelInfoLoader>()
         .add_asset::<LevelInfo>();
-}
-
-pub fn create_app() -> App {
-    let mut app = App::new();
-
-    setup_plugins(&mut app);
    
     app.world.spawn()
         .insert_bundle(OrthographicCameraBundle::new_2d())
@@ -70,6 +81,8 @@ pub fn create_app() -> App {
     app.world.spawn()
         .insert_bundle(UiCameraBundle::default())
         .insert(Name::new("Screen Camera")).insert(MenuCamera);
+
+    setup_states(&mut app);
 
     app
 }

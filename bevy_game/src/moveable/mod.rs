@@ -9,6 +9,7 @@ pub use components::*;
 
 use systems::*;
 use bevy::prelude::*;
+use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
 
 #[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -26,6 +27,10 @@ pub struct MoveablePlugin;
 
 impl Plugin for MoveablePlugin {
     fn build(&self, app: &mut App) {
+        if app.world.get_resource::<InspectableRegistry>().is_some() {
+            app.register_inspectable::<Moveable>();
+        }
+        
         app
             .add_event::<TileInteractionEvent>()
             .insert_resource(MoveableSettings { map_id: 0, moveable_layer: 0 })

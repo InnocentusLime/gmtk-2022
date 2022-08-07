@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use super::direction::MoveDirection;
+use bevy_inspector_egui::Inspectable;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default, Inspectable)]
 #[repr(u8)]
 enum BoxSide {
     Up = 0,
@@ -9,6 +10,7 @@ enum BoxSide {
     Down = 2,
     Right = 3,
     Bottom = 4,
+    #[default]
     Top = 5,
 }
 
@@ -27,7 +29,7 @@ impl BoxSide {
 
 /// Represents object rotation using integers, assuming it's always going
 /// to be rotated by 90 degreees.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default, Inspectable)]
 pub struct DecomposedRotation {
     ortho_rot: u8, // Orthogonal rotation clock-wise. Gets applied first
     flat_rot: BoxSide, // Flat rotation. Gets applied second

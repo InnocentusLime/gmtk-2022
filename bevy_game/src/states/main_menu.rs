@@ -9,7 +9,7 @@ use super::GameState;
 use super::loading::LoadingLevelSubstate;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::app::{ GameplayCamera, MenuCamera };
+use crate::{ GameplayCamera, MenuCamera };
 
 #[derive(AssetCollection)]
 pub struct MenuAssets {
