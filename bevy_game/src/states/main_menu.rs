@@ -5,8 +5,7 @@ use bevy::tasks::{ IoTaskPool, Task };
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
-use super::GameState;
-use super::loading::LoadingLevelSubstate;
+use super::{ GameState, enter_level };
 use crate::save::Save;
 use crate::level_info::LevelInfo;
 use crate::{ GameplayCamera, MenuCamera };
@@ -165,15 +164,7 @@ fn tick(
         if ev.state == ElementState::Pressed && ev.key_code == Some(KeyCode::Return) {
             if let Some(save) = save.as_ref() {
                 let (world, level) = save.world_level();
-                // TODO special function, which handles things like entering the level
-                // It would verify the integrity of a save before proceeding.
-                asset_keys.register_asset(
-                    "level",
-                    DynamicAsset::File {
-                        path: format!("maps/level{}-{}.tmx", world, level),
-                    }
-                );
-                commands.insert_resource(NextState(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets)));
+                enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut *asset_keys);
             }
         }
     }

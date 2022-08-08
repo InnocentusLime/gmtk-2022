@@ -12,9 +12,10 @@ fn main() {
             Command::new("run")
                 .about("Runs the game")
                 .args(&[
-                    arg!(-i --inspector "Run the game with inspector turned on"),
-                    arg!(-l --logging "Run the game with logging turned on"),
+                    arg!(--inspector "Run the game with inspector turned on"),
+                    arg!(--logging "Run the game with logging turned on"),
                     arg!(-d --debugging "Run the game with debugging (inspector and logging) on"),
+                    arg!(-l --level <LEVEL> "Run the game with given level loaded and exit once the level is completed"),
                 ])
         )
         .subcommand(
@@ -27,9 +28,10 @@ fn main() {
         Some(("run", sub_matches)) => create_app(
             sub_matches.contains_id("logging") || sub_matches.contains_id("debugging"),
             sub_matches.contains_id("inspector") || sub_matches.contains_id("debugging"),
+            sub_matches.get_one::<String>("level").map(|x| x.as_str())
         ).run(),
-        Some(("schedule", _)) => bevy_mod_debugdump::print_schedule(&mut create_app(false, false)),
-        None => create_app(false, false).run(),
+        Some(("schedule", _)) => bevy_mod_debugdump::print_schedule(&mut create_app(false, false, None)),
+        None => create_app(false, false, None).run(),
         _ => unreachable!(),
     }
 }

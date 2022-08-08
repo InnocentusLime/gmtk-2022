@@ -48,7 +48,7 @@ fn window_descriptor() -> WindowDescriptor {
     }
 }
 
-pub fn create_app(log: bool, inspector: bool) -> App {
+pub fn create_app(log: bool, inspector: bool, test_level_path: Option<&str>) -> App {
     let mut app = App::new();
 
     app
@@ -82,7 +82,7 @@ pub fn create_app(log: bool, inspector: bool) -> App {
         .insert_bundle(UiCameraBundle::default())
         .insert(Name::new("Screen Camera")).insert(MenuCamera);
 
-    setup_states(&mut app);
+    setup_states(&mut app, test_level_path);
 
     app
 }
