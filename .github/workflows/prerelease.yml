@@ -33,9 +33,10 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{matrix.target}}
       - name: Package the build
-        run: mkdir ${{matrix.osname}} && mv ./target/release/${{matrix.executable}} ./${{matrix.osname}} && cp -r ./bevy_game_bootstrap/assets ./${{matrix.osname}} && zip -r ${{matrix.osname}} ${{matrix.osname}}/
+        run: mkdir ${{matrix.osname}} && mv ./target/${{matrix.target}}/release/${{matrix.executable}} ./${{matrix.osname}} && cp -r ./bevy_game_bootstrap/assets ./${{matrix.osname}} && zip -r ${{matrix.osname}} ${{matrix.osname}}/
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
+          prerelease: true
           files: |
             ${{matrix.osname}}.zip
