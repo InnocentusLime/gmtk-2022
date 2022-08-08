@@ -5,7 +5,7 @@ mod loading;
 mod splash_screen;
 
 use bevy::prelude::*;
-use bevy_asset_loader::*;
+use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::* };
 use iyes_loopless::prelude::*;
 use loading::LoadingLevelSubstate;
 
@@ -26,7 +26,7 @@ pub enum GameState {
 }
 
 pub fn enter_level(level_path: String, commands: &mut Commands, asset_keys: &mut DynamicAssets) {
-    asset_keys.register_asset("level", DynamicAsset::File { path: level_path });
+    asset_keys.register_asset("level", Box::new(StandardDynamicAsset::File { path: level_path }));
     commands.insert_resource(NextState(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets)));
 }
 

@@ -1,4 +1,4 @@
-use bevy_asset_loader::*;
+use bevy_asset_loader::asset_collection::*;
 use bevy::prelude::*;
 
 use super::Level;

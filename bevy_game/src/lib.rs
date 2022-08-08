@@ -33,9 +33,6 @@ pub static GAME_NAME: &'static str = game_strings!(game_name);
 static TITLE: &'static str = game_strings!(title);
 
 #[derive(Clone, Copy, Component)]
-pub struct MenuCamera;
-
-#[derive(Clone, Copy, Component)]
 pub struct GameplayCamera;
 
 fn window_descriptor() -> WindowDescriptor {
@@ -76,11 +73,8 @@ pub fn create_app(log: bool, inspector: bool, test_level_path: Option<&str>) -> 
         .add_asset::<LevelInfo>();
    
     app.world.spawn()
-        .insert_bundle(OrthographicCameraBundle::new_2d())
+        .insert_bundle(Camera2dBundle::default())
         .insert(Name::new("GameplayCamera")).insert(GameplayCamera);
-    app.world.spawn()
-        .insert_bundle(UiCameraBundle::default())
-        .insert(Name::new("Screen Camera")).insert(MenuCamera);
 
     setup_states(&mut app, test_level_path);
 

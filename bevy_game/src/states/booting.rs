@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_asset_loader::*;
+use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::*, loading_state::* };
 use iyes_loopless::prelude::*;
 
 use super::{ GameState, enter_level };
@@ -30,12 +30,14 @@ pub fn setup_states(app: &mut App, testing_level: Option<&str>) {
             );
         },
         None => {
-            app.add_enter_system(GameState::Booting, enter_normal);
-            AssetLoader::new(GameState::Booting)
-                .continue_to_state(GameState::SplashScreen)
-                .with_collection::<ScreenAssets>()
-                .with_collection::<MenuAssets>()
-                .build(app);
+            app
+                .add_enter_system(GameState::Booting, enter_normal)
+                .add_loading_state(
+                    LoadingState::new(GameState::Booting)
+                    .continue_to_state(GameState::SplashScreen)
+                    .with_collection::<ScreenAssets>()
+                    .with_collection::<MenuAssets>()
+                );
         },
     }
 }

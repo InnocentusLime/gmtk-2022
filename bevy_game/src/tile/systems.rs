@@ -83,9 +83,10 @@ pub fn fry_logic(
 
 pub fn conveyor_logic(
     mut interactions: EventReader<TileInteractionEvent>,
-    mut tile_query: Query<(&ActivatableTileTag, &Tile), With<ConveyorTag>>,
+    //mut tile_query: Query<(&ActivatableTileTag, &Tile), With<ConveyorTag>>,
     mut move_query: Query<&mut Moveable>,
 ) {
+    /*
     for e in interactions.iter() {
         match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
             (Ok((state, tile)), Ok(mut moveable)) if state.is_active() => {
@@ -95,6 +96,8 @@ pub fn conveyor_logic(
             _ => (),
         }
     }
+    */
+    todo!()
 }
 
 pub fn exit_logic(

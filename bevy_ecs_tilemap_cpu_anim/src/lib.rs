@@ -14,7 +14,7 @@ impl Plugin for CPUTileAnimationPlugin {
         app
             .insert_resource(CPUTileAnimations::new())
             .add_stage_before(
-                bevy_ecs_tilemap::TilemapStage,
+                CoreStage::PostUpdate,
                 CPUTileAnimateStage,
                 SystemStage::parallel()
             )
@@ -24,7 +24,7 @@ impl Plugin for CPUTileAnimationPlugin {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Frame {
-    pub texture_id: u16, // Texture ID (the bevy_ecs_tilemap one)
+    pub texture_id: u32, // Texture ID (the bevy_ecs_tilemap one)
     pub duration: Duration, // Duration in milliseconds
 }
 
@@ -112,17 +112,14 @@ impl CPUAnimated {
 pub fn update_animation_frames(
     time: Res<Time>,
     animations: Res<CPUTileAnimations>,
-    mut animated_tile_q: Query<(&mut CPUAnimated, &mut Tile, &TilePos, &TileParent)>,
-    mut map: MapQuery,
+    mut animated_tile_q: Query<(&mut CPUAnimated, &mut TileTexture)>,
 ) {
     let dt = time.delta();
 
-    // TODO `par_iter_*`
-    for (mut state, mut tile, pos, parent_info) in animated_tile_q.iter_mut() {
+    animated_tile_q.par_for_each_mut(10, |(mut state, mut tile)| {
         state.tick(dt);
         if state.update_from_anims(&*animations) {
-            tile.texture_index = animations.0[state.anim_id].0[state.current_frame].texture_id;
-            map.notify_chunk_for_tile(*pos, parent_info.map_id, parent_info.layer_id);
+            tile.0 = animations.0[state.anim_id].0[state.current_frame].texture_id;
         }
-    }
+    });
 }

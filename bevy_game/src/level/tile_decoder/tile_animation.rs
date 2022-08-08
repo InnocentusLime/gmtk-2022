@@ -17,11 +17,11 @@ fn get_tile_animation(
 ) -> (f32, CPUTileAnimation) {
     let anim = match tile.animation.as_ref() {
         None => CPUTileAnimation::from_frames(std::iter::once(Frame { 
-            texture_id: id as u16,
+            texture_id: id,
             duration: Duration::new(1, 1),
         })),
         Some(x) => CPUTileAnimation::from_frames(x.iter().map(|frame| Frame {
-            texture_id: frame.tile_id as u16,
+            texture_id: frame.tile_id,
             duration: Duration::from_millis(frame.duration as u64),
         })),
     };

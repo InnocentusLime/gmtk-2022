@@ -7,7 +7,7 @@ use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
 use crate::player::{ PlayerTag, PlayerEscapedEvent };
-use crate::{ GameplayCamera, MenuCamera };
+use crate::GameplayCamera;
 
 struct LevelCompleteCountdown(Timer);
 
@@ -74,7 +74,7 @@ fn level_complete_system_testing_level(
 fn exit(
     mut commands: Commands,
     mut cam: Query<&mut Transform, With<GameplayCamera>>,
-    to_del: Query<Entity, (Without<GameplayCamera>, Without<MenuCamera>)>,
+    to_del: Query<Entity, Without<GameplayCamera>>,
 ) {
     info!("Exited ingame state");
     for mut tf in cam.iter_mut() { tf.translation = Vec3::new(0.0f32, 0.0f32, 50.0f32); }

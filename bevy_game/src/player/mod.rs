@@ -11,7 +11,7 @@ use iyes_loopless::prelude::*;
 use crate::moveable::Moveable;
 use crate::tile::StartTileTag;
 use crate::states::GameState;
-use crate::level::{ LevelInfo, tile_pos_to_world_pos };
+use crate::level::{ LevelInfo /*, tile_pos_to_world_pos */ };
 
 pub use resources::*;
 pub use components::*;
@@ -53,14 +53,14 @@ impl Plugin for PlayerPlugin {
 
 pub fn spawn_player(
     mut commands: Commands,
-    mut map_q: MapQuery,
     start: Query<&TilePos, With<StartTileTag>>,
     map_entity: Query<(&LevelInfo, &Transform)>,
     generated_assets: Res<GeneratedPlayerAssets>,
 ) {
     let tile_pos = start.single();
-    let tile_pos = (tile_pos.0, tile_pos.1);
+    let tile_pos = (tile_pos.x, tile_pos.y);
     let (level_info, map_tf) = map_entity.single();
+    /*
     let world_pos = tile_pos_to_world_pos(
         tile_pos,
         map_tf, 
@@ -68,6 +68,8 @@ pub fn spawn_player(
         level_info.map(), 
         level_info.geometry_layer()
     );
+    */
+    let world_pos: Vec2 = todo!();
     commands.spawn()
         .insert(PlayerTag)
         .insert(Name::new("Player"))

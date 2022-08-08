@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_asset_loader::*;
+use bevy_asset_loader::{ asset_collection::*, dynamic_asset::* };
 use bevy::input::keyboard::KeyboardInput;
 use bevy::tasks::{ IoTaskPool, Task };
 use futures_lite::future;
@@ -8,7 +8,7 @@ use iyes_loopless::prelude::*;
 use super::{ GameState, enter_level };
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::{ GameplayCamera, MenuCamera };
+use crate::GameplayCamera;
 
 #[derive(AssetCollection)]
 pub struct MenuAssets {
@@ -34,25 +34,21 @@ fn spawn_text(
     commands.spawn_bundle(TextBundle {
         style: Style {
             position_type: PositionType::Absolute,
-            position: Rect { 
+            position: UiRect { 
                 left: Val::Px(500.0),
                 bottom: Val::Px(340.0),
                 ..default() 
             },
             ..default()
         },
-        text: Text::with_section(
+        text: Text::from_section(
             format!("Press enter to enter {}-{}", world, level),
             TextStyle {
                 font: font.clone(),
                 font_size: 30.0f32,
                 color: Color::WHITE,
             },
-            TextAlignment {
-                vertical: VerticalAlign::Center,
-                horizontal: HorizontalAlign::Center,
-            }
-        ),
+        ).with_alignment(TextAlignment::CENTER),
         ..default()
     });
 }
@@ -90,45 +86,37 @@ fn enter(
     let font = menu_assets.main_font.clone();
     commands.spawn_bundle(TextBundle {
         style: Style {
-            margin: Rect::all(Val::Px(5.0)),
+            margin: UiRect::all(Val::Px(5.0)),
             ..default()
         },
-        text: Text::with_section(
+        text: Text::from_section(
             "Main menu", 
             TextStyle {
                 font: font.clone(),
                 font_size: 60.0f32,
                 color: Color::WHITE,
             },
-            TextAlignment {
-                vertical: VerticalAlign::Center,
-                horizontal: HorizontalAlign::Center,
-            }
-        ),
+        ).with_alignment(TextAlignment::CENTER),
         ..default()
     });
     commands.spawn_bundle(TextBundle {
         style: Style {
             position_type: PositionType::Absolute,
-            position: Rect { 
+            position: UiRect { 
                 left: Val::Px(500.0),
                 bottom: Val::Px(340.0),
                 ..default() 
             },
-                ..default()
+            ..default()
         },
-        text: Text::with_section(
+        text: Text::from_section(
             "Reading save...",
             TextStyle {
                 font: font.clone(),
                 font_size: 30.0f32,
                 color: Color::WHITE,
             },
-            TextAlignment {
-                vertical: VerticalAlign::Center,
-                horizontal: HorizontalAlign::Center,
-            }
-        ),
+        ).with_alignment(TextAlignment::CENTER),
         ..default()
     }).insert(WaitingSaveTag);
 }
@@ -158,10 +146,10 @@ fn tick(
     save: Option<Res<Save>>,
     mut asset_keys: ResMut<DynamicAssets>,
 ) {
-    use bevy::input::ElementState;
+    use bevy::input::ButtonState;
 
     for ev in events.iter() {
-        if ev.state == ElementState::Pressed && ev.key_code == Some(KeyCode::Return) {
+        if ev.state == ButtonState::Pressed && ev.key_code == Some(KeyCode::Return) {
             if let Some(save) = save.as_ref() {
                 let (world, level) = save.world_level();
                 enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut *asset_keys);
@@ -172,7 +160,7 @@ fn tick(
 
 fn exit(
     mut commands: Commands,
-    elems_query: Query<Entity, (Without<GameplayCamera>, Without<MenuCamera>)>,
+    elems_query: Query<Entity, Without<GameplayCamera>>,
 ) {
     info!("Exited main menu state");
 

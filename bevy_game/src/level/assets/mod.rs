@@ -6,7 +6,6 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use bevy::asset::{ AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset };
-use bevy_ecs_tilemap::prelude::TileAtlasBuilder;
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 
@@ -34,7 +33,7 @@ impl Level {
         self.map.layers().enumerate().find(|(_, x)| x.name == "geometry").map(|(x, _)| x as u16)
     }
 
-    pub fn get_tile_texture(&self, tileset: usize, tile: u32) -> u16 {
+    pub fn get_tile_texture(&self, tileset: usize, tile: u32) -> u32 {
         self.tileset_indexing[&tileset].dispatch(tile)
     }
 
@@ -79,23 +78,31 @@ impl Level {
                 TilesetState::ImageCollection { collection, tile_size } => {
                     let mut map = HashMap::new();
                     let mut origin = Vec::new();
-                    let mut builder = TileAtlasBuilder::new(*tile_size);
 
-                    for (tile_id, path) in collection {
-                        let handle = textures.get_handle(path.to_owned());
-                        map.insert(
-                            *tile_id, 
-                            builder.add_texture(
-                                handle.clone(),
-                                textures.get(&handle).expect("Image should be loaded"),
-                            ).unwrap() as u16
+                    let tileset_size = Vec2::new(
+                            tile_size.x, 
+                            tile_size.y * collection.len() as f32,
                         );
+                    let mut builder = TextureAtlasBuilder::default()
+                        .initial_size(tileset_size)
+                        .max_size(tileset_size);
+
+                    let tile_count = collection.len();
+                    for (img_id, (tile_id, path)) in collection.into_iter().enumerate() {
+                        let handle = textures.get_handle(path.to_owned());
+
+                        builder.add_texture(
+                            handle.clone(),
+                            textures.get(&handle).expect("Image should be loaded"),
+                        );
+                        map.insert(*tile_id, img_id as u32);
                         origin.push(path.to_owned());
                     }
 
                     self.tileset_indexing.insert(*k, TilesetIndexing::Special(map));
     
-                    let atlas = builder.finish(textures).unwrap();
+                    let mut atlas = builder.finish(textures).unwrap();
+                    textures.get_mut(&atlas.texture).unwrap().reinterpret_stacked_2d_as_array(tile_count as u32);
 
                     *v = TilesetState::Ready {
                         origin,
@@ -183,7 +190,7 @@ impl AssetLoader for LevelLoader {
 
 fn asset_dir_root() -> PathBuf {
     #[cfg(target_arch = "x86_64")]
-    return bevy::asset::FileAssetIo::get_root_path();
+    return bevy::asset::FileAssetIo::get_base_path();
 
     #[cfg(target_arch = "wasm32")]
     return PathBuf::new();

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_asset_loader::*;
+use bevy_asset_loader::loading_state::*;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use iyes_loopless::prelude::*;
 
@@ -20,30 +20,32 @@ pub enum LoadingLevelSubstate {
 
 pub fn setup_states(app: &mut App) {
     // Loading base assets
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
-        |mut anims: ResMut<CPUTileAnimations>| anims.clear()
-    );
-    AssetLoader::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets))
-        .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
-        .with_collection::<BasePlayerAssets>()
-        .with_collection::<BaseLevelAssets>()
-        .init_resource::<GeneratedPlayerAssets>()
-        .build(app);
-    app.add_exit_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
-        queue_level_tileset_images
-    );
+    app
+        .add_enter_system(
+            GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
+            |mut anims: ResMut<CPUTileAnimations>| anims.clear()
+        )
+        .add_loading_state(LoadingState::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets))
+            .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
+            .with_collection::<BasePlayerAssets>()
+            .with_collection::<BaseLevelAssets>()
+            .init_resource::<GeneratedPlayerAssets>()
+        )
+        .add_exit_system(
+            GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
+            queue_level_tileset_images
+        );
 
     // Loading level tiles
-    AssetLoader::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
-        .with_collection::<LevelTilesetImages>()
-        .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel))
-        .build(app);
-    app.add_exit_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles),
-        prepare_level_tileset_images
-    );
+    app
+        .add_loading_state(LoadingState::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
+            .with_collection::<LevelTilesetImages>()
+            .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel))
+        )
+        .add_exit_system(
+            GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles),
+            prepare_level_tileset_images
+        );
    
     // Spawning level
     app.add_enter_system(
