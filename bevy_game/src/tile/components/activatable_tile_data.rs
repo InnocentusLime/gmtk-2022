@@ -1,6 +1,7 @@
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
+use bevy_inspector_egui::Inspectable;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Inspectable)]
 pub enum ActivationCondition {
     Odd,
     Even,

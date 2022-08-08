@@ -1,8 +1,10 @@
 use bevy::prelude::*;
+use bevy_inspector_egui::Inspectable;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default, Inspectable)]
 #[repr(u8)]
 pub enum MoveDirection {
+    #[default]
     Up = 0,
     Left = 1,
     Down = 2,

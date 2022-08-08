@@ -5,9 +5,19 @@ on:
       - "v0.*.*"
 
 jobs:
-  release-linux:
+  build-prerelease:
+    strategy:
+      matrix:
+        target: [x86_64-unknown-linux-gnu, x86_64-pc-windows-gnu]
+        include:
+          - target: x86_64-unknown-linux-gnu
+            executable: game
+            osname: linux
+          - target: x86_64-pc-windows-gnu
+            executable: game.exe
+            osname: windows
     runs-on: ubuntu-latest
-    name: Build the linux pre-release
+    name: Build the ${{matrix.osname}} pre-release
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -15,42 +25,17 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: ${{matrix.target}}
           default: true
           override: true
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Build
-        run: cargo build --release
+        run: cargo build --release --target ${{matrix.target}}
       - name: Package the build
-        run: mkdir linux && mv ./target/release/bevy_game ./linux && cp -r ./bevy_game/assets ./linux && zip -r linux linux/
+        run: mkdir ${{matrix.osname}} && mv ./target/release/${{matrix.executable}} ./${{matrix.osname}} && cp -r ./bevy_game_bootstrap/assets ./${{matrix.osname}} && zip -r ${{matrix.osname}} ${{matrix.osname}}/
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            linux.zip
-  release-windows:
-    runs-on: ubuntu-latest
-    name: Build the windows pre-release
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install latest rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: x86_64-pc-windows-gnu
-          default: true
-          override: true
-      - name: Install mingw
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends mingw-w64
-      - name: Install alsa and udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
-      - name: Build
-        run: cargo build --release --target x86_64-pc-windows-gnu
-      - name: Package the build
-        run: mkdir windows && mv ./target/x86_64-pc-windows-gnu/release/bevy_game.exe ./windows && cp -r ./bevy_game/assets ./windows && zip -r windows windows/
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            windows.zip
+            ${{matrix.osname}}.zip

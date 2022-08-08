@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use std::time::Duration;
-use crate::app::GameplayCamera;
+use crate::GameplayCamera;
 use crate::moveable::Moveable;
 use super::{ PlayerTag, PlayerWinnerTag, PlayerEscapedEvent, BasePlayerAssets };
 

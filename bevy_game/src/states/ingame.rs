@@ -7,7 +7,7 @@ use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
 use crate::player::{ PlayerTag, PlayerEscapedEvent };
-use crate::app::{ GameplayCamera, MenuCamera };
+use crate::{ GameplayCamera, MenuCamera };
 
 struct LevelCompleteCountdown(Timer);
 
