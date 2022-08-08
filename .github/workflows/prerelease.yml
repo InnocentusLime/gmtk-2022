@@ -30,6 +30,9 @@ jobs:
           override: true
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      - name: Install mingw
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends mingw-w64
+        if: ${{matrix.osname}} == 'windows'
       - name: Build
         run: cargo build --release --target ${{matrix.target}}
       - name: Package the build
