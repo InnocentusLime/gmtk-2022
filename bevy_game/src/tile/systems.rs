@@ -83,21 +83,19 @@ pub fn fry_logic(
 
 pub fn conveyor_logic(
     mut interactions: EventReader<TileInteractionEvent>,
-    //mut tile_query: Query<(&ActivatableTileTag, &Tile), With<ConveyorTag>>,
+    mut tile_query: Query<(&ActivatableTileTag, &TileFlip), With<ConveyorTag>>,
     mut move_query: Query<&mut Moveable>,
 ) {
-    /*
     for e in interactions.iter() {
         match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
-            (Ok((state, tile)), Ok(mut moveable)) if state.is_active() => {
-                let dir = MoveDirection::Up.apply_flipping_flags(tile.flip_x, tile.flip_y, tile.flip_d);
+            (Ok((state, flip)), Ok(mut moveable)) if state.is_active() => {
+                let dir = MoveDirection::Up.apply_flipping_flags(flip.x, flip.y, flip.d);
+
                 moveable.slide(dir, Duration::from_millis(132));
             },
             _ => (),
         }
     }
-    */
-    todo!()
 }
 
 pub fn exit_logic(

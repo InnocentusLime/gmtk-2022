@@ -26,11 +26,19 @@ impl Plugin for TilePlugin {
         app
             .add_plugin(CPUTileAnimationPlugin)
             .add_stage_before(CoreStage::Update, ActiveTileSwitchStage, SystemStage::parallel())
-            .add_system_to_stage(ActiveTileSwitchStage, tile_switch_system.run_in_state(GameState::InGame))
-            .add_system_to_stage(ActiveTileSwitchStage, activeatable_tile_transition_system.run_in_state(GameState::InGame))
-            .add_system(fry_logic)
-            .add_system(conveyor_logic)
-            .add_system(exit_logic);
+            .add_system_set_to_stage(
+                ActiveTileSwitchStage, 
+                SystemSet::new()
+                    .with_system(tile_switch_system)
+                    .with_system(activeatable_tile_transition_system)
+            )
+            .add_system_set_to_stage(
+                CoreStage::Update,
+                SystemSet::new()
+                    .with_system(fry_logic)
+                    .with_system(conveyor_logic)
+                    .with_system(exit_logic)
+            );
     }
 }
 
