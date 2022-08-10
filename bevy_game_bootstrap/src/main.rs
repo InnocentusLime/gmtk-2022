@@ -15,7 +15,7 @@ fn main() {
                     arg!(--inspector "Run the game with inspector turned on"),
                     arg!(--logging "Run the game with logging turned on"),
                     arg!(-d --debugging "Run the game with debugging (inspector and logging) on"),
-                    arg!(-l --level <LEVEL> "Run the game with given level loaded and exit once the level is completed"),
+                    arg!(-l --level [LEVEL] "Run the game with given level loaded and exit once the level is completed"),
                 ])
         )
         .subcommand(
