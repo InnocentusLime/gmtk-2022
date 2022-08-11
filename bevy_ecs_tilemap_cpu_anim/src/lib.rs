@@ -37,7 +37,6 @@ impl CPUTileAnimation {
     }
 }
 
-// TODO Animations -> CPUTileAnimations
 pub struct CPUTileAnimations(Vec<CPUTileAnimation>);
 
 impl CPUTileAnimations {
@@ -52,11 +51,11 @@ impl CPUTileAnimations {
     pub fn new_cpu_animated(
         &self,
         anim_id: usize,
-        speed: f32,
         looping: bool
     ) -> CPUAnimated {
         CPUAnimated {
-            speed, looping, anim_id,
+            looping, anim_id,
+            paused: false,
             passed_time: Duration::new(0, 0),
             current_frame: 0,
         }
@@ -67,8 +66,8 @@ impl CPUTileAnimations {
 
 #[derive(Clone, Copy, Component, Debug)]
 pub struct CPUAnimated {
-    speed: f32,
-    looping: bool,
+    pub paused: bool,
+    pub looping: bool,
     anim_id: usize,
     current_frame: usize,
     passed_time: Duration,
@@ -93,20 +92,17 @@ impl CPUAnimated {
     }
 
     fn tick(&mut self, dt: Duration) {
-        self.passed_time += dt.mul_f32(self.speed);
+        if !self.paused {
+            self.passed_time += dt;
+        }
     }
 
     pub fn set_animation(&mut self, id: usize, animations: &CPUTileAnimations) {
         if animations.0.len() <= id { panic!("Bad animation ID"); }
-        self.speed = 0.0f32;
         self.anim_id = id;
         self.current_frame = 0;
         self.passed_time = Duration::new(0, 0);
     }
-
-    pub fn set_speed(&mut self, speed: f32) { self.speed = speed }
-
-    pub fn set_looping(&mut self, looping: bool) { self.looping = looping }
 }
 
 pub fn update_animation_frames(
