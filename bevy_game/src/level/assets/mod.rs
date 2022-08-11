@@ -1,184 +1,159 @@
-mod tileset_type;
 mod tileset_indexing;
 
-use std::collections::HashMap;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use bevy::asset::{ AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset };
+use super::LevelTilesetImages;
+use bevy::asset::{ AssetServer, AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset };
+use bevy_asset_loader::dynamic_asset::{ DynamicAsset, DynamicAssetType };
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 
-pub use tileset_type::TilesetState;
 pub use tileset_indexing::TilesetIndexing;
+
+/// Encodes the types for the tilset
+#[derive(Clone, Debug)]
+pub enum TiledTileset {
+    /// The tilset is a single image
+    Image(AssetPath<'static>),
+    /// Each tile has an individual image. So we keep
+    /// a mapping from tile ID to paths.
+    ImageCollection(Vec<(u32, AssetPath<'static>)>),
+}
 
 #[derive(TypeUuid)]
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
-pub struct Level {
+pub struct TiledMap {
     pub map: tiled::Map,
-    pub tileset_indexing: HashMap<usize, TilesetIndexing>,
-    pub tilesets: HashMap<usize, TilesetState>,
+    pub tilesets: Vec<(Vec2, TiledTileset)>,
 }
 
-impl Level {
-    pub fn new(map: tiled::Map, tilesets: HashMap<usize, TilesetState>) -> Self {
-        Level { 
-            map, 
-            tilesets,
-            tileset_indexing: HashMap::new(),
-        }
+impl TiledMap {
+    pub fn get_tileset_dynamic_asset(&self) -> impl DynamicAsset { 
+        TilesetsFromTiled(self.tilesets.clone()) 
     }
+}
 
-    pub fn find_geometry_layer(&self) -> Option<u16> {
-        self.map.layers().enumerate().find(|(_, x)| x.name == "geometry").map(|(x, _)| x as u16)
-    }
+#[derive(Debug)]
+struct TilesetsFromTiled(Vec<(Vec2, TiledTileset)>);
 
-    pub fn get_tile_texture(&self, tileset: usize, tile: u32) -> u32 {
-        self.tileset_indexing[&tileset].dispatch(tile)
-    }
-
-    pub fn get_used_images(&self) -> Vec<String> {
+impl DynamicAsset for TilesetsFromTiled {
+    fn load(&self, asset_server: &AssetServer) -> Vec<HandleUntyped> {
         let mut res = Vec::new();
 
-        for (_, v) in &self.tilesets {
-            match v {
-                TilesetState::Ready { origin, .. } => res.extend(
-                    origin.iter()
-                    .map(|x| x.path().to_str().unwrap().to_owned())
+        self.0.iter()
+            .for_each(|(_, t)| match t {
+                TiledTileset::Image(p) => res.push(asset_server.load_untyped(p.to_owned())),
+                TiledTileset::ImageCollection(c) => res.extend(
+                    c.iter().map(|(_, p)| asset_server.load_untyped(p.to_owned()))
                 ),
-                TilesetState::ImageAtlas { image, .. } => {
-                    assert!(image.label().is_none());
-                    res.push(image.path().to_str().unwrap().to_owned());
-                },
-                TilesetState::ImageCollection { collection, .. } => res.extend(
-                    collection.iter()
-                    .map(|(_, x)| {
-                        assert!(x.label().is_none());
-                        x.path().to_str().unwrap().to_owned()
-                    })
-                ),
-            }
-        }
+            });
+
+        info!("Compiled list of tiles");
 
         res
     }
-    
-    /// Ensures that `self` is `FullImage`
-    pub fn prepare_tilesets(&mut self, textures: &mut Assets<Image>) {
-        for (k, v) in &mut self.tilesets {
-            match v {
-                TilesetState::Ready { .. } => (),
-                TilesetState::ImageAtlas { image, .. } => {
-                    self.tileset_indexing.insert(*k, TilesetIndexing::Continious);
-                    *v = TilesetState::Ready {
-                        handle: textures.get_handle(image.to_owned()),
-                        origin: vec![image.to_owned()],
-                    }
+
+    fn build(&self, world: &mut World) -> Result<DynamicAssetType, anyhow::Error> {
+        info!("Building tilesets");
+        let cell = world.cell();
+        let mut images = cell
+            .get_resource_mut::<Assets<Image>>()
+            .expect("Failed to get image asset container");
+        let mut atlases = cell
+            .get_resource_mut::<Assets<TextureAtlas>>()
+            .expect("Failed to get image asset container");
+        let res = self.0.iter()
+            .map(|(tile_size, tileset)| match tileset {
+                TiledTileset::Image(p) => {
+                    let image_handle = images.get_handle(p.to_owned());
+                    let image = images.get(&image_handle).expect("Image should be loaded");
+                    let image_size = image.size();
+
+                    Ok(atlases.add(TextureAtlas::from_grid(
+                        image_handle, 
+                        *tile_size, 
+                        image_size.x as usize / tile_size.x as usize,
+                        image_size.y as usize / tile_size.y as usize,
+                    )).clone_untyped())
                 },
-                TilesetState::ImageCollection { collection, tile_size } => {
-                    let mut map = HashMap::new();
-                    let mut origin = Vec::new();
+                TiledTileset::ImageCollection(c) => {
+                    let tileset_size = Vec2::new(tile_size.x, tile_size.y * c.len() as f32);
+                    let mut builder = TextureAtlasBuilder::default().initial_size(tileset_size).max_size(tileset_size);
 
-                    let tileset_size = Vec2::new(
-                            tile_size.x, 
-                            tile_size.y * collection.len() as f32,
-                        );
-                    let mut builder = TextureAtlasBuilder::default()
-                        .initial_size(tileset_size)
-                        .max_size(tileset_size);
-
-                    let tile_count = collection.len();
-                    for (img_id, (tile_id, path)) in collection.into_iter().enumerate() {
-                        let handle = textures.get_handle(path.to_owned());
-
-                        builder.add_texture(
+                    c.iter()
+                        .map(|(_, p)| images.get_handle(p.to_owned()))
+                        .for_each(|handle| builder.add_texture(
                             handle.clone(),
-                            textures.get(&handle).expect("Image should be loaded"),
-                        );
-                        map.insert(*tile_id, img_id as u32);
-                        origin.push(path.to_owned());
-                    }
-
-                    self.tileset_indexing.insert(*k, TilesetIndexing::Special(map));
-    
-                    let mut atlas = builder.finish(textures).unwrap();
-                    textures.get_mut(&atlas.texture).unwrap().reinterpret_stacked_2d_as_array(tile_count as u32);
-
-                    *v = TilesetState::Ready {
-                        origin,
-                        handle: atlas.texture,
-                    };
+                            images.get(&handle).expect("Image should be loaded")
+                        ));
+            
+                    let result = builder.finish(&mut *images)?;
+                    
+                    Ok(atlases.add(result).clone_untyped())
                 },
-            }
-        }
-    } 
+            })
+            .collect::<Result<_, anyhow::Error>>()?;
+
+        Ok(DynamicAssetType::Collection(res))
+    }
 }
 
 #[derive(Clone, Copy, Default)]
-pub struct LevelLoader;
+pub struct TiledMapLoader;
 
-impl AssetLoader for LevelLoader {
+impl AssetLoader for TiledMapLoader {
     fn load<'a>(
         &'a self,
         bytes: &'a [u8],
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
-        Box::pin(async move {
-            trace!("Loading map {:?}...", load_context.path());
+        // NOTE this is a workround, because of `tiled`'s bad compatability
+        // with `bevy`. It uses `fs::File` to load tileset, which ends up 
+        // peeking into the crate root, rather into asset folder.
+        fn asset_dir_root() -> PathBuf {
+            #[cfg(target_arch = "x86_64")]
+            return bevy::asset::FileAssetIo::get_base_path();
 
+            #[cfg(target_arch = "wasm32")]
+            return PathBuf::new();
+        }
+
+        Box::pin(async move {
             let mut loader = tiled::Loader::new();
-            // TODO not entirely correct
+            
             let root = asset_dir_root().join("assets");
+            // FIXME `tiled` loads dependencies using Rust's traditional file IO. That's very bad
+            // news for the WASM build. 
             let map = loader.load_tmx_map_from(BufReader::new(bytes), &root.join(load_context.path()))?;
             let fix_asset_path = |x: &PathBuf| AssetPath::new(x.strip_prefix(&root).unwrap().to_path_buf(), None);
+            let mut tilesets = Vec::new();
 
-            let mut dependencies = Vec::new();
-            let mut handles = HashMap::default();
-
-            trace!("Discovering tilesets...");
-            for (tileset_index, tileset) in map.tilesets().iter().enumerate() {
-                trace!("Discovered tileset {}...", tileset_index);
+            for tileset in map.tilesets() {
                 let tile_size = Vec2::new(tileset.tile_width as f32, tileset.tile_height as f32);
-
-                match tileset.image.as_ref() {
+                let tileset = match tileset.image.as_ref() {
                     Some(image) => {
                         let asset_path = fix_asset_path(&image.source);
                         
-                        dependencies.push(asset_path.clone());
-                        handles.insert(
-                            tileset_index, 
-                            TilesetState::ImageAtlas {
-                                tile_size,
-                                image: asset_path,
-                            }
-                        );
+                        TiledTileset::Image(asset_path)
                     },
                     None => {
-                        let collection = tileset.tiles()
-                            .filter_map(|(tile_id, tile)| match &tile.image {
-                                None => None,
-                                Some(image) => {
-                                    let asset_path = fix_asset_path(&image.source);
-                                    dependencies.push(asset_path.clone());
-                                    Some((tile_id, asset_path))
-                                },
-                            })
+                        let asset_paths: Vec<(u32, AssetPath<'static>)> = tileset.tiles()
+                            .filter_map(|(tile_id, tile)|
+                                tile.image.as_ref().map(|x| (tile_id, fix_asset_path(&x.source)))
+                            )
                             .collect();
 
-                        handles.insert(
-                            tileset_index, 
-                            TilesetState::ImageCollection {
-                                tile_size,
-                                collection,
-                            }
-                        );
+                        TiledTileset::ImageCollection(asset_paths)
                     },
-                }
+                };
+                
+                tilesets.push((tile_size, tileset));
             }
 
-            let loaded_asset = LoadedAsset::new(Level::new(
-                map, handles
-            )).with_dependencies(dependencies);
+            let loaded_asset = LoadedAsset::new(TiledMap {
+                map, tilesets,
+            });
 
             load_context.set_default_asset(loaded_asset);
             Ok(())
@@ -186,12 +161,4 @@ impl AssetLoader for LevelLoader {
     }
 
     fn extensions(&self) -> &[&str] { &["tmx"] }
-}
-
-fn asset_dir_root() -> PathBuf {
-    #[cfg(target_arch = "x86_64")]
-    return bevy::asset::FileAssetIo::get_base_path();
-
-    #[cfg(target_arch = "wasm32")]
-    return PathBuf::new();
 }

@@ -3,104 +3,84 @@ use bevy_asset_loader::loading_state::*;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use iyes_loopless::prelude::*;
 
-use super::GameState;
-use crate::level::{ LevelTilesetImages, BaseLevelAssets, queue_level_tileset_images, spawn_level, prepare_level_tileset_images };
+use super::{ GameState, jump_to_state };
+use crate::level::{ LevelTilesetImages, BaseLevelAssets, queue_level_tileset_images, init_level_resource, spawn_level, tileset_indexing };
 use crate::player::{ GeneratedPlayerAssets, BasePlayerAssets, spawn_player };
 use crate::tile::activeatable_tile_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum LoadingLevelSubstate {
+pub enum LoadingLevel {
     LoadingBaseAssets,
     LoadingLevelTiles,
+    InittingLevelResources,
     SpawningLevel,
     SpawningPlayer,
     InittingTiles,
     Cleanup,
+    Done,
 }
 
 pub fn setup_states(app: &mut App) {
     // Loading base assets
     app
-        .add_enter_system(
-            GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
-            |mut anims: ResMut<CPUTileAnimations>| anims.clear()
-        )
-        .add_loading_state(LoadingState::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets))
-            .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
+        .add_enter_system(LoadingLevel::LoadingBaseAssets, |mut anims: ResMut<CPUTileAnimations>| anims.clear())
+        .add_loading_state(LoadingState::new(LoadingLevel::LoadingBaseAssets)
+            .continue_to_state(LoadingLevel::LoadingLevelTiles)
             .with_collection::<BasePlayerAssets>()
             .with_collection::<BaseLevelAssets>()
             .init_resource::<GeneratedPlayerAssets>()
         )
-        .add_exit_system(
-            GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets),
-            queue_level_tileset_images
-        );
+        .add_exit_system(LoadingLevel::LoadingBaseAssets, queue_level_tileset_images);
 
     // Loading level tiles
     app
-        .add_loading_state(LoadingState::new(GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles))
+        .add_loading_state(LoadingState::new(LoadingLevel::LoadingLevelTiles)
             .with_collection::<LevelTilesetImages>()
-            .continue_to_state(GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel))
-        )
-        .add_exit_system(
-            GameState::LoadingLevel(LoadingLevelSubstate::LoadingLevelTiles),
-            prepare_level_tileset_images
+            .continue_to_state(LoadingLevel::InittingLevelResources)
         );
-   
-    // Spawning level
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel),
-        |mut commands: Commands| commands.insert_resource(NextState(
-            GameState::LoadingLevel(
-                LoadingLevelSubstate::SpawningPlayer
-            )
-        ))
+
+    // Inititing level resources
+    app.add_enter_system_set(
+        LoadingLevel::InittingLevelResources, 
+        SystemSet::new()
+            .with_system(tileset_indexing.chain(init_level_resource))
+            .with_system(jump_to_state(LoadingLevel::SpawningLevel))
     );
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::SpawningLevel),
-        spawn_level
+
+    // Spawning level
+    app.add_enter_system_set(
+        LoadingLevel::SpawningLevel,
+        SystemSet::new()
+            .with_system(spawn_level)
+            //.with_system(jump_to_state(LoadingLevel::SpawningPlayer))
     );
 
     // Spawning a player
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::SpawningPlayer), 
-        |mut commands: Commands| commands.insert_resource(NextState(
-            GameState::LoadingLevel(
-                LoadingLevelSubstate::InittingTiles
-            )
-        ))
-    );
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::SpawningPlayer), 
-        spawn_player
+    app.add_enter_system_set(
+        LoadingLevel::SpawningPlayer, 
+        SystemSet::new()
+            .with_system(spawn_player)
+            .with_system(jump_to_state(LoadingLevel::InittingTiles))
     );
 
     // Initting tiles
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::InittingTiles), 
-        |mut commands: Commands| commands.insert_resource(NextState(
-            GameState::LoadingLevel(
-                LoadingLevelSubstate::Cleanup
-            )
-        ))
-    );
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::InittingTiles), 
-        activeatable_tile_setup
+    app.add_enter_system_set(
+        LoadingLevel::InittingTiles, 
+        SystemSet::new()
+            .with_system(activeatable_tile_setup)
+            .with_system(jump_to_state(LoadingLevel::Cleanup))
     );
 
     // Cleanup
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::Cleanup),
-        |server: Res<AssetServer>| {
-            server.mark_unused_assets();
-            server.free_unused_assets();
-        }
-    );
-    app.add_enter_system(
-        GameState::LoadingLevel(LoadingLevelSubstate::Cleanup),
-        |mut commands: Commands| commands.insert_resource(NextState(
-            GameState::InGame
-        ))
-    );
+    app
+        .add_enter_system_set(
+            LoadingLevel::Cleanup,
+            SystemSet::new()
+                .with_system(|server: Res<AssetServer>| {
+                    server.mark_unused_assets();
+                    server.free_unused_assets();
+                })
+                .with_system(jump_to_state(GameState::InGame))
+                .with_system(jump_to_state(LoadingLevel::Done))
+        );
 }

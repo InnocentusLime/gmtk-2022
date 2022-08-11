@@ -1,7 +1,7 @@
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 use bevy_inspector_egui::Inspectable;
 
-#[derive(Clone, Copy, Inspectable)]
+#[derive(Clone, Copy, Debug,Inspectable)]
 pub enum ActivationCondition {
     Odd,
     Even,
@@ -28,8 +28,6 @@ impl ActivationCondition {
 pub enum ActivatableAnimating {
     // Loops the `on_anim`, without looping the
     // `off_anim`
-    //
-    // anim_type = switchable_machine
     Switch {
         on_transition: CPUAnimated,
         off_transition: CPUAnimated,
@@ -38,11 +36,7 @@ pub enum ActivatableAnimating {
     },
     // Loops the anim when the tile is on and
     // stops it when off
-    //
-    // anim_type = stoppable_machine
-    Stop {
-        on_speed: f32,
-    },
+    Stop,
 }
 
 impl ActivatableAnimating {
@@ -54,11 +48,7 @@ impl ActivatableAnimating {
             } else {
                 *anim = *off_anim;
             },
-            Stop { on_speed } => if active {
-                anim.set_speed(*on_speed);
-            } else {
-                anim.set_speed(0.0f32);
-            },
+            Stop => anim.paused = !active,
         }
     }
 }
