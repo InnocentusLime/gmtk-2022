@@ -1,4 +1,5 @@
 use bevy_asset_loader::asset_collection::*;
+use bevy_ecs_tilemap::prelude::*;
 use bevy::prelude::*;
 use std::collections::HashMap;
 use thiserror::Error;
@@ -20,7 +21,7 @@ pub struct LevelTilesetImages {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(u8)]
-pub enum LevelTile {
+pub enum LevelTileType {
     Conveyor,
     Fry,
     Floor(u8),
@@ -82,15 +83,18 @@ pub enum LevelInitError {
 static GEOMETRY_LAYER_ID: &'static str = "geometry";
 static ACTIVATOR_LAYER_ID: &'static str = "activators";
 
+pub struct LevelTileData {
+    pub tile_type: LevelTileType,
+    pub flip: TileFlip, 
+}
+
 // TODO the level manages graphics, which doesn't
 // seem to be a good idea in the end.
 pub struct Level {
-    // TODO rename to `geometry_atlas`
-    pub(super) atlas: Handle<Image>,
+    pub(super) geometry_atlas: Handle<Image>,
     pub(super) activators: Vec<Vec<Option<ActivationCondition>>>,
-    // TODO include mirroring flags
-    pub(super) geometry: Vec<Vec<Option<LevelTile>>>,
-    pub(super) graphics: HashMap<LevelTile, u32>,
+    pub(super) geometry: Vec<Vec<Option<LevelTileData>>>,
+    pub(super) graphics: HashMap<LevelTileType, u32>,
 }
 
 impl Level {
@@ -163,18 +167,18 @@ impl Level {
         Ok(result)
     }
 
-    fn scan_geometry_tileset(geometry_tileset: &tiled::Tileset) -> Result<HashMap<u32, LevelTile>, GeometryTilesetError> {
+    fn scan_geometry_tileset(geometry_tileset: &tiled::Tileset) -> Result<HashMap<u32, LevelTileType>, GeometryTilesetError> {
         let mut result = HashMap::new();
         let mut next_floor_id = Some(0u8);
 
         for (tile_id, tile) in geometry_tileset.tiles() {
             match tile.tile_type.as_ref().map(String::as_str) {
                 None => (),
-                Some("conveyor") => { result.insert(tile_id, LevelTile::Conveyor); },
-                Some("fry") => { result.insert(tile_id, LevelTile::Fry); },
+                Some("conveyor") => { result.insert(tile_id, LevelTileType::Conveyor); },
+                Some("fry") => { result.insert(tile_id, LevelTileType::Fry); },
                 Some("floor") => match next_floor_id { 
                     Some(x) => { 
-                        result.insert(tile_id, LevelTile::Floor(x)); 
+                        result.insert(tile_id, LevelTileType::Floor(x)); 
                         next_floor_id = x.checked_add(1);
                     },
                     None => return Err(GeometryTilesetError::TooManyFloorTiles),
@@ -227,19 +231,31 @@ impl Level {
                             .ok_or(LevelInitError::IncorrectGeometryTile { x, y })
                         ).transpose()?
                 );
-                geometry[x as usize].push(
-                    geometry_layer.get_tile_data(x as i32, y as i32)
-                        .map(|t| geometry_table.get(&t.id()).map(|t| *t)
-                            .ok_or(LevelInitError::IncorrectActivatorTile { x, y })
-                        ).transpose()?
-                );
+
+                match geometry_layer.get_tile_data(x as i32, y as i32) {
+                    None => geometry[x as usize].push(None),
+                    Some(tile) => {
+                        geometry[x as usize].push(Some(
+                            LevelTileData {
+                                flip: TileFlip {
+                                    x: tile.flip_h,
+                                    y: tile.flip_v,
+                                    d: tile.flip_d,
+                                },
+                                tile_type: *geometry_table.get(&tile.id())
+                                    .ok_or(LevelInitError::IncorrectActivatorTile { x, y })?
+                                ,
+                            }
+                        ));
+                    }
+                }
             }
         }
 
         Ok(Level {
             geometry,
             activators,
-            atlas: atlases.get(&tilesets.images[geometry_tileset_id])
+            geometry_atlas: atlases.get(&tilesets.images[geometry_tileset_id])
                 .unwrap().texture.clone(),
             graphics: geometry_table.iter()
                 .map(|(tile, level_tile)| (*level_tile, tileset_indexing[geometry_tileset_id].dispatch(*tile)))

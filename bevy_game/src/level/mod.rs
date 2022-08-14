@@ -119,22 +119,16 @@ pub fn spawn_level(
             .with_children(|commands| {
                 for x in 0..level.geometry.len() {
                     for y in 0..level.geometry[x].len() {
-                        level.geometry[x][y].map(|ty| {
+                        level.geometry[x][y].as_ref().map(|data| {
                             let (x, y) = (x as u32, y as u32);
                             let tile_pos = TilePos { x, y };
     
                             let entity = commands.spawn()
                                 .insert_bundle(TileBundle {
                                     position: tile_pos,
-                                    texture: TileTexture(level.graphics[&ty]),
+                                    texture: TileTexture(level.graphics[&data.tile_type]),
                                     tilemap_id: TilemapId(map_entity),
-                                    /*
-                                    flip: TileFlip {
-                                        x: tile.flip_h,
-                                        y: tile.flip_v,
-                                        d: tile.flip_d,
-                                    },
-                                    */
+                                    flip: data.flip,
                                     ..default()
                                 })
                                 .insert(Name::new("level tile"))
@@ -149,7 +143,7 @@ pub fn spawn_level(
     commands.entity(map_entity)
         .insert_bundle(TilemapBundle {
             storage: tile_store,
-            texture: TilemapTexture(level.atlas.clone()),
+            texture: TilemapTexture(level.geometry_atlas.clone()),
             mesh_type: TilemapMeshType::Square,
             // FIXME hardcoded
             tile_size: TilemapTileSize { x: 32.0f32, y: 32.0f32 },
