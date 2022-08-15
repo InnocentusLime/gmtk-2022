@@ -1,6 +1,7 @@
 use bevy_asset_loader::asset_collection::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy::prelude::*;
+use bevy::ecs::system::EntityCommands;
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -24,7 +25,19 @@ pub struct LevelTilesetImages {
 pub enum LevelTileType {
     Conveyor,
     Fry,
-    Floor(u8),
+    Floor,
+}
+
+impl LevelTileType {
+    pub fn insert_into(&self, cmds: &mut EntityCommands) {
+        use crate::tile::{ FrierTag, ConveyorTag };
+                            
+        match self {
+            LevelTileType::Fry => { cmds.insert(FrierTag); },
+            LevelTileType::Conveyor => { cmds.insert(ConveyorTag); },
+            _ => (),
+        }
+    }
 }
 
 #[derive(Error, Debug)]
@@ -51,8 +64,6 @@ pub enum ActivatorTilesetError {
 
 #[derive(Error, Debug)]
 pub enum GeometryTilesetError {
-    #[error("the tileset specified more than {} floor tiles", (std::u8::MAX as u128)+1)]
-    TooManyFloorTiles,
     #[error("tile with id {tile_id:} is declared with an unknown type: {ty:?}")]
     UnknownType { tile_id: u32, ty: String },
 }
@@ -83,18 +94,16 @@ pub enum LevelInitError {
 static GEOMETRY_LAYER_ID: &'static str = "geometry";
 static ACTIVATOR_LAYER_ID: &'static str = "activators";
 
-pub struct LevelTileData {
-    pub tile_type: LevelTileType,
-    pub flip: TileFlip, 
-}
-
 // TODO the level manages graphics, which doesn't
 // seem to be a good idea in the end.
 pub struct Level {
+    width: u32,
+    height: u32,
     pub(super) geometry_atlas: Handle<Image>,
-    pub(super) activators: Vec<Vec<Option<ActivationCondition>>>,
-    pub(super) geometry: Vec<Vec<Option<LevelTileData>>>,
-    pub(super) graphics: HashMap<LevelTileType, u32>,
+    pub(super) geometry_graphics: HashMap<(u32, u32), u32>,
+    pub(super) activators: HashMap<(u32, u32), ActivationCondition>,
+    pub(super) level_tiles: HashMap<(u32, u32), LevelTileType>,
+    pub(super) level_tiles_flip: HashMap<(u32, u32), TileFlip>,
 }
 
 impl Level {
@@ -169,20 +178,13 @@ impl Level {
 
     fn scan_geometry_tileset(geometry_tileset: &tiled::Tileset) -> Result<HashMap<u32, LevelTileType>, GeometryTilesetError> {
         let mut result = HashMap::new();
-        let mut next_floor_id = Some(0u8);
 
         for (tile_id, tile) in geometry_tileset.tiles() {
             match tile.tile_type.as_ref().map(String::as_str) {
                 None => (),
                 Some("conveyor") => { result.insert(tile_id, LevelTileType::Conveyor); },
                 Some("fry") => { result.insert(tile_id, LevelTileType::Fry); },
-                Some("floor") => match next_floor_id { 
-                    Some(x) => { 
-                        result.insert(tile_id, LevelTileType::Floor(x)); 
-                        next_floor_id = x.checked_add(1);
-                    },
-                    None => return Err(GeometryTilesetError::TooManyFloorTiles),
-                },
+                Some("floor") => { result.insert(tile_id, LevelTileType::Floor); },
                 Some(ty) => return Err(GeometryTilesetError::UnknownType { tile_id, ty: ty.to_owned() }),
             }
         }
@@ -215,51 +217,55 @@ impl Level {
         let geometry_table = Self::scan_geometry_tileset(&*map.map.tilesets()[geometry_tileset_id])?;
         let activator_table = Self::scan_activator_tileset(&*map.map.tilesets()[activator_tileset_id])?;
 
-        let mut activators = Vec::new();
-        let mut geometry = Vec::new();
+        let mut geometry_graphics = HashMap::new();
+        let mut activators = HashMap::new();
+        let mut level_tiles = HashMap::new();
+        let mut level_tiles_flip = HashMap::new();
 
         for x in 0..map.map.width {
-            activators.push(Vec::new());
-            geometry.push(Vec::new());
-
             for y in 0..map.map.height {
+                let table_pos = (x, y);
                 let y = (map.map.height - 1) as u32 - y;
-                
-                activators[x as usize].push(
-                    activator_layer.get_tile_data(x as i32, y as i32)
-                        .map(|t| activator_table.get(&t.id()).map(|t| *t)
-                            .ok_or(LevelInitError::IncorrectGeometryTile { x, y })
-                        ).transpose()?
-                );
 
-                match geometry_layer.get_tile_data(x as i32, y as i32) {
-                    None => geometry[x as usize].push(None),
-                    Some(tile) => {
-                        geometry[x as usize].push(Some(
-                            LevelTileData {
-                                flip: TileFlip {
-                                    x: tile.flip_h,
-                                    y: tile.flip_v,
-                                    d: tile.flip_d,
-                                },
-                                tile_type: *geometry_table.get(&tile.id())
-                                    .ok_or(LevelInitError::IncorrectActivatorTile { x, y })?
-                                ,
-                            }
-                        ));
-                    }
+                if let Some(act_tile) = activator_layer.get_tile_data(x as i32, y as i32) {
+                    activators.insert(table_pos,
+                        activator_table.get(&act_tile.id()).map(|t| *t)
+                            .ok_or(LevelInitError::IncorrectGeometryTile { x, y })?
+                    );
+                }
+                
+                if let Some(lvl_tile) = geometry_layer.get_tile_data(x as i32, y as i32) {
+                    level_tiles.insert(table_pos,
+                        *geometry_table.get(&lvl_tile.id())
+                            .ok_or(LevelInitError::IncorrectGeometryTile { x, y })?
+                    );
+
+                    level_tiles_flip.insert(table_pos, TileFlip {
+                        x: lvl_tile.flip_h,
+                        y: lvl_tile.flip_v,
+                        d: lvl_tile.flip_d,
+                    });
+
+                    geometry_graphics.insert(table_pos, 
+                        tileset_indexing[geometry_tileset_id].dispatch(lvl_tile.id())
+                    );
                 }
             }
         }
 
         Ok(Level {
-            geometry,
+            width: map.map.width,
+            height: map.map.height,
+            geometry_graphics,
+            level_tiles,
             activators,
+            level_tiles_flip,
             geometry_atlas: atlases.get(&tilesets.images[geometry_tileset_id])
                 .unwrap().texture.clone(),
-            graphics: geometry_table.iter()
-                .map(|(tile, level_tile)| (*level_tile, tileset_indexing[geometry_tileset_id].dispatch(*tile)))
-                .collect(),
         })
     }
+
+    pub fn width(&self) -> u32 { self.width }
+
+    pub fn height(&self) -> u32 { self.height }
 }

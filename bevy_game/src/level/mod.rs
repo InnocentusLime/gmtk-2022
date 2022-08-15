@@ -14,7 +14,7 @@ pub use resources::*;
 pub use components::*;
 pub use assets::*;
 
-use crate::tile::TilePlugin;
+use crate::tile::*;
 
 #[derive(Default)]
 pub struct LevelPlugin;
@@ -109,33 +109,34 @@ pub fn spawn_level(
 ) {
     // Create the loaded map
     let map_entity = commands.spawn().insert(Name::new("Map")).id();
-    // TODO get from `Level`
-    let tilemap_size = TilemapSize { x: level.geometry.len() as u32, y: level.geometry[0].len() as u32 };
+    let tilemap_size = TilemapSize { x: level.width(), y: level.height() };
     let mut tile_store = TileStorage::empty(tilemap_size);
 
     // Build the geometry layer
     let map_commands = 
         commands.entity(map_entity)
             .with_children(|commands| {
-                for x in 0..level.geometry.len() {
-                    for y in 0..level.geometry[x].len() {
-                        level.geometry[x][y].as_ref().map(|data| {
-                            let (x, y) = (x as u32, y as u32);
-                            let tile_pos = TilePos { x, y };
-    
-                            let entity = commands.spawn()
-                                .insert_bundle(TileBundle {
-                                    position: tile_pos,
-                                    texture: TileTexture(level.graphics[&data.tile_type]),
-                                    tilemap_id: TilemapId(map_entity),
-                                    flip: data.flip,
-                                    ..default()
-                                })
-                                .insert(Name::new("level tile"))
-                                .id();
+                for x in 0..level.width() {
+                    for y in 0..level.height() {
+                        // Skip a tile if it has no graphics.
+                        if level.geometry_graphics.get(&(x, y)).is_none() { continue; }
 
-                            tile_store.set(&tile_pos, Some(entity));
-                        });
+                        let tile_pos = TilePos { x, y };
+                        let mut cmds = commands.spawn();
+
+                        cmds.insert_bundle(TileBundle {
+                            position: tile_pos,
+                            tilemap_id: TilemapId(map_entity),
+                            texture: TileTexture(level.geometry_graphics[&(x, y)]),
+                            flip: level.level_tiles_flip.get(&(x, y)).map(|f| *f).unwrap_or_default(),
+                            ..default()
+                        }).insert(Name::new("level tile"));
+
+                        if let Some(ty) = level.level_tiles.get(&(x, y)) {
+                            ty.insert_into(&mut cmds);
+                        }
+
+                        tile_store.set(&tile_pos, Some(cmds.id()));
                     }
                 }
             });
