@@ -57,7 +57,6 @@ fn spawn_text(
 fn enter(
     mut commands: Commands, 
     menu_assets: Res<MenuAssets>,
-    io_pool: Res<IoTaskPool>,
     save: Option<Res<Save>>,
 ) {
     info!("Entered main menu state");
@@ -68,7 +67,7 @@ fn enter(
     }
 
     commands.spawn()
-        .insert(SaveLoading(io_pool.spawn(async move {
+        .insert(SaveLoading(IoTaskPool::get().spawn(async move {
             match Save::load() {
                 Ok(x) => x,
                 Err(e) => {
