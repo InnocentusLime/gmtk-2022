@@ -5,8 +5,8 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use crate::level::LevelTag;
 
-/// Updated the internals of this component. Returns `true` if the moveable
-/// ended up changing its tile.
+/// Updates the internals of a moveable. Returns `true` if the moveable
+/// reached the destination (if it was in process of moving from one position to another).
 fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
     match &mut moveable.state {
         MoveableState::Idle => false,
@@ -28,7 +28,14 @@ fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
     }
 }
 
-/// Updates the state data of all moveables.
+// TODO implement collisions to later implement boxes?
+/// Updates the state data of all moveables. This system does the following:
+///
+/// * Cancels all attempts to move (force-transitioning all moveables into `Idle` style)
+/// if they are trying to move into a tile that doesn't exist.
+/// * Tick all timers on moveables.
+/// * Issue `TileInteractionEvent` when a moveable is done moving onto a tile.
+/// * Performs state transitions on the moveables when they are done moving.
 pub fn moveable_tick(
     mut interaction_events: EventWriter<TileInteractionEvent>,
     mut moveable_q: Query<(Entity, &mut Moveable)>,
@@ -61,7 +68,9 @@ pub fn moveable_tick(
     });
 }
 
-/// Animates all moveables.
+// TODO Maybe doing animations this way is bad
+/// Animates all moveables. This state simply alters moveable's transform to 
+/// create the animations.
 pub fn moveable_animation(
     map_q: Query<(&Transform, &TilemapGridSize), With<LevelTag>>,
     mut moveable_q: Query<(&mut Transform, &Moveable), Without<LevelTag>>,

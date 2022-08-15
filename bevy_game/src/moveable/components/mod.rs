@@ -12,6 +12,14 @@ pub(super) use decomposed_rotation::*;
 pub use direction::MoveDirection;
 pub use decomposed_rotation::DecomposedRotation;
 
+/// Contains all information about a moveable:
+/// 
+/// * Rotation
+/// * Position
+/// * State
+///
+/// `Transform` **does not** encode the actual position of a moveable.
+/// It's actual position is whatever returned by `pos()` method.
 #[derive(Debug, Clone, Component, Default)]
 pub struct Moveable {
     pub(super) pos: TilePos,
@@ -80,7 +88,7 @@ impl Moveable {
     }
 
     /// Returns the cell the moveable is going to occupy at the end of
-    /// the animation. Returns `None` if no animation is playing.
+    /// the animation. Returns `None` if no position changing animation is playing.
     #[inline]
     pub fn going_to_occupy(&self) -> Option<TilePos> {
         match &self.state {
@@ -89,6 +97,8 @@ impl Moveable {
         }
     }
 
+    /// Returns the side that the moveable will have up once its animation
+    /// finished. Returns `None` if no side changing animation is playing.
     #[inline]
     pub fn next_side(&self) -> Option<u8> {
         match &self.state {
