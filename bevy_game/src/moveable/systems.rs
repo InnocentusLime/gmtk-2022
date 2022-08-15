@@ -4,6 +4,7 @@ use super::resources::*;
 use super::components::*;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
+use crate::level::LevelTag;
 
 /// Updated the internals of this component. Returns `true` if the moveable
 /// ended up changing its tile.
@@ -30,85 +31,58 @@ fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
 
 /// Updates the state data of all moveables.
 pub fn moveable_tick(
-    settings: Res<MoveableSettings>,
     mut interaction_events: EventWriter<TileInteractionEvent>,
-    mut moveable_q: Query<(Entity, &mut Moveable)>, 
+    mut moveable_q: Query<(Entity, &mut Moveable)>,
+    map_q: Query<&TileStorage, With<LevelTag>>,
     time: Res<Time>,
 ) {
     let dt = time.delta();
 
     moveable_q.for_each_mut(|(id, mut moveable)| {
-        if let Some((x, y)) = moveable.going_to_occupy() {
-            /*
-            if map_q.get_tile_entity(
-                TilePos(x, y), 
-                settings.map_id, 
-                settings.moveable_layer
-            ).is_err() {
+        let tiles = match map_q.get_single() {
+            Ok(x) => x,
+            Err(_) => return,
+        };
+
+        if let Some(pos) = moveable.going_to_occupy() {
+            if tiles.get(&pos).is_none() {
                 moveable.force_idle();
             }
-            */
-            todo!();
         }
 
         if update_moveable(&mut *moveable, dt) {
-            /*
-            let (x, y) = moveable.pos();
-            match map_q.get_tile_entity(
-                TilePos(x, y), 
-                settings.map_id, 
-                settings.moveable_layer
-            ) {
-                Ok(tile_id) => interaction_events.send(TileInteractionEvent {
+            match tiles.get(&moveable.pos()) {
+                Some(tile_id) => interaction_events.send(TileInteractionEvent {
                     tile_id,
                     interactor_id: id,
                 }),
-                Err(e) => error!("Entity {id:?} has ended up on an illegal tiles pos ({x}, {y}). Error:\n{e}"),
+                None => error!("Entity {id:?} has ended up on an illegal tiles pos ({:?}).", moveable.pos()),
             }
-            */
-            todo!()
         } 
     });
 }
 
 /// Animates all moveables.
 pub fn moveable_animation(
-    //map_tf_q: Query<&Transform, With<Map>>,
-    settings: Res<MoveableSettings>,
-    //mut moveable_q: Query<(&mut Transform, &Moveable)>,
+    map_q: Query<(&Transform, &TilemapGridSize), With<LevelTag>>,
+    mut moveable_q: Query<(&mut Transform, &Moveable), Without<LevelTag>>,
 ) {
-    /*
     use crate::level::tile_pos_to_world_pos;
 
-    if map_tf_q.get_single().is_err() { return; }
-    let map_tf = map_tf_q.single();
+    if map_q.get_single().is_err() { return; }
+    let (map_tf, map_grid) = map_q.single();
 
     moveable_q.for_each_mut(|(mut tf, moveable)| {
-        let current_pos = todo!();
-        /*
-        let current_pos = tile_pos_to_world_pos(
-            moveable.pos(),
-            map_tf, 
-            &mut map_q, 
-            settings.map_id, 
-            settings.moveable_layer
-        ).extend(1.0f32);
-        */
+        let current_pos = tile_pos_to_world_pos(moveable.pos(), map_tf, map_grid).extend(1.0f32);
 
         // Other animation curves for moving
         // t = ((2.0f32 * t - 1.0f32).powi(3) + 1.0f32) / 2.0f32
         // t = 2.0 * t.powi(3) - t
         match (&moveable.state, moveable.going_to_occupy()) {
-            (MoveableState::Moving { timer, ty, dir, .. }, Some((nx, ny))) => {
+            (MoveableState::Moving { timer, ty, dir, .. }, Some(n_pos)) => {
                 let t = 1.0f32 - timer.percent_left();
                 let start_pos = current_pos;
-                let end_pos = tile_pos_to_world_pos(
-                    (nx, ny), 
-                    map_tf, 
-                    &mut map_q, 
-                    settings.map_id, 
-                    settings.moveable_layer
-                ).extend(1.0f32);
+                let end_pos = tile_pos_to_world_pos(n_pos, map_tf, map_grid).extend(1.0f32);
                 
                 tf.translation = start_pos + (end_pos - start_pos) * t;
             
@@ -123,7 +97,4 @@ pub fn moveable_animation(
             _ => (),
         }
     });
-    */
-    //todo!()
-    return;
 }

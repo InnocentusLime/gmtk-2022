@@ -11,7 +11,7 @@ use iyes_loopless::prelude::*;
 use crate::moveable::Moveable;
 use crate::tile::StartTileTag;
 use crate::states::GameState;
-use crate::level::{ /*, tile_pos_to_world_pos */ };
+use crate::level::{ LevelTag, tile_pos_to_world_pos };
 
 pub use resources::*;
 pub use components::*;
@@ -53,35 +53,25 @@ impl Plugin for PlayerPlugin {
 
 pub fn spawn_player(
     mut commands: Commands,
-    start: Query<&TilePos, With<StartTileTag>>,
-//    map_entity: Query<(&LevelInfo, &Transform)>,
+    start_q: Query<&TilePos, With<StartTileTag>>,
+    map_q: Query<(&Transform, &TilemapGridSize), With<LevelTag>>,
     generated_assets: Res<GeneratedPlayerAssets>,
 ) {
-    /*
-    let tile_pos = start.single();
-    let tile_pos = (tile_pos.x, tile_pos.y);
-    let (level_info, map_tf) = map_entity.single();
-    /*
-    let world_pos = tile_pos_to_world_pos(
-        tile_pos,
-        map_tf, 
-        &mut map_q, 
-        level_info.map(), 
-        level_info.geometry_layer()
-    );
-    */
-    let world_pos: Vec2 = todo!();
+    let start_pos = start_q.single();
+    let (map_tf, map_grid) = map_q.single();
+    let start_world_pos = tile_pos_to_world_pos(*start_pos, map_tf, map_grid);
+
     commands.spawn()
         .insert(PlayerTag)
         .insert(Name::new("Player"))
-        .insert(Moveable::new(tile_pos))
+        .insert(Moveable::new(*start_pos))
         .insert_bundle(MaterialMesh2dBundle {
             mesh: generated_assets.model.clone(),
             material: generated_assets.material.clone(),
             // TODO hardcoded player size
-            transform: Transform::from_translation(world_pos.extend(1.0f32))
+            // FIXME feels weird to double-set player's pos
+            transform: Transform::from_translation(start_world_pos.extend(1.0f32))
                 .with_scale(Vec3::new(25.0f32, 25.0f32, 25.0f32)),
             ..default()
         });
-    */
 }

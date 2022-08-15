@@ -52,7 +52,7 @@ pub fn setup_states(app: &mut App) {
         LoadingLevel::SpawningLevel,
         SystemSet::new()
             .with_system(spawn_level)
-            //.with_system(jump_to_state(LoadingLevel::SpawningPlayer))
+            .with_system(jump_to_state(LoadingLevel::SpawningPlayer))
     );
 
     // Spawning a player

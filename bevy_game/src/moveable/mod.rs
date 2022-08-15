@@ -27,13 +27,14 @@ pub struct MoveablePlugin;
 
 impl Plugin for MoveablePlugin {
     fn build(&self, app: &mut App) {
+        /*
         if app.world.get_resource::<InspectableRegistry>().is_some() {
             app.register_inspectable::<Moveable>();
         }
+        */
         
         app
             .add_event::<TileInteractionEvent>()
-            .insert_resource(MoveableSettings { map_id: 0, moveable_layer: 0 })
             .add_stage_after(CoreStage::Update, MoveableUpdateStage, SystemStage::parallel())
             .add_system_to_stage(MoveableUpdateStage, moveable_animation.label(MoveableSystem::Animate))
             .add_system_to_stage(MoveableUpdateStage, moveable_tick.label(MoveableSystem::Tick).before(MoveableSystem::Animate));

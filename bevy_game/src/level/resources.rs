@@ -25,16 +25,18 @@ pub struct LevelTilesetImages {
 pub enum LevelTileType {
     Conveyor,
     Fry,
+    PlayerStart,
     Floor,
 }
 
 impl LevelTileType {
     pub fn insert_into(&self, cmds: &mut EntityCommands) {
-        use crate::tile::{ FrierTag, ConveyorTag };
+        use crate::tile::{ FrierTag, ConveyorTag, StartTileTag };
                             
         match self {
             LevelTileType::Fry => { cmds.insert(FrierTag); },
             LevelTileType::Conveyor => { cmds.insert(ConveyorTag); },
+            LevelTileType::PlayerStart => { cmds.insert(StartTileTag); },
             _ => (),
         }
     }
@@ -185,6 +187,7 @@ impl Level {
                 Some("conveyor") => { result.insert(tile_id, LevelTileType::Conveyor); },
                 Some("fry") => { result.insert(tile_id, LevelTileType::Fry); },
                 Some("floor") => { result.insert(tile_id, LevelTileType::Floor); },
+                Some("player_start") => { result.insert(tile_id, LevelTileType::PlayerStart); },
                 Some(ty) => return Err(GeometryTilesetError::UnknownType { tile_id, ty: ty.to_owned() }),
             }
         }

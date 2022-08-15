@@ -1,7 +1,8 @@
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 use bevy_inspector_egui::Inspectable;
 
-#[derive(Debug, Clone, Copy, Default, Inspectable)]
+#[derive(Debug, Clone, Copy, Default)]
 #[repr(u8)]
 pub enum MoveDirection {
     #[default]
@@ -21,14 +22,14 @@ impl MoveDirection {
         }
     }
 
-    pub fn apply_on_pos(self, (x, y): (u32, u32)) -> Option<(u32, u32)> {
+    pub fn apply_on_pos(self, TilePos { x, y }: TilePos) -> Option<TilePos> {
         let (dx, dy) = self.to_offset();
         let (x, y) = (x as i32 + dx, y as i32 + dy);
 
         if x < 0 || y < 0 {
             None
         } else {
-            Some((x as u32, y as u32))
+            Some(TilePos { x: x as u32, y: y as u32 })
         }
     }
 

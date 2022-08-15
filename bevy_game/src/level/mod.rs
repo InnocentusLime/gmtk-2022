@@ -30,13 +30,13 @@ impl Plugin for LevelPlugin {
 }
 
 pub fn tile_pos_to_world_pos(
-    tile_pos: (u32, u32),
+    tile_pos: TilePos,
     map_transform: &Transform,
-    map_grid: TilemapGridSize,
+    map_grid: &TilemapGridSize,
 ) -> Vec2 {
     map_transform.mul_vec3(Vec3::new(
-        tile_pos.0 as f32 * map_grid.x + map_grid.x / 2.0f32, 
-        tile_pos.1 as f32 * map_grid.y + map_grid.y / 2.0f32, 
+        tile_pos.x as f32 * map_grid.x + map_grid.x / 2.0f32, 
+        tile_pos.y as f32 * map_grid.y + map_grid.y / 2.0f32, 
         0.0f32
     )).truncate()
 }
@@ -153,5 +153,6 @@ pub fn spawn_level(
             size: tilemap_size,
             transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
             ..default()
-        });
+        })
+        .insert(LevelTag);
 }

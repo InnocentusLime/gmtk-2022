@@ -3,6 +3,7 @@ mod moveable_state;
 mod decomposed_rotation;
 
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 use std::time::Duration;
 use bevy_inspector_egui::Inspectable;
 pub(super) use moveable_state::*;
@@ -11,17 +12,16 @@ pub(super) use decomposed_rotation::*;
 pub use direction::MoveDirection;
 pub use decomposed_rotation::DecomposedRotation;
 
-#[derive(Debug, Clone, Component, Default, Inspectable)]
+#[derive(Debug, Clone, Component, Default)]
 pub struct Moveable {
-    pub(super) pos: (u32, u32),
+    pub(super) pos: TilePos,
     pub(super) rot: DecomposedRotation,
-    #[inspectable(read_only)]
     pub(super) state: MoveableState,
 }
 
 impl Moveable {
     /// Create a moveable placed on `pos`.
-    pub fn new(pos: (u32, u32)) -> Self {
+    pub fn new(pos: TilePos) -> Self {
         Self {
             pos,
             state: MoveableState::Idle,
@@ -38,7 +38,7 @@ impl Moveable {
 
     /// Gets the current position of a moveable.
     #[inline]
-    pub fn pos(&self) -> (u32, u32) { self.pos }
+    pub fn pos(&self) -> TilePos { self.pos }
 
     /// Starts the rolling animation. The animation will play exactly
     /// `time` long.
@@ -82,7 +82,7 @@ impl Moveable {
     /// Returns the cell the moveable is going to occupy at the end of
     /// the animation. Returns `None` if no animation is playing.
     #[inline]
-    pub fn going_to_occupy(&self) -> Option<(u32, u32)> {
+    pub fn going_to_occupy(&self) -> Option<TilePos> {
         match &self.state {
             MoveableState::Idle => None,
             MoveableState::Moving { dir, .. } => dir.apply_on_pos(self.pos),

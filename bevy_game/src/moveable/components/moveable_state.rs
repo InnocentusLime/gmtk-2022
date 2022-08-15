@@ -9,16 +9,13 @@ pub enum MoveTy {
     Flip,
 }
 
-#[derive(Debug, Clone, Default, Inspectable)]
+#[derive(Debug, Clone, Default)]
 pub enum MoveableState {
     #[default]
     Idle,
     Moving {
-        #[inspectable(ignore)]
         timer: Timer,
-        #[inspectable(ignore)]
         dir: MoveDirection,
-        #[inspectable(ignore)]
         ty: MoveTy,
     },
 }
