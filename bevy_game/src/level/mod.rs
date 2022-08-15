@@ -136,6 +136,12 @@ pub fn spawn_level(
                             ty.insert_into(&mut cmds);
                         }
 
+                        if let Some(act_cond) = level.activators.get(&(x, y)) {
+                            cmds
+                                .insert(*act_cond)
+                                .insert(Active { is_active: true });
+                        }
+
                         tile_store.set(&tile_pos, Some(cmds.id()));
                     }
                 }

@@ -6,7 +6,6 @@ use iyes_loopless::prelude::*;
 use super::{ GameState, jump_to_state };
 use crate::level::{ LevelTilesetImages, BaseLevelAssets, queue_level_tileset_images, init_level_resource, spawn_level, tileset_indexing };
 use crate::player::{ GeneratedPlayerAssets, BasePlayerAssets, spawn_player };
-use crate::tile::activeatable_tile_setup;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LoadingLevel {
@@ -15,7 +14,6 @@ pub enum LoadingLevel {
     InittingLevelResources,
     SpawningLevel,
     SpawningPlayer,
-    InittingTiles,
     Cleanup,
     Done,
 }
@@ -60,17 +58,9 @@ pub fn setup_states(app: &mut App) {
         LoadingLevel::SpawningPlayer, 
         SystemSet::new()
             .with_system(spawn_player)
-            .with_system(jump_to_state(LoadingLevel::InittingTiles))
-    );
-
-    // Initting tiles
-    app.add_enter_system_set(
-        LoadingLevel::InittingTiles, 
-        SystemSet::new()
-            .with_system(activeatable_tile_setup)
             .with_system(jump_to_state(LoadingLevel::Cleanup))
     );
-
+    
     // Cleanup
     app
         .add_enter_system_set(

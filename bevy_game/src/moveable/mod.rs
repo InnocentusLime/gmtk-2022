@@ -1,9 +1,7 @@
 mod components;
 mod systems;
 mod events;
-mod resources;
 
-pub use resources::*;
 pub use events::*;
 pub use components::*;
 

@@ -1,7 +1,8 @@
-use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
+use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
+use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 
-#[derive(Clone, Copy, Debug,Inspectable)]
+#[derive(Clone, Copy, Debug, Component, Inspectable)]
 pub enum ActivationCondition {
     Odd,
     Even,
@@ -24,7 +25,7 @@ impl ActivationCondition {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Component)]
 pub enum ActivatableAnimating {
     // Loops the `on_anim`, without looping the
     // `off_anim`
@@ -53,3 +54,20 @@ impl ActivatableAnimating {
     }
 }
 
+#[derive(Clone, Copy, Debug, Component, Inspectable)]
+pub struct Active { 
+    #[inspectable(read_only)]
+    pub is_active: bool,
+}
+
+#[derive(Component)]
+pub struct ConveyorTag;
+
+#[derive(Component)]
+pub struct StartTileTag;
+
+#[derive(Component)]
+pub struct FrierTag;
+
+#[derive(Component)]
+pub struct EndTileTag;
