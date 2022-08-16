@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_pkv::PkvStore;
 use bevy_asset_loader::{ asset_collection::*, dynamic_asset::* };
 use bevy::input::keyboard::KeyboardInput;
 use bevy::tasks::{ IoTaskPool, Task };
@@ -18,16 +19,10 @@ pub struct MenuAssets {
     pub level_info: Handle<LevelInfo>,
 }
 
-#[derive(Clone, Copy, Component)]
-struct WaitingSaveTag;
-
-#[derive(Component)]
-struct SaveLoading(Task<Save>);
-
 fn spawn_text(
     commands: &mut Commands,
     save: &Save,
-    menu_assets: Res<MenuAssets>,
+    menu_assets: &MenuAssets,
 ) {
     let (world, level) = save.world_level();
     let font = menu_assets.main_font.clone();
@@ -57,30 +52,12 @@ fn spawn_text(
 fn enter(
     mut commands: Commands, 
     menu_assets: Res<MenuAssets>,
-    save: Option<Res<Save>>,
+    pkv: Res<PkvStore>,
 ) {
     info!("Entered main menu state");
 
-    if let Some(save) = save { 
-        spawn_text(&mut commands, &save, menu_assets);
-        return; 
-    }
-
-    commands.spawn()
-        .insert(SaveLoading(IoTaskPool::get().spawn(async move {
-            match Save::load() {
-                Ok(x) => x,
-                Err(e) => {
-                    warn!("Error loading save: {}\nReset save will be used.", e);
-                    let res = Save::new();
-                    if let Err(e) = res.save() {
-                        error!("Failed to save the new save: {}\nAny progress will be lost.", e);
-                    }
-                    res
-                },
-            }
-        })));
-
+    let save = pkv.get::<Save>("save").unwrap_or_else(|_| Save::new());
+    spawn_text(&mut commands, &save, &*menu_assets);
 
     let font = menu_assets.main_font.clone();
     commands.spawn_bundle(TextBundle {
@@ -98,45 +75,8 @@ fn enter(
         ).with_alignment(TextAlignment::CENTER),
         ..default()
     });
-    commands.spawn_bundle(TextBundle {
-        style: Style {
-            position_type: PositionType::Absolute,
-            position: UiRect { 
-                left: Val::Px(500.0),
-                bottom: Val::Px(340.0),
-                ..default() 
-            },
-            ..default()
-        },
-        text: Text::from_section(
-            "Reading save...",
-            TextStyle {
-                font: font.clone(),
-                font_size: 30.0f32,
-                color: Color::WHITE,
-            },
-        ).with_alignment(TextAlignment::CENTER),
-        ..default()
-    }).insert(WaitingSaveTag);
-}
-
-fn save_await(
-    mut commands: Commands,
-    menu_assets: Res<MenuAssets>,
-    mut q: Query<(Entity, &mut SaveLoading)>,
-    waiting: Query<Entity, With<WaitingSaveTag>>,
-) {
-    match q.get_single_mut() {
-        Ok((e, mut task)) => if let Some(save) = future::block_on(future::poll_once(&mut task.0)) {
-            commands.entity(e).despawn();
-            for e in waiting.iter() {
-                commands.entity(e).despawn();
-            }
-            spawn_text(&mut commands, &save, menu_assets);
-            commands.insert_resource(save);
-        }
-        Err(_) => (),
-    }
+    
+    commands.insert_resource(save);
 }
 
 fn tick(
@@ -171,7 +111,6 @@ fn exit(
 pub fn setup_states(app: &mut App) {
     app
         .add_enter_system(GameState::MainMenu, enter)
-        .add_system(save_await.run_in_state(GameState::MainMenu))
         .add_system(tick.run_in_state(GameState::MainMenu))
         .add_exit_system(GameState::MainMenu, exit);
 }

@@ -9,6 +9,7 @@ mod level_info;
 use crate::states::setup_states;
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
+use bevy_pkv::PkvStore;
 use bevy_inspector_egui::WorldInspectorPlugin;
 
 use crate::moveable::MoveablePlugin;
@@ -49,6 +50,7 @@ pub fn create_app(log: bool, inspector: bool, test_level_path: Option<&str>) -> 
     let mut app = App::new();
 
     app
+        .insert_resource(PkvStore::new("SeptemModi", game_strings!(game_name)))
         .insert_resource(ClearColor(Color::hex("263238").unwrap()))
         .insert_resource(window_descriptor());
 

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_pkv::PkvStore;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
@@ -39,6 +40,7 @@ fn level_complete_system_normal(
     menu_assets: Res<MenuAssets>,
     level_infos: Res<Assets<LevelInfo>>,
     time: Res<Time>,
+    mut pkv: ResMut<PkvStore>,
 ) {
     if let Some(timer) = timer.as_mut() {
         timer.0.tick(time.delta());
@@ -46,8 +48,9 @@ fn level_complete_system_normal(
             let level_info = level_infos.get(&menu_assets.level_info).unwrap();
          
             save.register_level_complete(&*level_info);
+            
             // TODO retry?
-            match save.save() {
+            match pkv.set("save", &*save) {
                 Ok(()) => (),
                 Err(e) => error!("Error recording save: {}\nThe progress will be lost.", e),
             }
