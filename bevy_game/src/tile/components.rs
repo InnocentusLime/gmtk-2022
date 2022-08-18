@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
+use serde::Deserialize;
 
-#[derive(Clone, Copy, Debug, Component, Inspectable)]
+#[derive(Clone, Copy, Debug, Component, Deserialize, Inspectable)]
 pub enum ActivationCondition {
     Odd,
     Even,

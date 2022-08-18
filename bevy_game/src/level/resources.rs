@@ -1,9 +1,12 @@
 use bevy_asset_loader::asset_collection::*;
 use bevy_ecs_tilemap::prelude::*;
+use bevy_ecs_tilemap_cpu_anim::*;
+use bevy_tiled::*;
 use bevy::prelude::*;
 use bevy::ecs::system::EntityCommands;
 use std::collections::HashMap;
 use thiserror::Error;
+use serde::Deserialize;
 
 use super::{ TiledMap, TilesetIndexing };
 use crate::tile::{ ActivationCondition, ActivatableAnimating };
@@ -20,7 +23,24 @@ pub struct LevelTilesetImages {
     pub images: Vec<Handle<TextureAtlas>>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum LevelTileAnimation {
+    OnOff {
+        anim: Option<CPUTileAnimation>,
+    },
+    Switch {
+        on_anim: Option<CPUTileAnimation>,
+        of_anim: Option<CPUTileAnimation>,
+        on_trans: Option<CPUTileAnimation>,
+        off_trans: Option<CPUTileAnimation>,
+    },
+}
+        
+#[derive(Deserialize)]
+struct ActivatorTile {
+    active: ActivationCondition,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize)]
 #[repr(u8)]
 pub enum LevelTileType {
     Conveyor,
@@ -42,6 +62,11 @@ impl LevelTileType {
     }
 }
 
+#[derive(Deserialize)]
+struct LevelTile {
+    ty: LevelTileType,
+}
+
 #[derive(Error, Debug)]
 pub enum SublayerError {
     #[error("failed to find the sublayer")]
@@ -58,16 +83,24 @@ pub enum SublayerError {
 
 #[derive(Error, Debug)]
 pub enum ActivatorTilesetError {
-    #[error("tile with id {tile_id:} has no activation info")]
-    TileWithoutInfo { tile_id: u32 },
-    #[error("tile with id {tile_id:} contains a syntax error in its activation condition")]
-    ConditionSyntaxError { tile_id: u32 },
+    #[error("Failed to parse activator tile properties")]
+    DeserializationError(#[from] TilePropertyDeserError),
 }
 
 #[derive(Error, Debug)]
 pub enum GeometryTilesetError {
     #[error("tile with id {tile_id:} is declared with an unknown type: {ty:?}")]
     UnknownType { tile_id: u32, ty: String },
+    #[error("Failed to parse geometry tile properties")]
+    DeserializationError(#[from] TilePropertyDeserError),
+}
+
+#[derive(Error, Debug)]
+pub enum GeometryTilesetAnimError {
+    #[error("tile with id {tile_id:} is declared as an animation tile, but has an unknown type: {ty:?}")]
+    UnknownType { tile_id: u32, ty: String },
+    #[error("tile with id {tile_id:} has malformed info")]
+    MalformedInfo { tile_id: u32 },
 }
 
 #[derive(Error, Debug)]
@@ -87,6 +120,8 @@ pub enum LevelInitError {
     ActivatorTilesetError(#[from] ActivatorTilesetError),
     #[error("failed to parse geometry tileset")]
     GeometryTilesetError(#[from] GeometryTilesetError),
+    #[error("failed to parse geometry tileset for animations")]
+    GeometryTilesetAnimError(#[from] GeometryTilesetAnimError),
     #[error("incorrect geometry tile at ({x:}, {y:})")]
     IncorrectGeometryTile { x: u32, y: u32 },
     #[error("incorrect activator tile at ({x:}, {y:})")]
@@ -102,6 +137,7 @@ pub struct Level {
     width: u32,
     height: u32,
     pub(super) geometry_atlas: Handle<Image>,
+    pub(super) level_tile_animations: HashMap<(u32, u32), LevelTileAnimation>,
     pub(super) geometry_graphics: HashMap<(u32, u32), u32>,
     pub(super) activators: HashMap<(u32, u32), ActivationCondition>,
     pub(super) level_tiles: HashMap<(u32, u32), LevelTileType>,
@@ -164,15 +200,9 @@ impl Level {
         let mut result = HashMap::new();
 
         for (tile_id, tile) in activator_tileset.tiles() {
-            match tile.properties.get("active") {
-                None => return Err(ActivatorTilesetError::TileWithoutInfo { tile_id }),
-                Some(tiled::PropertyValue::StringValue(x)) => match x.as_str() {
-                    "odd" => { result.insert(tile_id, ActivationCondition::Odd); },
-                    "even" => { result.insert(tile_id, ActivationCondition::Even); },
-                    _ => return Err(ActivatorTilesetError::ConditionSyntaxError { tile_id }), 
-                },
-                Some(_) => return Err(ActivatorTilesetError::ConditionSyntaxError { tile_id }),
-            }
+            let activator_data = tile.deser_properties::<ActivatorTile>()?;
+
+            result.insert(tile_id, activator_data.active);
         }
 
         Ok(result)
@@ -182,13 +212,26 @@ impl Level {
         let mut result = HashMap::new();
 
         for (tile_id, tile) in geometry_tileset.tiles() {
-            match tile.tile_type.as_ref().map(String::as_str) {
-                None => (),
-                Some("conveyor") => { result.insert(tile_id, LevelTileType::Conveyor); },
-                Some("fry") => { result.insert(tile_id, LevelTileType::Fry); },
-                Some("floor") => { result.insert(tile_id, LevelTileType::Floor); },
-                Some("player_start") => { result.insert(tile_id, LevelTileType::PlayerStart); },
-                Some(ty) => return Err(GeometryTilesetError::UnknownType { tile_id, ty: ty.to_owned() }),
+            let level_data = match tile.deser_properties::<LevelTile>() {
+                Ok(x) => x,
+                Err(e) => { warn!("{}", e); continue },
+            };
+
+            result.insert(tile_id, level_data.ty);
+        }
+
+        Ok(result)
+    }
+
+    fn scan_geometry_tileset_for_anims(
+        geometry_tileset: &tiled::Tileset,
+        geometry_tileset_indexing: &TilesetIndexing,
+    ) -> Result<HashMap<LevelTileType, LevelTileAnimation>, GeometryTilesetAnimError> {
+        let mut result = HashMap::new();
+        
+        for (tile_id, tile) in geometry_tileset.tiles() {
+            match (tile.properties.get("anim_target"), tile.properties.get("anim_type")) {
+                _ => todo!(),
             }
         }
 
@@ -220,6 +263,7 @@ impl Level {
         let geometry_table = Self::scan_geometry_tileset(&*map.map.tilesets()[geometry_tileset_id])?;
         let activator_table = Self::scan_activator_tileset(&*map.map.tilesets()[activator_tileset_id])?;
 
+        let mut level_tile_animations = HashMap::new();
         let mut geometry_graphics = HashMap::new();
         let mut activators = HashMap::new();
         let mut level_tiles = HashMap::new();
@@ -243,12 +287,7 @@ impl Level {
                             .ok_or(LevelInitError::IncorrectGeometryTile { x, y })?
                     );
 
-                    level_tiles_flip.insert(table_pos, TileFlip {
-                        x: lvl_tile.flip_h,
-                        y: lvl_tile.flip_v,
-                        d: lvl_tile.flip_d,
-                    });
-
+                    level_tiles_flip.insert(table_pos, lvl_tile.bevy_flip_flags());
                     geometry_graphics.insert(table_pos, 
                         tileset_indexing[geometry_tileset_id].dispatch(lvl_tile.id())
                     );
@@ -260,6 +299,7 @@ impl Level {
             width: map.map.width,
             height: map.map.height,
             geometry_graphics,
+            level_tile_animations,
             level_tiles,
             activators,
             level_tiles_flip,

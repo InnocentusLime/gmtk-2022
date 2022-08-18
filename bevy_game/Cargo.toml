@@ -17,11 +17,12 @@ bevy-inspector-egui = "0.12.1"
 bevy_pkv = "0.5.0"
 # Other deps
 thiserror = "1"
-serde = "1"
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 lazy_static = "1"
 futures-lite = "1"
 # Internal deps
+bevy_tiled = { path = "../bevy_tiled" }
 bevy_ecs_tilemap_cpu_anim = { path = "../bevy_ecs_tilemap_cpu_anim" }
 
 [target.'cfg(target_arch = "wasm")'.dependencies]
