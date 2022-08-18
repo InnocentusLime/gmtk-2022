@@ -1,0 +1,14 @@
+[package]
+name = "bevy_tiled"
+description = "A set of useful tools for gluttony to load maps"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+thiserror = "1"
+serde = "1"
+bevy = "0.8"
+bevy_ecs_tilemap = "0.7.0"
+tiled = "0.10.2"
