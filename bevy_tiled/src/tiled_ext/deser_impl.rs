@@ -1,4 +1,4 @@
-use serde::{ Deserializer, de::{ Error as DeError, Visitor, DeserializeSeed, MapAccess, IntoDeserializer } };
+use serde::{ Deserializer, de::{ Error as DeError, Visitor, DeserializeSeed, MapAccess, IntoDeserializer, EnumAccess, VariantAccess } };
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -281,6 +281,8 @@ pub enum TilePropertyDeserError {
     WrongType { expected: &'static str, found: String },
     #[error("Failed to parse property {name:?}. {source:}")]
     PropFail { name: String, source: PropertyDeserError },
+    #[error("Tuple enum variants aren't supported")]
+    TupleVariantNotSupported,
     #[error("{custom:}")]
     Custom { custom: String },
 }
@@ -313,6 +315,53 @@ impl<'de> MapAccess<'de> for TilePropertyMapper<'de> {
 
         seed.deserialize(PropertyDes { prop })
             .map_err(|source| TilePropertyDeserError::PropFail { name: name.to_owned(), source })
+    }
+}
+
+struct TilePropertyEnum<'de> {
+    tile: &'de tiled::Tile<'de>,
+}
+
+impl<'de> EnumAccess<'de> for TilePropertyEnum<'de> {
+    type Error = TilePropertyDeserError;
+    type Variant = Self;
+
+    fn variant_seed<V: DeserializeSeed<'de>>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error> {
+        let val = seed.deserialize(self.tile.tile_type.as_ref()
+            .ok_or(TilePropertyDeserError::NoType)?
+            .as_str()
+            .into_deserializer()
+        )?;
+        Ok((val, self))
+    }
+}
+
+impl<'de> VariantAccess<'de> for TilePropertyEnum<'de> {
+    type Error = TilePropertyDeserError;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error> 
+    where
+        T: DeserializeSeed<'de>,
+    {
+        seed.deserialize(TilePropertyDes { tile: self.tile })
+    }
+
+    fn tuple_variant<V>(self, _len: usize, _visitor: V) -> Result<V::Value, Self::Error> 
+    where
+        V: Visitor<'de>
+    {
+        Err(TilePropertyDeserError::TupleVariantNotSupported)
+    }
+
+    fn struct_variant<V>(self, _fields: &'static [&'static str], visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>
+    {
+        TilePropertyDes { tile: self.tile }.deserialize_map(visitor)
     }
 }
 
@@ -451,9 +500,9 @@ impl<'de> Deserializer<'de> for TilePropertyDes<'de> {
         self, 
         _name: &'static str,
         _variants: &'static [&'static str],
-        _visitor: V
+        visitor: V
     ) -> Result<V::Value, Self::Error> {
-        Err(TilePropertyDeserError::OnlyStruct)
+        visitor.visit_enum(TilePropertyEnum { tile: &self.tile })
     }
     
     fn deserialize_identifier<V: Visitor<'de>>(self, _visitor: V) -> Result<V::Value, Self::Error> {

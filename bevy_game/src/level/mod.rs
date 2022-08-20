@@ -89,14 +89,7 @@ pub fn init_level_resource(
     let map = maps.get(&base_level_assets.map).unwrap();
     match Level::new(tileset_indexing, map, &*tilesets, &*atlases) {
         Ok(level) => { commands.insert_resource(level); },
-        Err(e) => {
-            let mut e: Option<&(dyn Error + 'static)> = Some(&e);
-            error!("Failed to init level resource");
-            while let Some(the_err) = e {
-                error!("{}", the_err);
-                e = the_err.source();
-            }
-        },
+        Err(e) => e.chain().for_each(|e| error!("{}", e)),
     }
 }
 

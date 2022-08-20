@@ -8,4 +8,4 @@ pub mod tiled_map_asset;
 pub mod map_scheme;
 
 pub use tiled_ext::*;
-pub use map_scheme::*;
+//pub use map_scheme::*;

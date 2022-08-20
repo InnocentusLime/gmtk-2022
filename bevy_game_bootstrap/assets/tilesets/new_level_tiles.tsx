@@ -31,7 +31,10 @@
   </properties>
   <image width="32" height="32" source="../tiles/player_start.png"/>
  </tile>
- <tile id="11">
+ <tile id="11" type="LevelTile">
+  <properties>
+   <property name="ty" propertytype="LevelTileType" value="Floor"/>
+  </properties>
   <image width="32" height="32" source="../tiles/exit.png"/>
  </tile>
  <tile id="12" type="LevelTile">
@@ -40,13 +43,13 @@
   </properties>
   <image width="32" height="32" source="../tiles/conveyor1.png"/>
  </tile>
- <tile id="13">
+ <tile id="13" type="Frame">
   <image width="32" height="32" source="../tiles/conveyor2.png"/>
  </tile>
- <tile id="14">
+ <tile id="14" type="Frame">
   <image width="32" height="32" source="../tiles/conveyor3.png"/>
  </tile>
- <tile id="15">
+ <tile id="15" type="Frame">
   <image width="32" height="32" source="../tiles/conveyor4.png"/>
  </tile>
  <tile id="16" type="LevelTile">
@@ -55,25 +58,25 @@
   </properties>
   <image width="32" height="32" source="../tiles/fry0.png"/>
  </tile>
- <tile id="17">
+ <tile id="17" type="Frame">
   <image width="32" height="32" source="../tiles/fry1.png"/>
  </tile>
- <tile id="18">
+ <tile id="18" type="Frame">
   <image width="32" height="32" source="../tiles/fry2.png"/>
  </tile>
- <tile id="19">
+ <tile id="19" type="Frame">
   <image width="32" height="32" source="../tiles/fry3.png"/>
  </tile>
- <tile id="20">
+ <tile id="20" type="Frame">
   <image width="32" height="32" source="../tiles/fry4.png"/>
  </tile>
- <tile id="21">
+ <tile id="21" type="Frame">
   <image width="32" height="32" source="../tiles/fry5.png"/>
  </tile>
- <tile id="22">
+ <tile id="22" type="Frame">
   <image width="32" height="32" source="../tiles/fry6.png"/>
  </tile>
- <tile id="23">
+ <tile id="23" type="Frame">
   <image width="32" height="32" source="../tiles/fry7.png"/>
  </tile>
 </tileset>
