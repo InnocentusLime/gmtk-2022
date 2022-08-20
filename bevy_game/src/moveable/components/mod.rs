@@ -109,3 +109,7 @@ impl Moveable {
         }
     }
 }
+
+/// Tag for tilemap, which moveables are intended to traverse.
+#[derive(Default, Clone, Copy, Debug, Component)]
+pub struct MoveableTilemapTag;

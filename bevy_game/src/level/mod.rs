@@ -1,5 +1,4 @@
 mod assets;
-mod components;
 mod resources;
 
 use std::error::Error;
@@ -11,10 +10,10 @@ use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use bevy::prelude::*;
 
 pub use resources::*;
-pub use components::*;
 pub use assets::*;
 
 use crate::tile::*;
+use crate::moveable::MoveableTilemapTag;
 
 #[derive(Default)]
 pub struct LevelPlugin;
@@ -153,5 +152,5 @@ pub fn spawn_level(
             transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
             ..default()
         })
-        .insert(LevelTag);
+        .insert(MoveableTilemapTag);
 }

@@ -3,7 +3,6 @@ use super::events::*;
 use super::components::*;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use crate::level::LevelTag;
 
 /// Updates the internals of a moveable. Returns `true` if the moveable
 /// reached the destination (if it was in process of moving from one position to another).
@@ -39,7 +38,7 @@ fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
 pub fn moveable_tick(
     mut interaction_events: EventWriter<TileInteractionEvent>,
     mut moveable_q: Query<(Entity, &mut Moveable)>,
-    map_q: Query<&TileStorage, With<LevelTag>>,
+    map_q: Query<&TileStorage, With<MoveableTilemapTag>>,
     time: Res<Time>,
 ) {
     let dt = time.delta();
@@ -72,8 +71,8 @@ pub fn moveable_tick(
 /// Animates all moveables. This state simply alters moveable's transform to 
 /// create the animations.
 pub fn moveable_animation(
-    map_q: Query<(&Transform, &TilemapGridSize), With<LevelTag>>,
-    mut moveable_q: Query<(&mut Transform, &Moveable), Without<LevelTag>>,
+    map_q: Query<(&Transform, &TilemapGridSize), With<MoveableTilemapTag>>,
+    mut moveable_q: Query<(&mut Transform, &Moveable), Without<MoveableTilemapTag>>,
 ) {
     use crate::level::tile_pos_to_world_pos;
 

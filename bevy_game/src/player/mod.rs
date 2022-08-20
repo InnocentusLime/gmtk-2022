@@ -8,10 +8,10 @@ use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use iyes_loopless::prelude::*;
 
-use crate::moveable::Moveable;
+use crate::moveable::{ Moveable, MoveableTilemapTag };
 use crate::tile::StartTileTag;
 use crate::states::GameState;
-use crate::level::{ LevelTag, tile_pos_to_world_pos };
+use crate::level::tile_pos_to_world_pos;
 
 pub use resources::*;
 pub use components::*;
@@ -54,7 +54,7 @@ impl Plugin for PlayerPlugin {
 pub fn spawn_player(
     mut commands: Commands,
     start_q: Query<&TilePos, With<StartTileTag>>,
-    map_q: Query<(&Transform, &TilemapGridSize), With<LevelTag>>,
+    map_q: Query<(&Transform, &TilemapGridSize), With<MoveableTilemapTag>>,
     generated_assets: Res<GeneratedPlayerAssets>,
 ) {
     let start_pos = start_q.single();
