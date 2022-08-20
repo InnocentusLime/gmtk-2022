@@ -35,8 +35,24 @@
             "name": "ActivatorTile",
             "type": "class",
             "useAs": [
-                "property",
                 "tile"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "id": 7,
+            "members": [
+            ],
+            "name": "Frame",
+            "type": "class",
+            "useAs": [
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset"
             ]
         },
         {
@@ -53,7 +69,6 @@
             "name": "LevelTile",
             "type": "class",
             "useAs": [
-                "property",
                 "tile"
             ]
         },
