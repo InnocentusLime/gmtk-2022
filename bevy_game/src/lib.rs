@@ -11,6 +11,7 @@ use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
 use bevy_pkv::PkvStore;
 use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_tiled::TiledPlugin;
 
 use crate::moveable::MoveablePlugin;
 use crate::level_info::{ LevelInfo, LevelInfoLoader };
@@ -61,7 +62,7 @@ pub fn create_app(log: bool, inspector: bool, test_level_path: Option<&str>) -> 
     }
 
     if inspector { app.add_plugin(WorldInspectorPlugin::new()); }
-
+    
     app
         .add_plugin(MoveablePlugin)
         .add_plugin(LevelPlugin)

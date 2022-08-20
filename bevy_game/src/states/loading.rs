@@ -4,7 +4,8 @@ use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use iyes_loopless::prelude::*;
 
 use super::{ GameState, jump_to_state };
-use crate::level::{ LevelTilesetImages, BaseLevelAssets, queue_level_tileset_images, init_level_resource, spawn_level, tileset_indexing };
+use bevy_tiled::tileset_indexing;
+use crate::level::{ LevelTilesetImages, BaseLevelAssets, queue_level_tileset_images, init_level_resource, spawn_level, get_level_map };
 use crate::player::{ GeneratedPlayerAssets, BasePlayerAssets, spawn_player };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -41,7 +42,9 @@ pub fn setup_states(app: &mut App) {
     app.add_enter_system_set(
         LoadingLevel::InittingLevelResources, 
         SystemSet::new()
-            .with_system(tileset_indexing.chain(init_level_resource))
+            .with_system(
+                get_level_map.chain(tileset_indexing).chain(init_level_resource)
+            )
             .with_system(jump_to_state(LoadingLevel::SpawningLevel))
     );
 

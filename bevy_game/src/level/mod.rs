@@ -1,4 +1,3 @@
-mod assets;
 mod resources;
 
 use std::error::Error;
@@ -10,9 +9,9 @@ use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use bevy::prelude::*;
 
 pub use resources::*;
-pub use assets::*;
 
 use crate::tile::*;
+use bevy_tiled::{ TiledPlugin, TiledMap, TilesetsFromTiled, TilesetIndexing, TiledTileset };
 use crate::moveable::MoveableTilemapTag;
 
 #[derive(Default)]
@@ -21,8 +20,7 @@ pub struct LevelPlugin;
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_asset::<TiledMap>()
-            .add_asset_loader(TiledMapLoader)
+            .add_plugin(TiledPlugin)
             .add_plugin(TilemapPlugin)
             .add_plugin(TilePlugin);
     }
@@ -50,31 +48,14 @@ pub fn queue_level_tileset_images(
     asset_keys.register_asset("tileset_images", Box::new(map.get_tileset_dynamic_asset()));
 }
 
-pub fn tileset_indexing(
-    maps: Res<Assets<TiledMap>>,
-    asset_server: Res<AssetServer>,
-    level_tilesets: Res<LevelTilesetImages>, 
-    atlases: Res<Assets<TextureAtlas>>,
+pub fn get_level_map(
     base_level_assets: Res<BaseLevelAssets>,
-) -> Vec<TilesetIndexing> {
-    let map = maps.get(&base_level_assets.map).unwrap();
-    map.tilesets.iter().enumerate()
-        .map(|(tileset_id, (_, t))| match t {
-            TiledTileset::Image(_) => TilesetIndexing::Continious,
-            TiledTileset::ImageCollection(c) => TilesetIndexing::Special(
-                c.iter()
-                    .map(|(from, p)| (
-                        *from, 
-                        *atlases.get(&level_tilesets.images[tileset_id])
-                            .unwrap()
-                            .texture_handles.as_ref()
-                            .unwrap()
-                            .get(&asset_server.get_handle(p.to_owned())).unwrap() as u32
-                    ))
-                    .collect()
-            ),
-        })
-        .collect()
+    level_tilesets: Res<LevelTilesetImages>, 
+) -> (Handle<TiledMap>, Vec<Handle<TextureAtlas>>) {
+    (
+        base_level_assets.map.clone(),
+        level_tilesets.images.clone()
+    )
 }
 
 pub fn init_level_resource(

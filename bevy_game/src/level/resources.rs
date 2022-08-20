@@ -8,8 +8,8 @@ use bevy::ecs::system::EntityCommands;
 use std::collections::HashMap;
 use thiserror::Error;
 use serde::Deserialize;
+use bevy_tiled::{ TiledMap, TilesetIndexing };
 
-use super::{ TiledMap, TilesetIndexing };
 use crate::tile::{ ActivationCondition, ActivatableAnimating };
 
 #[derive(AssetCollection)]
