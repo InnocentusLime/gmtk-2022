@@ -26,22 +26,21 @@ impl ActivationCondition {
     }
 }
 
-#[derive(Clone, Copy, Component)]
+#[derive(Debug, Clone, Copy, Component)]
 pub enum ActivatableAnimating {
-    // Loops the `on_anim`, without looping the
-    // `off_anim`
     Switch {
-        on_transition: CPUAnimated,
-        off_transition: CPUAnimated,
-        on_anim: CPUAnimated,
-        off_anim: CPUAnimated,
+        on_transition: usize,
+        off_transition: usize,
+        on_anim: usize,
+        off_anim: usize,
     },
-    // Loops the anim when the tile is on and
-    // stops it when off
-    Stop,
+    Pause {
+        anim: usize
+    },
 }
 
 impl ActivatableAnimating {
+    /*
     pub(in crate::tile) fn update_cpu_anim(&self, anim: &mut CPUAnimated, active: bool) {
         use ActivatableAnimating::*;
         match self {
@@ -53,6 +52,7 @@ impl ActivatableAnimating {
             Stop => anim.paused = !active,
         }
     }
+    */
 }
 
 #[derive(Clone, Copy, Debug, Component, Inspectable)]

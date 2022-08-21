@@ -27,7 +27,7 @@ pub struct LevelTilesetImages {
 #[derive(Deserialize)]
 pub enum GeometryTile {
     LogicTile {
-        ty: LevelTileType
+        ty: LevelTileType,
     },
     Frame,
     LevelTileAnimation {
@@ -41,13 +41,14 @@ pub struct ActivatorTile {
     active: ActivationCondition,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize)]
+#[repr(u8)]
 pub enum TileAnimationType {
     OnOffAnimation,
     OnAnimation,
     OffAnimation,
-    OnTransitionAnimation,
-    OffTransitionAnimation,
+    OnTransition,
+    OffTransition,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize)]
@@ -94,6 +95,7 @@ pub struct LevelTile {
     pub flip: TileFlip,
     pub ty: LevelTileType,
     pub activation_cond: Option<ActivationCondition>,
+    pub activatable_animating: Option<ActivatableAnimating>,
 }
 
 pub struct Level {
@@ -106,6 +108,7 @@ pub struct Level {
 impl Level {
     pub fn new(
         map: &TiledMap,
+        cpu_tile_animations: &mut CPUTileAnimations,
         tileset_indexing: &[TilesetIndexing],
         tilesets: &[&TextureAtlas],
     ) -> Result<Self, anyhow::Error> {
@@ -131,6 +134,38 @@ impl Level {
         let geometry_table = map.map.tilesets()[geometry_tileset_id].tile_properties()?;
         let activator_table: HashMap<u32, ActivatorTile> = map.map.tilesets()[activator_tileset_id].tile_properties()?;
 
+        // Collect animations and their meta-info
+        let animations = map.map.tilesets()[geometry_tileset_id].tiles()
+            .filter(|(id, _)| matches!(&geometry_table[id], GeometryTile::LevelTileAnimation { .. }))
+            .map(|(id, tile)| 
+                tile.animation.as_ref()
+                .map(|anim| (id, tileset_indexing[geometry_tileset_id].cpu_tile_anim(anim)))
+                .ok_or(anyhow!("Tile {id:} in geometry tileset has type `LevelTileAnimation`, but has no animation"))
+            )
+            .map(|x| x.map(|(id, anim)| (id, cpu_tile_animations.add_animation(anim))))
+            .collect::<Result<HashMap<_, _>, _>>()?;
+        let anim_metainf: HashMap<_, _> = geometry_table.iter()
+            .filter_map(|(id, info)| match info {
+                GeometryTile::LevelTileAnimation {
+                    anim_ty,
+                    target,
+                } => Some(((*target, *anim_ty), animations[&id])),
+                _ => None
+            })
+            .collect();
+        let deduce_anim = |ty| {
+            if let Some(anim) = anim_metainf.get(&(ty, TileAnimationType::OnOffAnimation)) {
+                return Some(ActivatableAnimating::Pause { anim: *anim });
+            }
+
+            Some(ActivatableAnimating::Switch {
+                on_transition: *anim_metainf.get(&(ty, TileAnimationType::OnTransition))?,
+                off_transition: *anim_metainf.get(&(ty, TileAnimationType::OffTransition))?,
+                on_anim: *anim_metainf.get(&(ty, TileAnimationType::OnAnimation))?,
+                off_anim: *anim_metainf.get(&(ty, TileAnimationType::OffAnimation))?,
+            })
+        };
+
         // Build level tiles
         let mut tiles = HashMap::new();
 
@@ -139,16 +174,19 @@ impl Level {
                 let table_pos = (x, y);
                 let y = (map.map.height - 1) as u32 - y;
 
+                // Fetch the tile data for later use
                 let logic_tile = match geometry_layer.get_tile_data(x as i32, y as i32) {
                     Some(x) => x,
                     None => continue,
                 };
 
+                // Get tile type
                 let ty = match geometry_table.get(&logic_tile.id()) {
                     Some(GeometryTile::LogicTile { ty }) => *ty,
                     _ => bail!("Incorrect tile on logic layer at ({x:}, {y:}) (not a logic tile)"),
                 };
 
+                // Get activation condition if such exists
                 let activation_cond = 
                     activator_layer.get_tile_data(x as i32, y as i32)
                         .map(|tile| 
@@ -157,9 +195,15 @@ impl Level {
                         )
                         .transpose()?;
 
+                // If the tile has activation condition -- deduce the animation
+                let activatable_animating = if activation_cond.is_some() {
+                    Some(deduce_anim(ty).ok_or_else(|| anyhow!("Found no animating configuration for {ty:?}"))?)
+                } else { None };
+
                 tiles.insert(table_pos, LevelTile {
                     ty,
                     activation_cond,
+                    activatable_animating,
                     flip: logic_tile.bevy_flip_flags(),
                     texture: TileTexture(
                         tileset_indexing[geometry_tileset_id].dispatch(logic_tile.id())
@@ -169,9 +213,9 @@ impl Level {
         }
 
         Ok(Level {
+            tiles,
             width: map.map.width,
             height: map.map.height,
-            tiles,
             geometry_atlas: tilesets[geometry_tileset_id].texture.clone(),
         })
     }

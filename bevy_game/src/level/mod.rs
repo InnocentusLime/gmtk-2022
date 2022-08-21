@@ -66,10 +66,12 @@ pub fn init_level_resource(
     tilesets: Res<LevelTilesetImages>,
     atlases: Res<Assets<TextureAtlas>>,
     maps: Res<Assets<TiledMap>>,
+    mut animations: ResMut<CPUTileAnimations>,
 ) {
     let map = maps.get(&base_level_assets.map).expect("Level map should be loaded by now");
     let level = match Level::new(
         map, 
+        &mut *animations,
         &tileset_indexing, 
         &tilesets.images.iter().filter_map(|h| atlases.get(h)).collect::<Vec<_>>(),
     ) {
