@@ -26,25 +26,19 @@ pub struct LevelTilesetImages {
 
 #[derive(Deserialize)]
 pub enum GeometryTile {
-    LogicTile(LogicTile),
+    LogicTile {
+        ty: LevelTileType
+    },
     Frame,
-    LevelTileAnimation(LevelTileAnimation),
-}
-
-#[derive(Deserialize)]
-pub struct LevelTileAnimation {
-    anim_ty: TileAnimationType,
-    target: LevelTileType,
+    LevelTileAnimation {
+        anim_ty: TileAnimationType,
+        target: LevelTileType,
+    },
 }
 
 #[derive(Deserialize)]
 pub struct ActivatorTile {
     active: ActivationCondition,
-}
-
-#[derive(Deserialize)]
-pub struct LogicTile {
-    ty: LevelTileType,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -151,7 +145,7 @@ impl Level {
                 };
 
                 let ty = match geometry_table.get(&logic_tile.id()) {
-                    Some(GeometryTile::LogicTile(tile)) => tile.ty,
+                    Some(GeometryTile::LogicTile { ty }) => *ty,
                     _ => bail!("Incorrect tile on logic layer at ({x:}, {y:}) (not a logic tile)"),
                 };
 

@@ -469,8 +469,11 @@ impl<'de> Deserializer<'de> for TilePropertyDes<'de> {
         Err(TilePropertyDeserError::OnlyStruct)
     }
 
-    fn deserialize_map<V: Visitor<'de>>(self, _visitor: V) -> Result<V::Value, Self::Error> {
-        Err(TilePropertyDeserError::OnlyStruct)
+    fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        visitor.visit_map(TilePropertyMapper {
+            curr: None,
+            it: self.tile.properties.iter(),
+        })
     }
     
     fn deserialize_struct<V: Visitor<'de>>(
@@ -490,10 +493,7 @@ impl<'de> Deserializer<'de> for TilePropertyDes<'de> {
             });
         }
 
-        visitor.visit_map(TilePropertyMapper {
-            curr: None,
-            it: self.tile.properties.iter(),
-        })
+        self.deserialize_map(visitor)
     }
     
     fn deserialize_enum<V: Visitor<'de>>(
