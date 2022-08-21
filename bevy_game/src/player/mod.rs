@@ -57,8 +57,16 @@ pub fn spawn_player(
     map_q: Query<(&Transform, &TilemapGridSize), With<MoveableTilemapTag>>,
     generated_assets: Res<GeneratedPlayerAssets>,
 ) {
-    let start_pos = start_q.single();
-    let (map_tf, map_grid) = map_q.single();
+    let (map_tf, map_grid) = match map_q.get_single() {
+        Ok(x) => x,
+        Err(e) => { error!("Failed to query the level map: {}", e); return },
+    };
+
+    let start_pos = match start_q.get_single() {
+        Ok(x) => x,
+        Err(e) => { error!("Failed to query player start: {}", e); return },
+    };
+
     let start_world_pos = tile_pos_to_world_pos(*start_pos, map_tf, map_grid);
 
     commands.spawn()
