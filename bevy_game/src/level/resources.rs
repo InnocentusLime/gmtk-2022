@@ -24,31 +24,36 @@ pub struct LevelTilesetImages {
     pub images: Vec<Handle<TextureAtlas>>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
-enum TileAnimationType {
-    OnOffAnimation,
-    OnAnimation,
-    OffAnimation,
-    OnTransitionAnimation,
-    OffTransitionAnimation,
+#[derive(Deserialize)]
+pub enum GeometryTile {
+    LogicTile(LogicTile),
+    Frame,
+    LevelTileAnimation(LevelTileAnimation),
 }
 
 #[derive(Deserialize)]
-struct LevelTileAnimation {
+pub struct LevelTileAnimation {
     anim_ty: TileAnimationType,
     target: LevelTileType,
 }
 
 #[derive(Deserialize)]
-struct ActivatorTile {
+pub struct ActivatorTile {
     active: ActivationCondition,
 }
 
 #[derive(Deserialize)]
-enum GeometryTile {
-    LevelTile(LevelTile),
-    Frame,
-    LevelTileAnimation(LevelTileAnimation),
+pub struct LogicTile {
+    ty: LevelTileType,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+pub enum TileAnimationType {
+    OnOffAnimation,
+    OnAnimation,
+    OffAnimation,
+    OnTransitionAnimation,
+    OffTransitionAnimation,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize)]
@@ -73,49 +78,46 @@ impl LevelTileType {
     }
 }
 
-#[derive(Deserialize)]
-struct LevelTile {
-    ty: LevelTileType,
-}
+fn ensure_unique_tileset(layer: tiled::FiniteTileLayer) -> Result<usize, anyhow::Error> {
+    let mut result = None;
 
-static GEOMETRY_LAYER_ID: &'static str = "geometry";
-static ACTIVATOR_LAYER_ID: &'static str = "activators";
-
-// TODO the level manages graphics, which doesn't
-// seem to be a good idea in the end.
-pub struct Level {
-    width: u32,
-    height: u32,
-    pub(super) geometry_atlas: Handle<Image>,
-    pub(super) geometry_graphics: HashMap<(u32, u32), u32>,
-    pub(super) activators: HashMap<(u32, u32), ActivationCondition>,
-    pub(super) level_tiles: HashMap<(u32, u32), LevelTileType>,
-    pub(super) level_tiles_flip: HashMap<(u32, u32), TileFlip>,
-}
-
-impl Level {
-    fn ensure_unique_tileset(layer: tiled::FiniteTileLayer) -> Result<usize, anyhow::Error> {
-        let mut result = None;
-
-        for x in 0..layer.map().width {
-            for y in 0..layer.map().height {
-                if let Some(tile) = layer.get_tile(x as i32, y as i32) {
-                    if result != Some(tile.tileset_index()) && result.replace(tile.tileset_index()).is_some() {
-                        bail!("Found more than one tileset for the layer");
-                    }
+    for x in 0..layer.map().width {
+        for y in 0..layer.map().height {
+            if let Some(tile) = layer.get_tile(x as i32, y as i32) {
+                if result != Some(tile.tileset_index()) && result.replace(tile.tileset_index()).is_some() {
+                    bail!("Found more than one tileset for the layer");
                 }
             }
         }
-
-        result.ok_or(anyhow!("The layer uses no tileset"))
     }
 
+    result.ok_or(anyhow!("The layer uses no tileset"))
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct LevelTile {
+    pub texture: TileTexture,
+    pub flip: TileFlip,
+    pub ty: LevelTileType,
+    pub activation_cond: Option<ActivationCondition>,
+}
+
+pub struct Level {
+    width: u32,
+    height: u32,
+    pub(super) tiles: HashMap<(u32, u32), LevelTile>,
+    pub(super) geometry_atlas: Handle<Image>,
+}
+
+impl Level {
     pub fn new(
-        tileset_indexing: Vec<TilesetIndexing>,
-        map: &TiledMap, 
-        tilesets: &LevelTilesetImages, 
-        atlases: &Assets<TextureAtlas>,
+        map: &TiledMap,
+        tileset_indexing: &[TilesetIndexing],
+        tilesets: &[&TextureAtlas],
     ) -> Result<Self, anyhow::Error> {
+        static GEOMETRY_LAYER_ID: &'static str = "geometry";
+        static ACTIVATOR_LAYER_ID: &'static str = "activators";
+
         // Get the level layer
         let level_layer = map.map.group_layer("level").ok_or_else(|| anyhow!("No `level` layer"))?;
 
@@ -126,55 +128,57 @@ impl Level {
             .ok_or_else(|| anyhow!("No `{}` layer in `level`", ACTIVATOR_LAYER_ID))?;
 
         // Get the tilesets, ensuring that each layer uses exactly one.
-        let geometry_tileset_id = Self::ensure_unique_tileset(geometry_layer)
+        let geometry_tileset_id = ensure_unique_tileset(geometry_layer)
             .context(format!("Failed to check that `{}` has one tileset", GEOMETRY_LAYER_ID))?;
-        let activator_tileset_id = Self::ensure_unique_tileset(activator_layer)
+        let activator_tileset_id = ensure_unique_tileset(activator_layer)
             .context(format!("Failed to check that `{}` has one tileset", ACTIVATOR_LAYER_ID))?;
 
-        // Scan the tilesets, creating mappings from tile IDs to engine data.
+        // Deserialize tile properties
         let geometry_table = map.map.tilesets()[geometry_tileset_id].tile_properties()?;
-        let activator_table = map.map.tilesets()[activator_tileset_id].tile_properties()?;
+        let activator_table: HashMap<u32, ActivatorTile> = map.map.tilesets()[activator_tileset_id].tile_properties()?;
 
-        let mut geometry_graphics = HashMap::new();
-        let mut activators = HashMap::new();
-        let mut level_tiles = HashMap::new();
-        let mut level_tiles_flip = HashMap::new();
+        // Build level tiles
+        let mut tiles = HashMap::new();
 
         for x in 0..map.map.width {
             for y in 0..map.map.height {
                 let table_pos = (x, y);
                 let y = (map.map.height - 1) as u32 - y;
 
-                if let Some(act_tile) = activator_layer.get_tile_data(x as i32, y as i32) {
-                    activators.insert(table_pos,
-                        activator_table.get(&act_tile.id()).map(|tile: &ActivatorTile| tile.active)
-                            .ok_or_else(|| anyhow!("No data for activator tile at ({x:}, {y:})"))?
-                    );
-                }
-                
-                if let Some(lvl_tile) = geometry_layer.get_tile_data(x as i32, y as i32) {
-                    match geometry_table.get(&lvl_tile.id()) {
-                        Some(GeometryTile::LevelTile(tile)) => { level_tiles.insert(table_pos, tile.ty); },
-                        _ => bail!(anyhow!("No data for geometry tile at ({x:}, {y:})")),
-                    }
+                let logic_tile = match geometry_layer.get_tile_data(x as i32, y as i32) {
+                    Some(x) => x,
+                    None => continue,
+                };
 
-                    level_tiles_flip.insert(table_pos, lvl_tile.bevy_flip_flags());
-                    geometry_graphics.insert(table_pos, 
-                        tileset_indexing[geometry_tileset_id].dispatch(lvl_tile.id())
-                    );
-                }
+                let ty = match geometry_table.get(&logic_tile.id()) {
+                    Some(GeometryTile::LogicTile(tile)) => tile.ty,
+                    _ => bail!("Incorrect tile on logic layer at ({x:}, {y:}) (not a logic tile)"),
+                };
+
+                let activation_cond = 
+                    activator_layer.get_tile_data(x as i32, y as i32)
+                        .map(|tile| 
+                            activator_table.get(&tile.id()).map(|t| t.active)
+                            .ok_or_else(|| anyhow!("Tile at ({x:}, {y:}) on activator layer isn't an activator tile"))
+                        )
+                        .transpose()?;
+
+                tiles.insert(table_pos, LevelTile {
+                    ty,
+                    activation_cond,
+                    flip: logic_tile.bevy_flip_flags(),
+                    texture: TileTexture(
+                        tileset_indexing[geometry_tileset_id].dispatch(logic_tile.id())
+                    ),
+                });
             }
         }
 
         Ok(Level {
             width: map.map.width,
             height: map.map.height,
-            geometry_graphics,
-            level_tiles,
-            activators,
-            level_tiles_flip,
-            geometry_atlas: atlases.get(&tilesets.images[geometry_tileset_id])
-                .unwrap().texture.clone(),
+            tiles,
+            geometry_atlas: tilesets[geometry_tileset_id].texture.clone(),
         })
     }
 

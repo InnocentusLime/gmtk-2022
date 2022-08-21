@@ -3,6 +3,7 @@ mod resources;
 use std::error::Error;
 use std::collections::HashMap;
 
+use anyhow::{ Context, anyhow, bail };
 use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::* };
 use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
@@ -66,14 +67,19 @@ pub fn init_level_resource(
     atlases: Res<Assets<TextureAtlas>>,
     maps: Res<Assets<TiledMap>>,
 ) {
-    let map = maps.get(&base_level_assets.map).unwrap();
-    match Level::new(tileset_indexing, map, &*tilesets, &*atlases) {
-        Ok(level) => { commands.insert_resource(level); },
-        Err(e) => e.chain().for_each(|e| error!("{}", e)),
-    }
+    let map = maps.get(&base_level_assets.map).expect("Level map should be loaded by now");
+    let level = match Level::new(
+        map, 
+        &tileset_indexing, 
+        &tilesets.images.iter().filter_map(|h| atlases.get(h)).collect::<Vec<_>>(),
+    ) {
+        Ok(x) => x,
+        Err(e) => { e.chain().for_each(|e| error!("{}", e)); return },
+    };
+
+    commands.insert_resource(level);
 }
 
-// FIXME ugly nested stuff
 pub fn spawn_level(
     mut commands: Commands, 
     textures: Res<Assets<Image>>,
@@ -89,35 +95,28 @@ pub fn spawn_level(
     let map_commands = 
         commands.entity(map_entity)
             .with_children(|commands| {
-                for x in 0..level.width() {
-                    for y in 0..level.height() {
-                        // Skip a tile if it has no graphics.
-                        if level.geometry_graphics.get(&(x, y)).is_none() { continue; }
+                level.tiles.iter().for_each(|((x, y), data)| {
+                    let position = TilePos { x: *x, y: *y };
+                    let mut cmds = commands.spawn();
 
-                        let tile_pos = TilePos { x, y };
-                        let mut cmds = commands.spawn();
+                    cmds.insert_bundle(TileBundle {
+                        position,
+                        tilemap_id: TilemapId(map_entity),
+                        texture: data.texture,
+                        flip: data.flip,
+                        ..default()
+                    }).insert(Name::new("level tile"));
 
-                        cmds.insert_bundle(TileBundle {
-                            position: tile_pos,
-                            tilemap_id: TilemapId(map_entity),
-                            texture: TileTexture(level.geometry_graphics[&(x, y)]),
-                            flip: level.level_tiles_flip.get(&(x, y)).map(|f| *f).unwrap_or_default(),
-                            ..default()
-                        }).insert(Name::new("level tile"));
+                    data.ty.insert_into(&mut cmds);
 
-                        if let Some(ty) = level.level_tiles.get(&(x, y)) {
-                            ty.insert_into(&mut cmds);
-                        }
-
-                        if let Some(act_cond) = level.activators.get(&(x, y)) {
-                            cmds
-                                .insert(*act_cond)
-                                .insert(Active { is_active: true });
-                        }
-
-                        tile_store.set(&tile_pos, Some(cmds.id()));
+                    if let Some(cond) = data.activation_cond {
+                        cmds
+                            .insert(cond)
+                            .insert(Active { is_active: cond.active_on_start() });
                     }
-                }
+                        
+                    tile_store.set(&position, Some(cmds.id()));
+                });
             });
 
     commands.entity(map_entity)

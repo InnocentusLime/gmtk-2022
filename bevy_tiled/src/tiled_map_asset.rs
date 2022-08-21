@@ -2,11 +2,12 @@
 //! together with its own asset loader.
 
 use std::collections::HashMap;
-
 use std::io::BufReader;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use bevy::asset::{ AssetServer, AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset };
+use bevy_ecs_tilemap_cpu_anim::{ Frame, CPUTileAnimation };
 use bevy_asset_loader::dynamic_asset::{ DynamicAsset, DynamicAssetType };
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
@@ -14,26 +15,14 @@ use bevy::reflect::TypeUuid;
 pub fn tileset_indexing(
     In((map, level_tilesets)): In<(Handle<TiledMap>, Vec<Handle<TextureAtlas>>)>,
     maps: Res<Assets<TiledMap>>,
-    asset_server: Res<AssetServer>,
     atlases: Res<Assets<TextureAtlas>>,
 ) -> Vec<TilesetIndexing> {
     let map = maps.get(&map).unwrap();
     map.tilesets.iter().enumerate()
-        .map(|(tileset_id, (_, t))| match t {
-            TiledTileset::Image(_) => TilesetIndexing::Continious,
-            TiledTileset::ImageCollection(c) => TilesetIndexing::Special(
-                c.iter()
-                    .map(|(from, p)| (
-                        *from, 
-                        *atlases.get(&level_tilesets[tileset_id])
-                            .unwrap()
-                            .texture_handles.as_ref()
-                            .unwrap()
-                            .get(&asset_server.get_handle(p.to_owned())).unwrap() as u32
-                    ))
-                    .collect()
-            ),
-        })
+        .map(|(tileset_id, (_, t))| TilesetIndexing::from_tileset_and_atlas(
+            t,
+            atlases.get(&level_tilesets[tileset_id]).unwrap()
+        ))
         .collect()
 }
 
@@ -46,12 +35,41 @@ pub enum TilesetIndexing {
 }
 
 impl TilesetIndexing {
+    /// Constructs the mapping, given the compiled atlas
+    /// and the tileset source info.
+    pub fn from_tileset_and_atlas(
+        tileset_info: &TiledTileset,
+        atlas: &TextureAtlas,
+    ) -> Self {
+        match tileset_info {
+            TiledTileset::Image(_) => Self::Continious,
+            TiledTileset::ImageCollection(c) => Self::Special(
+                c.iter().map(|(from, path)| (
+                        *from, 
+                        *atlas.texture_handles.as_ref().and_then(|map|
+                            map.get(&Handle::weak(path.get_id().into()))
+                        )
+                        .unwrap() as u32
+                    )
+                ).collect()
+            ),
+        }
+    }
+
     /// Maps the tile ID from `Tiled` to the engine's tile ID.
     pub fn dispatch(&self, x: u32) -> u32 {
         match self {
             TilesetIndexing::Continious => x,
             TilesetIndexing::Special(map) => map[&x],
         }
+    }
+
+    /// Maps a tiled animation into an CPUTileAnimation
+    pub fn cpu_tile_anim(&self, anim: &[tiled::Frame]) -> CPUTileAnimation {
+        CPUTileAnimation::from_frames(anim.iter().map(|frame| Frame {
+            texture_id: self.dispatch(frame.tile_id),
+            duration: Duration::from_millis(frame.duration as u64),
+        }))
     }
 }
 

@@ -14,3 +14,4 @@ serde = "1"
 bevy = "0.8"
 bevy_ecs_tilemap = "0.7.0"
 tiled = "0.10.2"
+bevy_ecs_tilemap_cpu_anim = { path = "../bevy_ecs_tilemap_cpu_anim" }
