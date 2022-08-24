@@ -51,11 +51,11 @@ impl CPUTileAnimations {
     pub fn new_cpu_animated(
         &self,
         anim_id: usize,
-        looping: bool
+        looping: bool,
+        paused: bool,
     ) -> CPUAnimated {
         CPUAnimated {
-            looping, anim_id,
-            paused: false,
+            paused, looping, anim_id,
             passed_time: Duration::new(0, 0),
             current_frame: 0,
         }
@@ -97,8 +97,9 @@ impl CPUAnimated {
         }
     }
 
-    pub fn set_animation(&mut self, id: usize, animations: &CPUTileAnimations) {
+    pub fn set_animation(&mut self, id: usize, paused: bool, animations: &CPUTileAnimations) {
         if animations.0.len() <= id { panic!("Bad animation ID"); }
+        self.paused = paused;
         self.anim_id = id;
         self.current_frame = 0;
         self.passed_time = Duration::new(0, 0);

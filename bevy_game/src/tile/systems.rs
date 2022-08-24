@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
-use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
+use bevy_ecs_tilemap_cpu_anim::{ CPUAnimated, CPUTileAnimations };
 use crate::moveable::{ TileInteractionEvent, Moveable, MoveDirection, DecomposedRotation };
 use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
@@ -13,35 +13,20 @@ impl Default for LastPlayerSide {
 }
 
 // TODO implement via "Changed"
-/*
-pub fn tile_transition_animating(
-    mut last_next_side: Local<LastPlayerSide>,
-    player_q: Query<&Moveable, With<PlayerTag>>,
-    mut tile_q: Query<(&mut CPUAnimated, &ActivatableTileTag)>,
+// gjs
+pub fn tile_animating_switch(
+    animations: Res<CPUTileAnimations>,
+    mut tile_q: Query<(&Active, &mut CPUAnimated, &ActivatableAnimating), Changed<Active>>,
 ) {
-    player_q.for_each(|moveable| {
-        if let Some(next_side) = moveable.next_side() {
-            if last_next_side.0 != next_side {
-                last_next_side.0 = next_side;
-
-                tile_q.for_each_mut(|(mut anim, tag)| {
-                    if tag.is_active() == tag.will_be_active(next_side) { return; }
-                    match tag.anim_info {
-                        ActivatableAnimating::Switch { on_transition, off_transition, .. } => {
-                            if tag.is_active() {
-                                *anim = off_transition;
-                            } else {
-                                *anim = on_transition;
-                            }
-                        },
-                        _ => (),
-                    }
-                })
-            }
-        }
+    tile_q.for_each_mut(|(active, mut animated, animating)| match animating {
+        ActivatableAnimating::Switch { on_anim, off_anim, .. } => animated.set_animation(
+            if active.is_active { *on_anim } else { *off_anim },
+            false,
+            &*animations,
+        ),
+        ActivatableAnimating::Pause { .. } => animated.paused = !active.is_active,
     });
 }
-*/
 
 pub fn tile_state_switching(
     player_q: Query<&Moveable, With<PlayerTag>>,

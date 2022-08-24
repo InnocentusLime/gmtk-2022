@@ -86,7 +86,7 @@ pub fn spawn_level(
     mut commands: Commands, 
     textures: Res<Assets<Image>>,
     level: Res<Level>,
-    //mut animations: ResMut<CPUTileAnimations>,
+    animations: Res<CPUTileAnimations>,
 ) {
     // Create the loaded map
     let map_entity = commands.spawn().insert(Name::new("Map")).id();
@@ -111,10 +111,27 @@ pub fn spawn_level(
 
                     data.ty.insert_into(&mut cmds);
 
+                    let enabled = data.activation_cond.map(ActivationCondition::active_on_start).unwrap_or(false);
+
                     if let Some(cond) = data.activation_cond {
                         cmds
                             .insert(cond)
                             .insert(Active { is_active: cond.active_on_start() });
+                    }
+
+                    if let Some(animating) = data.activatable_animating {
+                        match animating {
+                            ActivatableAnimating::Switch { on_anim, off_anim, .. } => cmds.insert(
+                                if enabled {
+                                    animations.new_cpu_animated(on_anim, true, false)
+                                } else {
+                                    animations.new_cpu_animated(off_anim, true, false)
+                                }
+                            ),
+                            ActivatableAnimating::Pause { anim } => cmds.insert(
+                                animations.new_cpu_animated(anim, true, enabled)
+                            ),
+                        }.insert(animating);
                     }
                         
                     tile_store.set(&position, Some(cmds.id()));

@@ -32,6 +32,7 @@ impl Plugin for TilePlugin {
                 TileUpdateStage, 
                 SystemSet::new()
                     .with_system(tile_state_switching)
+                    .with_system(tile_animating_switch)
                     //.with_system(tile_transition_animating)
             )
             .add_system_set_to_stage(
