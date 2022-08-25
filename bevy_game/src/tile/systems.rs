@@ -6,12 +6,7 @@ use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
 use super::{ ActivationCondition, Active, ActivatableAnimating, FrierTag, ConveyorTag, EndTileTag };
 
-pub struct LastPlayerSide(u8);
-
-impl Default for LastPlayerSide {
-    fn default() -> Self { Self(DecomposedRotation::new().upper_side()) }
-}
-
+/// Manages the transition animatons for tiles. See [ActivatableAnimating] for more info.
 pub fn tile_transition_animating(
     animations: Res<CPUTileAnimations>,
     player_q: Query<&Moveable, With<PlayerTag>>,
@@ -42,7 +37,7 @@ pub fn tile_transition_animating(
     });
 }
 
-// gjs
+/// Switches tile animation if its state changes. See [ActivatableAnimating] for more info.
 pub fn tile_animating_switch(
     animations: Res<CPUTileAnimations>,
     mut tile_q: Query<(&Active, &mut CPUAnimated, &ActivatableAnimating), Changed<Active>>,
@@ -58,6 +53,8 @@ pub fn tile_animating_switch(
     });
 }
 
+/// Switches tile state, depending on which number the player has on their upper side.
+/// This system makes sure to trigger `Changed` only when the state of a tile actually changes.
 pub fn tile_state_switching(
     player_q: Query<&Moveable, With<PlayerTag>>,
     mut tile_q: Query<(&mut Active, &ActivationCondition)>, 
@@ -74,6 +71,7 @@ pub fn tile_state_switching(
     );
 }
 
+/// Logic for the frier tile. See [FrierTag]
 pub fn frier_tile_handler(
     mut interactions: EventReader<TileInteractionEvent>,
     mut tile_query: Query<&Active, With<FrierTag>>,
@@ -88,6 +86,7 @@ pub fn frier_tile_handler(
     }
 }
 
+/// Logic for the conveyor tile. See [ConveyorTag]
 pub fn conveyor_tile_handler(
     mut interactions: EventReader<TileInteractionEvent>,
     mut tile_query: Query<(&Active, &TileFlip), With<ConveyorTag>>,
@@ -105,6 +104,7 @@ pub fn conveyor_tile_handler(
     }
 }
 
+/// Logic for the end tile. See [EndTileTag]
 pub fn exit_tile_handler(
     mut interactions: EventReader<TileInteractionEvent>,
     mut tile_query: Query<(), With<EndTileTag>>,
