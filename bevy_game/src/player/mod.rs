@@ -33,7 +33,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_event::<PlayerEscapedEvent>()
-            .add_stage_after(CoreStage::Update, PlayerInputStage, SystemStage::parallel())
+            .add_stage_after(CoreStage::PreUpdate, PlayerInputStage, SystemStage::parallel())
             .add_stage_before(CoreStage::PostUpdate, PlayerPostStage, SystemStage::parallel())
             .add_system_to_stage(
                 PlayerInputStage,

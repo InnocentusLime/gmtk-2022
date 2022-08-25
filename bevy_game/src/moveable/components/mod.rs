@@ -37,6 +37,16 @@ impl Moveable {
         }
     }
 
+    /// Asks if the moveable has started moving this
+    /// very frame.
+    #[inline]
+    pub fn just_started_moving(&self) -> bool {
+        match &self.state {
+            MoveableState::Moving { just_started, .. } => *just_started,
+            _ => false,
+        }
+    }
+
     /// Gets the current upper side of a moveable
     pub fn upper_side(&self) -> u8 { self.rot.upper_side() }
 
@@ -60,6 +70,7 @@ impl Moveable {
                 timer: Timer::new(time, false),
                 dir,
                 ty: MoveTy::Flip,
+                just_started: true,
             }; true },
             _ => false,
         }
@@ -77,6 +88,7 @@ impl Moveable {
                 timer: Timer::new(time, false),
                 dir,
                 ty: MoveTy::Slide,
+                just_started: true,
             }; true },
             _ => false,
         }

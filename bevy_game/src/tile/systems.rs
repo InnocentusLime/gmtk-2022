@@ -12,7 +12,36 @@ impl Default for LastPlayerSide {
     fn default() -> Self { Self(DecomposedRotation::new().upper_side()) }
 }
 
-// TODO implement via "Changed"
+pub fn tile_transition_animating(
+    animations: Res<CPUTileAnimations>,
+    player_q: Query<&Moveable, With<PlayerTag>>,
+    mut tile_q: Query<(&ActivationCondition, &Active, &mut CPUAnimated, &ActivatableAnimating)>,
+) {
+    // Check if player has just started moving
+    let try_change = player_q.get_single().map(Moveable::just_started_moving).unwrap_or(false);
+    if !try_change { return; }
+    
+    let next_side = match player_q.get_single().ok().and_then(Moveable::next_side) {
+        Some(x) => x,
+        None => return,
+    };
+    tile_q.for_each_mut(|(cond, active, mut animated, animating)| {
+        // Do not play transition animation for tiles that aren't going to 
+        // change their state.
+        if active.is_active == cond.is_active(next_side) { return; }
+
+        match animating {
+            ActivatableAnimating::Switch { on_transition, off_transition, .. } => animated.set_animation(
+                if active.is_active { *off_transition } else { *on_transition },
+                false,
+                false,
+                &*animations,
+            ),
+            _ => (),
+        }
+    });
+}
+
 // gjs
 pub fn tile_animating_switch(
     animations: Res<CPUTileAnimations>,
@@ -22,6 +51,7 @@ pub fn tile_animating_switch(
         ActivatableAnimating::Switch { on_anim, off_anim, .. } => animated.set_animation(
             if active.is_active { *on_anim } else { *off_anim },
             false,
+            true,
             &*animations,
         ),
         ActivatableAnimating::Pause { .. } => animated.paused = !active.is_active,

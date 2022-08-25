@@ -23,7 +23,12 @@ fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
 
             true
         },
-        MoveableState::Moving { timer, .. } => { timer.tick(dt); false },
+        MoveableState::Moving { timer, just_started, .. } => { 
+            *just_started = false;
+            timer.tick(dt); 
+
+            false 
+        },
     }
 }
 

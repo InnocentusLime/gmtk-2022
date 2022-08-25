@@ -39,22 +39,6 @@ pub enum ActivatableAnimating {
     },
 }
 
-impl ActivatableAnimating {
-    /*
-    pub(in crate::tile) fn update_cpu_anim(&self, anim: &mut CPUAnimated, active: bool) {
-        use ActivatableAnimating::*;
-        match self {
-            Switch { on_anim, off_anim, .. } => if active {
-                *anim = *on_anim;
-            } else {
-                *anim = *off_anim;
-            },
-            Stop => anim.paused = !active,
-        }
-    }
-    */
-}
-
 #[derive(Clone, Copy, Debug, Component, Inspectable)]
 pub struct Active { 
     #[inspectable(read_only)]

@@ -17,5 +17,6 @@ pub enum MoveableState {
         timer: Timer,
         dir: MoveDirection,
         ty: MoveTy,
+        just_started: bool,
     },
 }

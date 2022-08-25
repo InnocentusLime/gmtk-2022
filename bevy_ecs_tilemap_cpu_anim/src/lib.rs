@@ -97,9 +97,16 @@ impl CPUAnimated {
         }
     }
 
-    pub fn set_animation(&mut self, id: usize, paused: bool, animations: &CPUTileAnimations) {
+    pub fn set_animation(
+        &mut self, 
+        id: usize, 
+        paused: bool, 
+        looping: bool,
+        animations: &CPUTileAnimations
+    ) {
         if animations.0.len() <= id { panic!("Bad animation ID"); }
         self.paused = paused;
+        self.looping = looping;
         self.anim_id = id;
         self.current_frame = 0;
         self.passed_time = Duration::new(0, 0);

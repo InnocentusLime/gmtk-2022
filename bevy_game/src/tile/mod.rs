@@ -17,6 +17,13 @@ pub struct TileUpdateStage;
 
 pub struct TilePlugin;
 
+#[derive(Clone, Copy, SystemLabel)]
+enum TileSystem {
+    StateSwitch,
+    AnimationSwitch,
+    TransitionAnimation,
+}
+
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         if app.world.get_resource::<InspectableRegistry>().is_some() {
@@ -31,9 +38,9 @@ impl Plugin for TilePlugin {
             .add_system_set_to_stage(
                 TileUpdateStage, 
                 SystemSet::new()
-                    .with_system(tile_state_switching)
-                    .with_system(tile_animating_switch)
-                    //.with_system(tile_transition_animating)
+                    .with_system(tile_state_switching.label(TileSystem::StateSwitch))
+                    .with_system(tile_transition_animating.label(TileSystem::TransitionAnimation).after(TileSystem::StateSwitch))
+                    .with_system(tile_animating_switch.label(TileSystem::AnimationSwitch).after(TileSystem::TransitionAnimation))
             )
             .add_system_set_to_stage(
                 CoreStage::Update,
