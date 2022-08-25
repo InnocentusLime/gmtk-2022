@@ -98,7 +98,7 @@ pub fn conveyor_tile_handler(
             (Ok((state, flip)), Ok(mut moveable)) if state.is_active => {
                 let dir = MoveDirection::Up.apply_flipping_flags(flip.x, flip.y, flip.d);
 
-                moveable.slide(dir, Duration::from_millis(132));
+                moveable.slide(dir, Duration::from_millis(500));
             },
             _ => (),
         }
