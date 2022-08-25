@@ -14,7 +14,7 @@ impl Plugin for CPUTileAnimationPlugin {
         app
             .insert_resource(CPUTileAnimations::new())
             .add_stage_before(
-                bevy_ecs_tilemap::TilemapStage,
+                CoreStage::PostUpdate,
                 CPUTileAnimateStage,
                 SystemStage::parallel()
             )
@@ -24,7 +24,7 @@ impl Plugin for CPUTileAnimationPlugin {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Frame {
-    pub texture_id: u16, // Texture ID (the bevy_ecs_tilemap one)
+    pub texture_id: u32, // Texture ID (the bevy_ecs_tilemap one)
     pub duration: Duration, // Duration in milliseconds
 }
 
@@ -37,7 +37,6 @@ impl CPUTileAnimation {
     }
 }
 
-// TODO Animations -> CPUTileAnimations
 pub struct CPUTileAnimations(Vec<CPUTileAnimation>);
 
 impl CPUTileAnimations {
@@ -52,11 +51,11 @@ impl CPUTileAnimations {
     pub fn new_cpu_animated(
         &self,
         anim_id: usize,
-        speed: f32,
-        looping: bool
+        looping: bool,
+        paused: bool,
     ) -> CPUAnimated {
         CPUAnimated {
-            speed, looping, anim_id,
+            paused, looping, anim_id,
             passed_time: Duration::new(0, 0),
             current_frame: 0,
         }
@@ -67,8 +66,8 @@ impl CPUTileAnimations {
 
 #[derive(Clone, Copy, Component, Debug)]
 pub struct CPUAnimated {
-    speed: f32,
-    looping: bool,
+    pub paused: bool,
+    pub looping: bool,
     anim_id: usize,
     current_frame: usize,
     passed_time: Duration,
@@ -93,36 +92,38 @@ impl CPUAnimated {
     }
 
     fn tick(&mut self, dt: Duration) {
-        self.passed_time += dt.mul_f32(self.speed);
+        if !self.paused {
+            self.passed_time += dt;
+        }
     }
 
-    pub fn set_animation(&mut self, id: usize, animations: &CPUTileAnimations) {
+    pub fn set_animation(
+        &mut self, 
+        id: usize, 
+        paused: bool, 
+        looping: bool,
+        animations: &CPUTileAnimations
+    ) {
         if animations.0.len() <= id { panic!("Bad animation ID"); }
-        self.speed = 0.0f32;
+        self.paused = paused;
+        self.looping = looping;
         self.anim_id = id;
         self.current_frame = 0;
         self.passed_time = Duration::new(0, 0);
     }
-
-    pub fn set_speed(&mut self, speed: f32) { self.speed = speed }
-
-    pub fn set_looping(&mut self, looping: bool) { self.looping = looping }
 }
 
 pub fn update_animation_frames(
     time: Res<Time>,
     animations: Res<CPUTileAnimations>,
-    mut animated_tile_q: Query<(&mut CPUAnimated, &mut Tile, &TilePos, &TileParent)>,
-    mut map: MapQuery,
+    mut animated_tile_q: Query<(&mut CPUAnimated, &mut TileTexture)>,
 ) {
     let dt = time.delta();
 
-    // TODO `par_iter_*`
-    for (mut state, mut tile, pos, parent_info) in animated_tile_q.iter_mut() {
+    animated_tile_q.par_for_each_mut(10, |(mut state, mut tile)| {
         state.tick(dt);
         if state.update_from_anims(&*animations) {
-            tile.texture_index = animations.0[state.anim_id].0[state.current_frame].texture_id;
-            map.notify_chunk_for_tile(*pos, parent_info.map_id, parent_info.layer_id);
+            tile.0 = animations.0[state.anim_id].0[state.current_frame].texture_id;
         }
-    }
+    });
 }

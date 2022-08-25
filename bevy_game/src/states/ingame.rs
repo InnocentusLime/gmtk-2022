@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_pkv::PkvStore;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
@@ -7,7 +8,7 @@ use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
 use crate::player::{ PlayerTag, PlayerEscapedEvent };
-use crate::{ GameplayCamera, MenuCamera };
+use crate::GameplayCamera;
 
 struct LevelCompleteCountdown(Timer);
 
@@ -25,34 +26,50 @@ fn death_system(mut commands: Commands, player_q: Query<(), With<PlayerTag>>) {
 fn beat_system(
     mut commands: Commands,
     mut escape_event: EventReader<PlayerEscapedEvent>,
-    mut save: ResMut<Save>,
-    menu_assets: Res<MenuAssets>,
-    level_infos: Res<Assets<LevelInfo>>,
 ) {
     for _ in escape_event.iter() {
         info!("You win");
-        let level_info = level_infos.get(&menu_assets.level_info).unwrap();
-         
-        save.register_level_complete(&*level_info);
-        // TODO retry?
-        match save.save() {
-            Ok(()) => (),
-            Err(e) => error!("Error recording save: {}\nThe progress will be lost.", e),
-        }
         commands.insert_resource(LevelCompleteCountdown(Timer::from_seconds(2.0f32, false)));
     }
 }
 
-fn level_complete_system(
+fn level_complete_system_normal(
     mut commands: Commands,
+    mut timer: Option<ResMut<LevelCompleteCountdown>>,
+    mut save: ResMut<Save>,
+    menu_assets: Res<MenuAssets>,
+    level_infos: Res<Assets<LevelInfo>>,
+    time: Res<Time>,
+    mut pkv: ResMut<PkvStore>,
+) {
+    if let Some(timer) = timer.as_mut() {
+        timer.0.tick(time.delta());
+        if timer.0.finished() {
+            let level_info = level_infos.get(&menu_assets.level_info).unwrap();
+         
+            save.register_level_complete(&*level_info);
+            
+            // TODO retry?
+            match pkv.set("save", &*save) {
+                Ok(()) => (),
+                Err(e) => error!("Error recording save: {}\nThe progress will be lost.", e),
+            }
+
+            commands.remove_resource::<LevelCompleteCountdown>();
+            commands.insert_resource(NextState(GameState::MainMenu));
+        }
+    }
+}
+
+fn level_complete_system_testing_level(
+    mut writer: EventWriter<bevy::app::AppExit>,
     mut timer: Option<ResMut<LevelCompleteCountdown>>,
     time: Res<Time>,
 ) {
     if let Some(timer) = timer.as_mut() {
         timer.0.tick(time.delta());
         if timer.0.finished() {
-            commands.remove_resource::<LevelCompleteCountdown>();
-            commands.insert_resource(NextState(GameState::MainMenu));
+            writer.send(bevy::app::AppExit);
         }
     }
 }
@@ -60,7 +77,7 @@ fn level_complete_system(
 fn exit(
     mut commands: Commands,
     mut cam: Query<&mut Transform, With<GameplayCamera>>,
-    to_del: Query<Entity, (Without<GameplayCamera>, Without<MenuCamera>)>,
+    to_del: Query<Entity, Without<GameplayCamera>>,
 ) {
     info!("Exited ingame state");
     for mut tf in cam.iter_mut() { tf.translation = Vec3::new(0.0f32, 0.0f32, 50.0f32); }
@@ -70,11 +87,16 @@ fn exit(
     }
 }
 
-pub fn setup_states(app: &mut App) {
+pub fn setup_states(app: &mut App, testing_level: bool) {
     app
         .add_enter_system(GameState::InGame, enter)
-        .add_system(level_complete_system.run_in_state(GameState::InGame))
         .add_system(beat_system.run_in_state(GameState::InGame))
         .add_system(death_system.run_in_state(GameState::InGame))
         .add_exit_system(GameState::InGame, exit);
+
+    if testing_level {
+        app.add_system(level_complete_system_testing_level.run_in_state(GameState::InGame));
+    } else {
+        app.add_system(level_complete_system_normal.run_in_state(GameState::InGame));
+    }
 }

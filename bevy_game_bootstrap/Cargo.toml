@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3", features = ["cargo"] }
-bevy_mod_debugdump = "0.4"
+bevy_mod_debugdump = "0.5"
 bevy_game = { path = "../bevy_game" }
 
 [[bin]]

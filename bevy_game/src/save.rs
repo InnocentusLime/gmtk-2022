@@ -52,28 +52,4 @@ impl Save {
             Some((world, level))
         }
     }
-
-    #[cfg(target_arch = "x86_64")]
-    pub fn load() -> Result<Self, anyhow::Error> {
-        use std::fs::File;
-        Ok(serde_json::from_reader(File::open("save.json")?)?)
-    }
-    
-    #[cfg(target_arch = "wasm32")]
-    pub fn load() -> Result<Self, anyhow::Error> {
-        compile_error!("Loading saves hasn't been implemented for wasm yet");
-        todo!() 
-    }
-
-    #[cfg(target_arch = "x86_64")]
-    pub fn save(&self) -> Result<(), anyhow::Error> {
-        use std::fs::File;
-        Ok(serde_json::to_writer(File::create("save.json")?, &self)?)
-    }
-    
-    #[cfg(target_arch = "wasm32")]
-    pub fn save(&self) -> Result<(), anyhow::Error> {
-        compile_error!("Saving hasn't been implemented for wasm yet");
-        todo!() 
-    }
 }

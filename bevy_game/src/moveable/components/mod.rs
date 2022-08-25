@@ -3,6 +3,7 @@ mod moveable_state;
 mod decomposed_rotation;
 
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 use std::time::Duration;
 use bevy_inspector_egui::Inspectable;
 pub(super) use moveable_state::*;
@@ -11,21 +12,38 @@ pub(super) use decomposed_rotation::*;
 pub use direction::MoveDirection;
 pub use decomposed_rotation::DecomposedRotation;
 
-#[derive(Debug, Clone, Component, Default, Inspectable)]
+/// Contains all information about a moveable:
+/// 
+/// * Rotation
+/// * Position
+/// * State
+///
+/// `Transform` **does not** encode the actual position of a moveable.
+/// It's actual position is whatever returned by `pos()` method.
+#[derive(Debug, Clone, Component, Default)]
 pub struct Moveable {
-    pub(super) pos: (u32, u32),
+    pub(super) pos: TilePos,
     pub(super) rot: DecomposedRotation,
-    #[inspectable(read_only)]
     pub(super) state: MoveableState,
 }
 
 impl Moveable {
     /// Create a moveable placed on `pos`.
-    pub fn new(pos: (u32, u32)) -> Self {
+    pub fn new(pos: TilePos) -> Self {
         Self {
             pos,
             state: MoveableState::Idle,
             rot: DecomposedRotation::new(),
+        }
+    }
+
+    /// Asks if the moveable has started moving this
+    /// very frame.
+    #[inline]
+    pub fn just_started_moving(&self) -> bool {
+        match &self.state {
+            MoveableState::Moving { just_started, .. } => *just_started,
+            _ => false,
         }
     }
 
@@ -38,7 +56,7 @@ impl Moveable {
 
     /// Gets the current position of a moveable.
     #[inline]
-    pub fn pos(&self) -> (u32, u32) { self.pos }
+    pub fn pos(&self) -> TilePos { self.pos }
 
     /// Starts the rolling animation. The animation will play exactly
     /// `time` long.
@@ -52,6 +70,7 @@ impl Moveable {
                 timer: Timer::new(time, false),
                 dir,
                 ty: MoveTy::Flip,
+                just_started: true,
             }; true },
             _ => false,
         }
@@ -69,6 +88,7 @@ impl Moveable {
                 timer: Timer::new(time, false),
                 dir,
                 ty: MoveTy::Slide,
+                just_started: true,
             }; true },
             _ => false,
         }
@@ -80,15 +100,17 @@ impl Moveable {
     }
 
     /// Returns the cell the moveable is going to occupy at the end of
-    /// the animation. Returns `None` if no animation is playing.
+    /// the animation. Returns `None` if no position changing animation is playing.
     #[inline]
-    pub fn going_to_occupy(&self) -> Option<(u32, u32)> {
+    pub fn going_to_occupy(&self) -> Option<TilePos> {
         match &self.state {
             MoveableState::Idle => None,
             MoveableState::Moving { dir, .. } => dir.apply_on_pos(self.pos),
         }
     }
 
+    /// Returns the side that the moveable will have up once its animation
+    /// finished. Returns `None` if no side changing animation is playing.
     #[inline]
     pub fn next_side(&self) -> Option<u8> {
         match &self.state {
@@ -99,3 +121,7 @@ impl Moveable {
         }
     }
 }
+
+/// Tag for tilemap, which moveables are intended to traverse.
+#[derive(Default, Clone, Copy, Debug, Component)]
+pub struct MoveableTilemapTag;

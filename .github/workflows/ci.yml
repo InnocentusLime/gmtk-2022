@@ -36,6 +36,9 @@ jobs:
           key: $${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      - name: Install mingw
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends mingw-w64
+        if: ${{matrix.osname}} == 'windows'
       - name: Typecheck linux release
         run: cargo check --release --target ${{matrix.target}}
       - name: Typecheck linux debug
