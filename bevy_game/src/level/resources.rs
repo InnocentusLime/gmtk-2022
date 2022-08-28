@@ -54,6 +54,7 @@ pub enum TileAnimationType {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize)]
 #[repr(u8)]
 pub enum LevelTileType {
+    Exit,
     Conveyor,
     Fry,
     PlayerStart,
@@ -62,9 +63,10 @@ pub enum LevelTileType {
 
 impl LevelTileType {
     pub fn insert_into(&self, cmds: &mut EntityCommands) {
-        use crate::tile::{ FrierTag, ConveyorTag, StartTileTag };
+        use crate::tile::{ FrierTag, ConveyorTag, StartTileTag, EndTileTag };
                             
         match self {
+            LevelTileType::Exit => { cmds.insert(EndTileTag); },
             LevelTileType::Fry => { cmds.insert(FrierTag); },
             LevelTileType::Conveyor => { cmds.insert(ConveyorTag); },
             LevelTileType::PlayerStart => { cmds.insert(StartTileTag); },
