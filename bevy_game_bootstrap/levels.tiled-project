@@ -81,7 +81,8 @@
                 "Fry",
                 "Conveyor",
                 "Floor",
-                "PlayerStart"
+                "PlayerStart",
+                "Exit"
             ],
             "valuesAsFlags": false
         }

@@ -31,9 +31,9 @@
   </properties>
   <image width="32" height="32" source="../tiles/player_start.png"/>
  </tile>
- <tile id="11" type="Frame">
+ <tile id="11" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Floor"/>
+   <property name="ty" propertytype="LevelTileType" value="Exit"/>
   </properties>
   <image width="32" height="32" source="../tiles/exit.png"/>
  </tile>
@@ -45,7 +45,7 @@
  </tile>
  <tile id="13" type="LevelTileAnimation">
   <properties>
-   <property name="anim_ty" propertytype="TileAnimationType" value="OnOffAnimation"/>
+   <property name="anim_ty" value="OnOffAnimation"/>
    <property name="target" propertytype="LevelTileType" value="Conveyor"/>
   </properties>
   <image width="32" height="32" source="../tiles/conveyor2.png"/>
@@ -70,7 +70,7 @@
  </tile>
  <tile id="17" type="LevelTileAnimation">
   <properties>
-   <property name="anim_ty" propertytype="TileAnimationType" value="OnTransition"/>
+   <property name="anim_ty" value="OnTransition"/>
    <property name="target" propertytype="LevelTileType" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry1.png"/>
@@ -83,7 +83,7 @@
  </tile>
  <tile id="18" type="LevelTileAnimation">
   <properties>
-   <property name="anim_ty" propertytype="TileAnimationType" value="OffTransition"/>
+   <property name="anim_ty" value="OffTransition"/>
    <property name="target" propertytype="LevelTileType" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry2.png"/>
@@ -96,7 +96,7 @@
  </tile>
  <tile id="19" type="LevelTileAnimation">
   <properties>
-   <property name="anim_ty" propertytype="TileAnimationType" value="OnAnimation"/>
+   <property name="anim_ty" value="OnAnimation"/>
    <property name="target" propertytype="LevelTileType" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry3.png"/>
@@ -110,7 +110,7 @@
  </tile>
  <tile id="20" type="LevelTileAnimation">
   <properties>
-   <property name="anim_ty" propertytype="TileAnimationType" value="OffAnimation"/>
+   <property name="anim_ty" value="OffAnimation"/>
    <property name="target" propertytype="LevelTileType" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry4.png"/>
