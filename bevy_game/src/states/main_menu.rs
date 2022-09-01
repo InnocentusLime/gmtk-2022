@@ -67,7 +67,7 @@ fn spawn_text(
                         size: Size::new(Val::Percent(40.0), Val::Percent(100.0)),
                         flex_direction: FlexDirection::ColumnReverse,
                         align_items: AlignItems::Center,
-                        margin: Rect {
+                        margin: UiRect {
                             top: Val::Px(5.0),
                             ..default()
                         },
@@ -81,24 +81,20 @@ fn spawn_text(
                     parent
                         .spawn_bundle(TextBundle {
                             style: Style {
-                                margin: Rect{
+                                margin: UiRect{
                                     top: Val::Px(50.0),
                                     ..default()
                                 },
                                 ..default()
                             },
-                            text: Text::with_section(
+                            text: Text::from_section(
                                 "Main menu", 
                                 TextStyle {
                                     font: font.clone(),
                                     font_size: 60.0f32,
                                     color: Color::WHITE,
                                 },
-                                TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
-                                }
-                            ),
+                            ).with_alignment(TextAlignment::CENTER_LEFT),
                             ..default()
                         });
 
@@ -108,11 +104,11 @@ fn spawn_text(
                             style: Style {
                                 size: Size::new(Val::Percent(90.0), Val::Percent(80.0)),
                                 flex_direction: FlexDirection::ColumnReverse,
-                                position: Rect {
+                                position: UiRect {
                                     left: Val::Percent(5.0),
                                     ..default()
                                 },
-                                margin: Rect {
+                                margin: UiRect {
                                     top: Val::Px(30.0),
                                     ..default()
                                 },
@@ -128,13 +124,13 @@ fn spawn_text(
                                         style: Style {
                                             align_items: AlignItems::Center,
                                             size: Size::new(Val::Percent(100.0), Val::Auto),
-                                            padding: Rect {
+                                            padding: UiRect {
                                                 left: Val::Px(30.0),
                                                 top: Val::Px(18.0),
                                                 bottom: Val::Px(13.0),
                                                 ..default()
                                             },
-                                            margin: Rect {
+                                            margin: UiRect {
                                                 bottom: Val::Px(40.0),
                                                 ..default()
                                             },
@@ -150,18 +146,14 @@ fn spawn_text(
                                                 style: Style {
                                                     ..default()
                                                 },
-                                                text: Text::with_section(
+                                                text: Text::from_section(
                                                     title, 
                                                     TextStyle {
                                                         font: font.clone(),
                                                         font_size: 35.0f32,
                                                         color: Color::WHITE,
                                                     },
-                                                    TextAlignment {
-                                                        vertical: VerticalAlign::Center,
-                                                        horizontal: HorizontalAlign::Center,
-                                                    }
-                                                ),
+                                                ).with_alignment(TextAlignment::CENTER),
                                                 ..default()
                                             });
                                     });
@@ -203,15 +195,7 @@ fn tick(
             MainMenuButton::PickLevel => {
                 if let Some(save) = save.as_ref() {
                     let (world, level) = save.world_level();
-                    // TODO special function, which handles things like entering the level
-                    // It would verify the integrity of a save before proceeding.
-                    asset_keys.register_asset(
-                        "level",
-                        DynamicAsset::File {
-                            path: format!("maps/level{}-{}.tmx", world, level),
-                        }
-                    );
-                    commands.insert_resource(NextState(GameState::LoadingLevel(LoadingLevelSubstate::LoadingBaseAssets)));
+                    enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut *asset_keys);
                 }
             },
             MainMenuButton::Achievements => (),
