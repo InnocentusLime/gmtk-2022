@@ -9,7 +9,9 @@ mod level_info;
 use crate::states::setup_states;
 use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
+use bevy_pkv::PkvStore;
 use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_tiled::TiledPlugin;
 
 use crate::moveable::MoveablePlugin;
 use crate::level_info::{ LevelInfo, LevelInfoLoader };
@@ -33,9 +35,6 @@ pub static GAME_NAME: &'static str = game_strings!(game_name);
 static TITLE: &'static str = game_strings!(title);
 
 #[derive(Clone, Copy, Component)]
-pub struct MenuCamera;
-
-#[derive(Clone, Copy, Component)]
 pub struct GameplayCamera;
 
 fn window_descriptor() -> WindowDescriptor {
@@ -48,10 +47,11 @@ fn window_descriptor() -> WindowDescriptor {
     }
 }
 
-pub fn create_app(log: bool, inspector: bool) -> App {
+pub fn create_app(log: bool, inspector: bool, test_level_path: Option<&str>) -> App {
     let mut app = App::new();
 
     app
+        .insert_resource(PkvStore::new("SeptemModi", game_strings!(game_name)))
         .insert_resource(ClearColor(Color::hex("263238").unwrap()))
         .insert_resource(window_descriptor());
 
@@ -62,7 +62,7 @@ pub fn create_app(log: bool, inspector: bool) -> App {
     }
 
     if inspector { app.add_plugin(WorldInspectorPlugin::new()); }
-
+    
     app
         .add_plugin(MoveablePlugin)
         .add_plugin(LevelPlugin)
@@ -76,13 +76,10 @@ pub fn create_app(log: bool, inspector: bool) -> App {
         .add_asset::<LevelInfo>();
    
     app.world.spawn()
-        .insert_bundle(OrthographicCameraBundle::new_2d())
+        .insert_bundle(Camera2dBundle::default())
         .insert(Name::new("GameplayCamera")).insert(GameplayCamera);
-    app.world.spawn()
-        .insert_bundle(UiCameraBundle::default())
-        .insert(Name::new("Screen Camera")).insert(MenuCamera);
 
-    setup_states(&mut app);
+    setup_states(&mut app, test_level_path);
 
     app
 }

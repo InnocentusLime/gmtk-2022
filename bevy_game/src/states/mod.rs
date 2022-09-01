@@ -5,7 +5,9 @@ mod loading;
 mod splash_screen;
 
 use bevy::prelude::*;
+use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::* };
 use iyes_loopless::prelude::*;
+use loading::LoadingLevel;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameState {
@@ -17,18 +19,30 @@ pub enum GameState {
     SplashScreen,
     // The main menu
     MainMenu,
-    // The state which loads assets for InGame state
-    LoadingLevel(loading::LoadingLevelSubstate),
+    // Loading a level
+    LoadingLevel,
     // The game
     InGame,
 }
 
-pub fn setup_states(app: &mut App) {
-    app.add_loopless_state(GameState::Booting);
+pub fn jump_to_state<T: bevy::ecs::schedule::StateData>(state: T) -> impl Fn(Commands) {
+    move |mut commands: Commands| commands.insert_resource(NextState(state.clone()))
+}
 
-    booting::setup_states(app);
+pub fn enter_level(level_path: String, commands: &mut Commands, asset_keys: &mut DynamicAssets) {
+    asset_keys.register_asset("map", Box::new(StandardDynamicAsset::File { path: level_path }));
+    commands.insert_resource(NextState(GameState::LoadingLevel));
+    commands.insert_resource(NextState(LoadingLevel::LoadingBaseAssets));
+}
+
+pub fn setup_states(app: &mut App, testing_level: Option<&str>) {
+    app.add_loopless_state(GameState::Booting);
+    app.add_loopless_state(LoadingLevel::Done); 
+
+    booting::setup_states(app, testing_level);
     splash_screen::setup_states(app);
     main_menu::setup_states(app);
     loading::setup_states(app);
-    ingame::setup_states(app);
+
+    ingame::setup_states(app, testing_level.is_some());
 }

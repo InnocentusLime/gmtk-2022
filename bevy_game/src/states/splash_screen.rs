@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_asset_loader::*;
+use bevy_asset_loader::asset_collection::*;
 use iyes_loopless::prelude::*;
 
 use super::GameState;
