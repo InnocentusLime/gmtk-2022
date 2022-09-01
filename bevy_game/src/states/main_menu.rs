@@ -19,6 +19,15 @@ pub struct MenuAssets {
     pub level_info: Handle<LevelInfo>,
 }
 
+
+#[derive(Clone, Copy, Component)]
+enum MainMenuButton {
+    PickLevel,
+    Achievements,
+    Settings,
+    Quit,
+}
+
 fn spawn_text(
     commands: &mut Commands,
     save: &Save,
@@ -26,26 +35,137 @@ fn spawn_text(
 ) {
     let (world, level) = save.world_level();
     let font = menu_assets.main_font.clone();
-    commands.spawn_bundle(TextBundle {
-        style: Style {
-            position_type: PositionType::Absolute,
-            position: UiRect { 
-                left: Val::Px(500.0),
-                bottom: Val::Px(340.0),
-                ..default() 
+
+    // Root node
+    commands
+        .spawn_bundle(NodeBundle {
+            style: Style {
+                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                justify_content: JustifyContent::SpaceBetween,
+                ..default()
+
             },
+            color: Color::NONE.into(),
             ..default()
-        },
-        text: Text::from_section(
-            format!("Press enter to enter {}-{}", world, level),
-            TextStyle {
-                font: font.clone(),
-                font_size: 30.0f32,
-                color: Color::WHITE,
-            },
-        ).with_alignment(TextAlignment::CENTER),
-        ..default()
-    });
+        })
+        .with_children(|parent| {
+            // Left fill
+            parent
+                .spawn_bundle(NodeBundle {
+                    style: Style {
+                        size: Size::new(Val::Percent(60.0), Val::Percent(100.0)),
+                        ..default()
+                    },
+                    color: Color::NONE.into(),
+                    ..default()
+                });
+
+            // Right fill
+            parent
+                .spawn_bundle(NodeBundle {
+                    style: Style {
+                        size: Size::new(Val::Percent(40.0), Val::Percent(100.0)),
+                        flex_direction: FlexDirection::ColumnReverse,
+                        align_items: AlignItems::Center,
+                        margin: UiRect {
+                            top: Val::Px(5.0),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                    color: Color::rgba(0.0, 0.15, 0.15, 0.1).into(),
+                    ..default()
+                })
+                .with_children(|parent| {
+                    // Header
+                    parent
+                        .spawn_bundle(TextBundle {
+                            style: Style {
+                                margin: UiRect{
+                                    top: Val::Px(50.0),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            text: Text::from_section(
+                                "Main menu", 
+                                TextStyle {
+                                    font: font.clone(),
+                                    font_size: 60.0f32,
+                                    color: Color::WHITE,
+                                },
+                            ).with_alignment(TextAlignment::CENTER_LEFT),
+                            ..default()
+                        });
+
+                    // Container for the controls
+                    parent
+                        .spawn_bundle(NodeBundle {
+                            style: Style {
+                                size: Size::new(Val::Percent(90.0), Val::Percent(80.0)),
+                                flex_direction: FlexDirection::ColumnReverse,
+                                position: UiRect {
+                                    left: Val::Percent(5.0),
+                                    ..default()
+                                },
+                                margin: UiRect {
+                                    top: Val::Px(30.0),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            color: Color::NONE.into(),
+                            ..default()
+                        })
+                        .with_children(|parent| {
+                            let mut spawn_button = |title, tag| {
+                                parent
+                                    .spawn_bundle(ButtonBundle {
+                                        style: Style {
+                                            align_items: AlignItems::Center,
+                                            size: Size::new(Val::Percent(100.0), Val::Auto),
+                                            padding: UiRect {
+                                                left: Val::Px(30.0),
+                                                top: Val::Px(18.0),
+                                                bottom: Val::Px(13.0),
+                                                ..default()
+                                            },
+                                            margin: UiRect {
+                                                bottom: Val::Px(40.0),
+                                                ..default()
+                                            },
+                                            ..default()
+                                        },
+                                        color: Color::rgb(0.0, 0.15, 0.15).into(),
+                                        ..default()
+                                    })
+                                    .insert(tag)
+                                    .with_children(|parent| {
+                                        parent
+                                            .spawn_bundle(TextBundle {
+                                                style: Style {
+                                                    ..default()
+                                                },
+                                                text: Text::from_section(
+                                                    title, 
+                                                    TextStyle {
+                                                        font: font.clone(),
+                                                        font_size: 35.0f32,
+                                                        color: Color::WHITE,
+                                                    },
+                                                ).with_alignment(TextAlignment::CENTER),
+                                                ..default()
+                                            });
+                                    });
+                            };
+
+                            spawn_button("Choose level", MainMenuButton::PickLevel);
+                            spawn_button("Achievements", MainMenuButton::Achievements);
+                            spawn_button("Settings", MainMenuButton::Settings);
+                            spawn_button("Quit", MainMenuButton::Quit);
+                        });
+                });
+        });
 }
 
 
@@ -55,44 +175,32 @@ fn enter(
     pkv: Res<PkvStore>,
 ) {
     info!("Entered main menu state");
-
     let save = pkv.get::<Save>("save").unwrap_or_else(|_| Save::new());
     spawn_text(&mut commands, &save, &*menu_assets);
-
-    let font = menu_assets.main_font.clone();
-    commands.spawn_bundle(TextBundle {
-        style: Style {
-            margin: UiRect::all(Val::Px(5.0)),
-            ..default()
-        },
-        text: Text::from_section(
-            "Main menu", 
-            TextStyle {
-                font: font.clone(),
-                font_size: 60.0f32,
-                color: Color::WHITE,
-            },
-        ).with_alignment(TextAlignment::CENTER),
-        ..default()
-    });
     
     commands.insert_resource(save);
 }
 
 fn tick(
+    button_q: Query<(&Interaction, &MainMenuButton)>,
     mut commands: Commands,
-    mut events: EventReader<KeyboardInput>,
     save: Option<Res<Save>>,
     mut asset_keys: ResMut<DynamicAssets>,
 ) {
     use bevy::input::ButtonState;
-
-    for ev in events.iter() {
-        if ev.state == ButtonState::Pressed && ev.key_code == Some(KeyCode::Return) {
-            if let Some(save) = save.as_ref() {
-                let (world, level) = save.world_level();
-                enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut *asset_keys);
-            }
+  
+    for (interaction, button) in button_q.iter() {
+        if *interaction != Interaction::Clicked { break; }
+        match button {
+            MainMenuButton::PickLevel => {
+                if let Some(save) = save.as_ref() {
+                    let (world, level) = save.world_level();
+                    enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut *asset_keys);
+                }
+            },
+            MainMenuButton::Achievements => (),
+            MainMenuButton::Settings => (),
+            MainMenuButton::Quit => (),
         }
     }
 }
