@@ -94,6 +94,22 @@ impl Moveable {
         }
     }
 
+    /// Starts the rotating animation. The animation will play exactly
+    /// `time` long.
+    /// The call will have no effect if there's an animation in progress.
+    /// Returns `true` if the command was successive, returns `false` if the
+    /// entity is already doing an animation.
+    #[inline]
+    pub fn rotate(&mut self, clock_wise: bool, time: Duration) -> bool {
+        match &self.state {
+            MoveableState::Idle => { self.state = MoveableState::Rotating {
+                timer: Timer::new(time, false),
+                clock_wise,
+            }; true },
+            _ => false,
+        }
+    }
+
     /// Force-sets moveable's state to `Idle`
     pub fn force_idle(&mut self) {
         self.state = MoveableState::Idle;
@@ -104,8 +120,8 @@ impl Moveable {
     #[inline]
     pub fn going_to_occupy(&self) -> Option<TilePos> {
         match &self.state {
-            MoveableState::Idle => None,
             MoveableState::Moving { dir, .. } => dir.apply_on_pos(self.pos),
+            _ => None,
         }
     }
 
