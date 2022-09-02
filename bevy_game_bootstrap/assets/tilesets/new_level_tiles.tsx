@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.8" tiledversion="1.9.1" name="new_level_tiles" tilewidth="32" tileheight="32" tilecount="18" columns="1">
+<tileset version="1.8" tiledversion="1.9.1" name="new_level_tiles" tilewidth="32" tileheight="32" tilecount="22" columns="1">
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="5" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Floor"/>
+   <property name="ty" value="Floor"/>
   </properties>
   <image width="32" height="32" source="../tiles/floor1.png"/>
  </tile>
  <tile id="6" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Floor"/>
+   <property name="ty" value="Floor"/>
   </properties>
   <image width="32" height="32" source="../tiles/floor2.png"/>
  </tile>
  <tile id="7" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Floor"/>
+   <property name="ty" value="Floor"/>
   </properties>
   <image width="32" height="32" source="../tiles/floor3.png"/>
  </tile>
  <tile id="8" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Floor"/>
+   <property name="ty" value="Floor"/>
   </properties>
   <image width="32" height="32" source="../tiles/floor4.png"/>
  </tile>
  <tile id="9" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="PlayerStart"/>
+   <property name="ty" value="PlayerStart"/>
   </properties>
   <image width="32" height="32" source="../tiles/player_start.png"/>
  </tile>
  <tile id="11" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Exit"/>
+   <property name="ty" value="Exit"/>
   </properties>
   <image width="32" height="32" source="../tiles/exit.png"/>
  </tile>
  <tile id="12" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Conveyor"/>
+   <property name="ty" value="Conveyor"/>
   </properties>
   <image width="32" height="32" source="../tiles/conveyor1.png"/>
  </tile>
  <tile id="13" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OnOffAnimation"/>
-   <property name="target" propertytype="LevelTileType" value="Conveyor"/>
+   <property name="target" value="Conveyor"/>
   </properties>
   <image width="32" height="32" source="../tiles/conveyor2.png"/>
   <animation>
@@ -64,14 +64,14 @@
  </tile>
  <tile id="16" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="Fry"/>
+   <property name="ty" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry0.png"/>
  </tile>
  <tile id="17" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OnTransition"/>
-   <property name="target" propertytype="LevelTileType" value="Fry"/>
+   <property name="target" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry1.png"/>
   <animation>
@@ -84,7 +84,7 @@
  <tile id="18" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OffTransition"/>
-   <property name="target" propertytype="LevelTileType" value="Fry"/>
+   <property name="target" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry2.png"/>
   <animation>
@@ -97,7 +97,7 @@
  <tile id="19" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OnAnimation"/>
-   <property name="target" propertytype="LevelTileType" value="Fry"/>
+   <property name="target" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry3.png"/>
   <animation>
@@ -111,7 +111,7 @@
  <tile id="20" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OffAnimation"/>
-   <property name="target" propertytype="LevelTileType" value="Fry"/>
+   <property name="target" value="Fry"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry4.png"/>
   <animation>
@@ -126,5 +126,30 @@
  </tile>
  <tile id="23" type="Frame">
   <image width="32" height="32" source="../tiles/fry7.png"/>
+ </tile>
+ <tile id="24" type="LogicTile">
+  <properties>
+   <property name="ty" propertytype="LevelTileType" value="SpinningTile"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/spin0.png"/>
+ </tile>
+ <tile id="25" type="LevelTileAnimation">
+  <properties>
+   <property name="anim_ty" propertytype="TileAnimationType" value="OnOffAnimation"/>
+   <property name="target" propertytype="LevelTileType" value="SpinningTile"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/spin1.png"/>
+  <animation>
+   <frame tileid="24" duration="100"/>
+   <frame tileid="25" duration="100"/>
+   <frame tileid="26" duration="100"/>
+   <frame tileid="27" duration="100"/>
+  </animation>
+ </tile>
+ <tile id="26" type="Frame">
+  <image width="32" height="32" source="../tiles/spin2.png"/>
+ </tile>
+ <tile id="27" type="Frame">
+  <image width="32" height="32" source="../tiles/spin3.png"/>
  </tile>
 </tileset>
