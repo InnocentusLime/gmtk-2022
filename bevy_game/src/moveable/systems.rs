@@ -29,6 +29,17 @@ fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
 
             false 
         },
+        MoveableState::Rotating { timer, clock_wise } if timer.finished() => {
+            moveable.rot = moveable.rot.rotate_ortho(*clock_wise);
+            moveable.state = MoveableState::Idle;
+
+            false
+        },
+        MoveableState::Rotating { timer, .. } => {
+            timer.tick(dt);
+
+            false
+        },
     }
 }
 
@@ -105,6 +116,15 @@ pub fn moveable_animation(
             (MoveableState::Idle, _) => {
                 tf.translation = current_pos;
                 tf.rotation = moveable.rotation().rot_quat();
+            },
+            (MoveableState::Rotating { timer, clock_wise }, _) => {
+                let t = 1.0f32 - timer.percent_left();
+
+                if *clock_wise {
+                    tf.rotation = Quat::from_rotation_z(-t * std::f32::consts::FRAC_PI_2) * moveable.rotation().rot_quat();
+                } else {
+                    tf.rotation = Quat::from_rotation_z(t * std::f32::consts::FRAC_PI_2) * moveable.rotation().rot_quat();
+                }
             },
             _ => (),
         }

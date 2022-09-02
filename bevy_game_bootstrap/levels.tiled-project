@@ -57,18 +57,25 @@
         },
         {
             "color": "#ffa0a0a4",
-            "id": 4,
+            "id": 9,
             "members": [
                 {
-                    "name": "ty",
+                    "name": "anim_ty",
+                    "propertyType": "TileAnimationType",
+                    "type": "string",
+                    "value": "OnOffAnimation"
+                },
+                {
+                    "name": "target",
                     "propertyType": "LevelTileType",
                     "type": "string",
                     "value": "Fry"
                 }
             ],
-            "name": "LevelTile",
+            "name": "LevelTileAnimation",
             "type": "class",
             "useAs": [
+                "property",
                 "tile"
             ]
         },
@@ -82,7 +89,39 @@
                 "Conveyor",
                 "Floor",
                 "PlayerStart",
-                "Exit"
+                "Exit",
+                "SpinningTile"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "color": "#ffa0a0a4",
+            "id": 4,
+            "members": [
+                {
+                    "name": "ty",
+                    "propertyType": "LevelTileType",
+                    "type": "string",
+                    "value": "Fry"
+                }
+            ],
+            "name": "LogicTile",
+            "type": "class",
+            "useAs": [
+                "tile"
+            ]
+        },
+        {
+            "id": 8,
+            "name": "TileAnimationType",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "OnOffAnimation",
+                "OnAnimation",
+                "OffAnimation",
+                "OnTransition",
+                "OffTransition"
             ],
             "valuesAsFlags": false
         }

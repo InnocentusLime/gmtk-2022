@@ -19,4 +19,8 @@ pub enum MoveableState {
         ty: MoveTy,
         just_started: bool,
     },
+    Rotating {
+        timer: Timer,
+        clock_wise: bool,
+    },
 }

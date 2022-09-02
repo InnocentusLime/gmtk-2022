@@ -95,6 +95,19 @@ impl DecomposedRotation {
             flat_rot,
         }
     }
+    
+    #[must_use]
+    pub fn rotate_ortho(&self, clock_wise: bool) -> Self {
+        if clock_wise {
+            self.rotate_in_dir(MoveDirection::Up)
+                .rotate_in_dir(MoveDirection::Left)
+                .rotate_in_dir(MoveDirection::Down)
+        } else {
+            self.rotate_in_dir(MoveDirection::Up)
+                .rotate_in_dir(MoveDirection::Right)
+                .rotate_in_dir(MoveDirection::Down)
+        }
+    }
 
     pub fn rot_quat(&self) -> Quat {
         let flat_rot_quat = self.flat_rot.rot_quat();

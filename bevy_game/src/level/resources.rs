@@ -59,17 +59,19 @@ pub enum LevelTileType {
     Fry,
     PlayerStart,
     Floor,
+    SpinningTile,
 }
 
 impl LevelTileType {
     pub fn insert_into(&self, cmds: &mut EntityCommands) {
-        use crate::tile::{ FrierTag, ConveyorTag, StartTileTag, EndTileTag };
+        use crate::tile::{ FrierTag, ConveyorTag, StartTileTag, EndTileTag, SpinningTileTag };
                             
         match self {
             LevelTileType::Exit => { cmds.insert(EndTileTag); },
             LevelTileType::Fry => { cmds.insert(FrierTag); },
             LevelTileType::Conveyor => { cmds.insert(ConveyorTag); },
             LevelTileType::PlayerStart => { cmds.insert(StartTileTag); },
+            LevelTileType::SpinningTile => { cmds.insert(SpinningTileTag); },
             _ => (),
         }
     }

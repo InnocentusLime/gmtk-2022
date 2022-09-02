@@ -4,7 +4,7 @@ use bevy_ecs_tilemap_cpu_anim::{ CPUAnimated, CPUTileAnimations };
 use crate::moveable::{ TileInteractionEvent, Moveable, MoveDirection, DecomposedRotation };
 use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
-use super::{ ActivationCondition, Active, ActivatableAnimating, FrierTag, ConveyorTag, EndTileTag };
+use super::{ ActivationCondition, Active, ActivatableAnimating, FrierTag, ConveyorTag, EndTileTag, SpinningTileTag };
 
 /// Manages the transition animatons for tiles. See [ActivatableAnimating] for more info.
 pub fn tile_transition_animating(
@@ -119,6 +119,24 @@ pub fn exit_tile_handler(
                     .remove::<Moveable>()
                     .insert(PlayerWinnerTag::new());
                 escape_event.send(PlayerEscapedEvent);
+            },
+            _ => (),
+        }
+    }
+}
+
+/// Logic fro the spining tile. See [SpiningTileTag]
+pub fn spinning_tile_handler(
+    mut interactions: EventReader<TileInteractionEvent>,
+    mut tile_query: Query<(&Active, &TileFlip), With<SpinningTileTag>>,
+    mut move_query: Query<&mut Moveable>,
+) {
+    for e in interactions.iter() {
+        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
+            (Ok((state, flip)), Ok(mut moveable)) if state.is_active => {
+                let clockwise = !(flip.x ^ flip.y ^ flip.d);
+
+                moveable.rotate(clockwise, Duration::from_millis(500));
             },
             _ => (),
         }
