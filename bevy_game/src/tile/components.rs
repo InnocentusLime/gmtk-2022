@@ -80,3 +80,9 @@ pub struct FrierTag;
 /// player. When the player steps on this tile, the level ends.
 #[derive(Component)]
 pub struct EndTileTag;
+
+/// Spinning tile. When active, this tile rotates the player clockwise
+/// (or counter-clockwise, depending on its mirroring flags) once and then
+/// allows the player to get off.
+#[derive(Component)]
+pub struct SpinningTileTag;

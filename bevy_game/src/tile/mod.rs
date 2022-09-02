@@ -48,6 +48,7 @@ impl Plugin for TilePlugin {
                     .with_system(frier_tile_handler)
                     .with_system(conveyor_tile_handler)
                     .with_system(exit_tile_handler)
+                    .with_system(spinning_tile_handler)
             );
     }
 }
