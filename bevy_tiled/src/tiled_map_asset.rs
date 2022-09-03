@@ -119,12 +119,8 @@ impl DynamicAsset for TilesetsFromTiled {
     fn build(&self, world: &mut World) -> Result<DynamicAssetType, anyhow::Error> {
         info!("Building tilesets");
         let cell = world.cell();
-        let mut images = cell
-            .get_resource_mut::<Assets<Image>>()
-            .expect("Failed to get image asset container");
-        let mut atlases = cell
-            .get_resource_mut::<Assets<TextureAtlas>>()
-            .expect("Failed to get image asset container");
+        let mut images = cell.resource_mut::<Assets<Image>>();
+        let mut atlases = cell.resource_mut::<Assets<TextureAtlas>>();
         let res = self.0.iter()
             .map(|(tile_size, tileset)| match tileset {
                 TiledTileset::Image(p) => {
