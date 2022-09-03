@@ -29,9 +29,9 @@ macro_rules! game_strings {
     (title) => { concat!(game_strings!(game_name), "v. ", game_strings!(version)) };
 }
 
-pub static VERSION: &'static str = game_strings!(version);
-pub static GAME_NAME: &'static str = game_strings!(game_name);
-static TITLE: &'static str = game_strings!(title);
+pub static VERSION: &str = game_strings!(version);
+pub static GAME_NAME: &str = game_strings!(game_name);
+static TITLE: &str = game_strings!(title);
 
 #[derive(Clone, Copy, Component)]
 pub struct GameplayCamera;

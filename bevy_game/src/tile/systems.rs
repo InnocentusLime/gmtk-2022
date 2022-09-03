@@ -25,6 +25,7 @@ pub fn tile_transition_animating(
         // change their state.
         if active.is_active == cond.is_active(next_side) { return; }
 
+        #[allow(clippy::single_match)]
         match animating {
             ActivatableAnimating::Switch { on_transition, off_transition, .. } => animated.set_animation(
                 if active.is_active { *off_transition } else { *on_transition },
@@ -113,14 +114,9 @@ pub fn exit_tile_handler(
     mut commands: Commands,
 ) {
     for e in interactions.iter() {
-        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
-            (Ok(_), Ok(_)) => {
-                commands.entity(e.interactor_id)
-                    .remove::<Moveable>()
-                    .insert(PlayerWinnerTag::new());
-                escape_event.send(PlayerEscapedEvent);
-            },
-            _ => (),
+        if let (Ok(_), Ok(_)) = (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
+            commands.entity(e.interactor_id).remove::<Moveable>().insert(PlayerWinnerTag::new());
+            escape_event.send(PlayerEscapedEvent);
         }
     }
 }
