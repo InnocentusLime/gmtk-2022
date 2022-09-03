@@ -1,5 +1,3 @@
-use bevy::log::warn;
-
 use std::collections::HashSet;
 
 use crate::level_info::LevelInfo;
@@ -22,9 +20,11 @@ impl Save {
 
     pub fn world_level(&self) -> (u8, u8) { (self.world, self.level) }
 
+    /*
     pub fn give_achievement(&mut self, name: &str) { self.achievements.insert(name.to_owned()); }
 
     pub fn has_achievement(&self, name: &str) -> bool { self.achievements.contains(name) }
+    */
 
     pub fn register_level_complete(&mut self, info: &LevelInfo) {
         if let Some((world, level)) = self.next_level(info) {

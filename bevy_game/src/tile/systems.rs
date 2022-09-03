@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::{ CPUAnimated, CPUTileAnimations };
-use crate::moveable::{ TileInteractionEvent, Moveable, MoveDirection, DecomposedRotation };
+use crate::moveable::{ TileInteractionEvent, Moveable, MoveDirection };
 use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
 use super::{ ActivationCondition, Active, ActivatableAnimating, FrierTag, ConveyorTag, EndTileTag, SpinningTileTag };

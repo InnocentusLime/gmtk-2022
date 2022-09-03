@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::*, loading_state::* };
+use bevy_asset_loader::{ dynamic_asset::*, loading_state::* };
 use iyes_loopless::prelude::*;
 
 use super::{ GameState, enter_level };

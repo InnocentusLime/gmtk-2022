@@ -7,7 +7,7 @@ pub use components::*;
 
 use systems::*;
 use bevy::prelude::*;
-use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
+//use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
 
 #[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]

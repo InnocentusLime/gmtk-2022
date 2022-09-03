@@ -1,10 +1,6 @@
 mod resources;
 
-use std::error::Error;
-use std::collections::HashMap;
-
-use anyhow::{ Context, anyhow, bail };
-use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::* };
+use bevy_asset_loader::dynamic_asset::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
 use bevy::prelude::*;
@@ -12,7 +8,7 @@ use bevy::prelude::*;
 pub use resources::*;
 
 use crate::tile::*;
-use bevy_tiled::{ TiledPlugin, TiledMap, TilesetsFromTiled, TilesetIndexing, TiledTileset };
+use bevy_tiled::{ TiledPlugin, TiledMap, TilesetIndexing };
 use crate::moveable::MoveableTilemapTag;
 
 #[derive(Default)]
@@ -84,7 +80,6 @@ pub fn init_level_resource(
 
 pub fn spawn_level(
     mut commands: Commands, 
-    textures: Res<Assets<Image>>,
     level: Res<Level>,
     animations: Res<CPUTileAnimations>,
 ) {
@@ -94,7 +89,7 @@ pub fn spawn_level(
     let mut tile_store = TileStorage::empty(tilemap_size);
 
     // Build the geometry layer
-    let map_commands = 
+    let _map_commands = 
         commands.entity(map_entity)
             .with_children(|commands| {
                 level.tiles.iter().for_each(|((x, y), data)| {

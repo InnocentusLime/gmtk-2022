@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use super::direction::MoveDirection;
-use bevy_inspector_egui::Inspectable;
 
 #[derive(Clone, Copy, Debug, Default)]
 #[repr(u8)]

@@ -11,7 +11,6 @@ use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
 use bevy_pkv::PkvStore;
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_tiled::TiledPlugin;
 
 use crate::moveable::MoveablePlugin;
 use crate::level_info::{ LevelInfo, LevelInfoLoader };

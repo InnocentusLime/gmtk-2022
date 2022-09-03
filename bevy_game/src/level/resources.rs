@@ -6,7 +6,6 @@ use bevy_tiled::*;
 use bevy::prelude::*;
 use bevy::ecs::system::EntityCommands;
 use std::collections::HashMap;
-use thiserror::Error;
 use serde::Deserialize;
 use bevy_tiled::{ TiledMap, TilesetIndexing };
 
