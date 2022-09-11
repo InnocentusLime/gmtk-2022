@@ -24,6 +24,7 @@ futures-lite = "1"
 # Internal deps
 bevy_tiled = { path = "../bevy_tiled" }
 bevy_ecs_tilemap_cpu_anim = { path = "../bevy_ecs_tilemap_cpu_anim" }
+cube_rot = { path = "../cube_rot" }
 
 [target.'cfg(target_arch = "wasm")'.dependencies]
 # Nothing

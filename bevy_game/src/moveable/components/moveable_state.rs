@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use super::direction::MoveDirection;
+use super::MoveDirection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MoveTy {
