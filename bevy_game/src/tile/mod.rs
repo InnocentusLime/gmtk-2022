@@ -3,14 +3,11 @@ mod systems;
 
 use bevy::prelude::*;
 use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
-use bevy_ecs_tilemap_cpu_anim::{ CPUTileAnimationPlugin, CPUAnimated };
-use iyes_loopless::prelude::*;
+use bevy_ecs_tilemap_cpu_anim::CPUTileAnimationPlugin;
 
 pub use components::*;
 
 use systems::*;
-
-use crate::states::GameState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 pub struct TileUpdateStage;

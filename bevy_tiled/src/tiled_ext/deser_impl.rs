@@ -502,7 +502,7 @@ impl<'de> Deserializer<'de> for TilePropertyDes<'de> {
         _variants: &'static [&'static str],
         visitor: V
     ) -> Result<V::Value, Self::Error> {
-        visitor.visit_enum(TilePropertyEnum { tile: &self.tile })
+        visitor.visit_enum(TilePropertyEnum { tile: self.tile })
     }
     
     fn deserialize_identifier<V: Visitor<'de>>(self, _visitor: V) -> Result<V::Value, Self::Error> {

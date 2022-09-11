@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-use super::direction::MoveDirection;
-use bevy_inspector_egui::Inspectable;
+use super::MoveDirection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MoveTy {

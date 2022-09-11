@@ -10,11 +10,11 @@ use crate::player::{ GeneratedPlayerAssets, BasePlayerAssets, spawn_player };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LoadingLevel {
-    LoadingBaseAssets,
-    LoadingLevelTiles,
-    InittingLevelResources,
-    SpawningLevel,
-    SpawningPlayer,
+    BaseAssets,
+    LevelTiles,
+    LevelResources,
+    LevelEntity,
+    PlayerEntity,
     Cleanup,
     Done,
 }
@@ -22,43 +22,43 @@ pub enum LoadingLevel {
 pub fn setup_states(app: &mut App) {
     // Loading base assets
     app
-        .add_enter_system(LoadingLevel::LoadingBaseAssets, |mut anims: ResMut<CPUTileAnimations>| anims.clear())
-        .add_loading_state(LoadingState::new(LoadingLevel::LoadingBaseAssets)
-            .continue_to_state(LoadingLevel::LoadingLevelTiles)
+        .add_enter_system(LoadingLevel::BaseAssets, |mut anims: ResMut<CPUTileAnimations>| anims.clear())
+        .add_loading_state(LoadingState::new(LoadingLevel::BaseAssets)
             .with_collection::<BasePlayerAssets>()
             .with_collection::<BaseLevelAssets>()
             .init_resource::<GeneratedPlayerAssets>()
+            .continue_to_state(LoadingLevel::LevelTiles)
         )
-        .add_exit_system(LoadingLevel::LoadingBaseAssets, queue_level_tileset_images);
+        .add_exit_system(LoadingLevel::BaseAssets, queue_level_tileset_images);
 
     // Loading level tiles
     app
-        .add_loading_state(LoadingState::new(LoadingLevel::LoadingLevelTiles)
+        .add_loading_state(LoadingState::new(LoadingLevel::LevelTiles)
             .with_collection::<LevelTilesetImages>()
-            .continue_to_state(LoadingLevel::InittingLevelResources)
+            .continue_to_state(LoadingLevel::LevelResources)
         );
 
     // Inititing level resources
     app.add_enter_system_set(
-        LoadingLevel::InittingLevelResources, 
+        LoadingLevel::LevelResources, 
         SystemSet::new()
             .with_system(
                 get_level_map.chain(tileset_indexing).chain(init_level_resource)
             )
-            .with_system(jump_to_state(LoadingLevel::SpawningLevel))
+            .with_system(jump_to_state(LoadingLevel::LevelEntity))
     );
 
     // Spawning level
     app.add_enter_system_set(
-        LoadingLevel::SpawningLevel,
+        LoadingLevel::LevelEntity,
         SystemSet::new()
             .with_system(spawn_level)
-            .with_system(jump_to_state(LoadingLevel::SpawningPlayer))
+            .with_system(jump_to_state(LoadingLevel::PlayerEntity))
     );
 
     // Spawning a player
     app.add_enter_system_set(
-        LoadingLevel::SpawningPlayer, 
+        LoadingLevel::PlayerEntity, 
         SystemSet::new()
             .with_system(spawn_player)
             .with_system(jump_to_state(LoadingLevel::Cleanup))

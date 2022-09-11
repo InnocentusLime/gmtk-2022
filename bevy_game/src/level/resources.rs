@@ -6,7 +6,6 @@ use bevy_tiled::*;
 use bevy::prelude::*;
 use bevy::ecs::system::EntityCommands;
 use std::collections::HashMap;
-use thiserror::Error;
 use serde::Deserialize;
 use bevy_tiled::{ TiledMap, TilesetIndexing };
 
@@ -90,7 +89,7 @@ fn ensure_unique_tileset(layer: tiled::FiniteTileLayer) -> Result<usize, anyhow:
         }
     }
 
-    result.ok_or(anyhow!("The layer uses no tileset"))
+    result.ok_or_else(|| anyhow!("The layer uses no tileset"))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -116,8 +115,8 @@ impl Level {
         tileset_indexing: &[TilesetIndexing],
         tilesets: &[&TextureAtlas],
     ) -> Result<Self, anyhow::Error> {
-        static GEOMETRY_LAYER_ID: &'static str = "geometry";
-        static ACTIVATOR_LAYER_ID: &'static str = "activators";
+        static GEOMETRY_LAYER_ID: &str = "geometry";
+        static ACTIVATOR_LAYER_ID: &str = "activators";
 
         // Get the level layer
         let level_layer = map.map.group_layer("level").ok_or_else(|| anyhow!("No `level` layer"))?;
@@ -144,7 +143,7 @@ impl Level {
             .map(|(id, tile)| 
                 tile.animation.as_ref()
                 .map(|anim| (id, tileset_indexing[geometry_tileset_id].cpu_tile_anim(anim)))
-                .ok_or(anyhow!("Tile {id:} in geometry tileset has type `LevelTileAnimation`, but has no animation"))
+                .ok_or_else(|| anyhow!("Tile {id:} in geometry tileset has type `LevelTileAnimation`, but has no animation"))
             )
             .map(|x| x.map(|(id, anim)| (id, cpu_tile_animations.add_animation(anim))))
             .collect::<Result<HashMap<_, _>, _>>()?;
@@ -153,7 +152,7 @@ impl Level {
                 GeometryTile::LevelTileAnimation {
                     anim_ty,
                     target,
-                } => Some(((*target, *anim_ty), animations[&id])),
+                } => Some(((*target, *anim_ty), animations[id])),
                 _ => None
             })
             .collect();

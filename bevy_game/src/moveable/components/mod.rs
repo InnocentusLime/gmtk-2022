@@ -1,16 +1,11 @@
-mod direction;
 mod moveable_state;
-mod decomposed_rotation;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use std::time::Duration;
-use bevy_inspector_egui::Inspectable;
 pub(super) use moveable_state::*;
-pub(super) use decomposed_rotation::*;
 
-pub use direction::MoveDirection;
-pub use decomposed_rotation::DecomposedRotation;
+pub use cube_rot::*;
 
 /// Contains all information about a moveable:
 /// 

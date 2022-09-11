@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["bevy_game", "bevy_ecs_tilemap_cpu_anim", "bevy_game_bootstrap", "bevy_tiled"]
+members = ["bevy_game", "bevy_ecs_tilemap_cpu_anim", "bevy_game_bootstrap", "bevy_tiled", "cube_rot"]
 
 [profile.dev]
 opt-level = 1

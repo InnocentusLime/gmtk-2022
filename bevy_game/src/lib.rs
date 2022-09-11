@@ -11,10 +11,10 @@ use bevy::prelude::*;
 use bevy::window::WindowDescriptor;
 use bevy_pkv::PkvStore;
 use bevy_inspector_egui::WorldInspectorPlugin;
-use bevy_tiled::TiledPlugin;
+use bevy_common_assets::json::JsonAssetPlugin;
 
 use crate::moveable::MoveablePlugin;
-use crate::level_info::{ LevelInfo, LevelInfoLoader };
+use crate::level_info::LevelInfo;
 use crate::level::LevelPlugin;
 use crate::player::PlayerPlugin;
 
@@ -30,9 +30,9 @@ macro_rules! game_strings {
     (title) => { concat!(game_strings!(game_name), "v. ", game_strings!(version)) };
 }
 
-pub static VERSION: &'static str = game_strings!(version);
-pub static GAME_NAME: &'static str = game_strings!(game_name);
-static TITLE: &'static str = game_strings!(title);
+pub static VERSION: &str = game_strings!(version);
+pub static GAME_NAME: &str = game_strings!(game_name);
+static TITLE: &str = game_strings!(title);
 
 #[derive(Clone, Copy, Component)]
 pub struct GameplayCamera;
@@ -72,8 +72,7 @@ pub fn create_app(log: bool, inspector: bool, test_level_path: Option<&str>) -> 
     app.add_plugin(FramepacePlugin::framerate(60).without_warnings());
 
     app
-        .init_asset_loader::<LevelInfoLoader>()
-        .add_asset::<LevelInfo>();
+        .add_plugin(JsonAssetPlugin::<LevelInfo>::new(&["level-info"]));
    
     app.world.spawn()
         .insert_bundle(Camera2dBundle::default())

@@ -32,7 +32,7 @@ pub fn jump_to_state<T: bevy::ecs::schedule::StateData>(state: T) -> impl Fn(Com
 pub fn enter_level(level_path: String, commands: &mut Commands, asset_keys: &mut DynamicAssets) {
     asset_keys.register_asset("map", Box::new(StandardDynamicAsset::File { path: level_path }));
     commands.insert_resource(NextState(GameState::LoadingLevel));
-    commands.insert_resource(NextState(LoadingLevel::LoadingBaseAssets));
+    commands.insert_resource(NextState(LoadingLevel::BaseAssets));
 }
 
 pub fn setup_states(app: &mut App, testing_level: Option<&str>) {

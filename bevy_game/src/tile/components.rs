@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::Inspectable;
-use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 use serde::Deserialize;
 
 // TODO this either needs a different named or should have the docs adjusted

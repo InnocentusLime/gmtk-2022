@@ -29,7 +29,7 @@ impl FromWorld for GeneratedPlayerAssets {
 
         let material = ColorMaterial {
             color: Color::WHITE,
-            texture: std_materials.get(&player_gltf.material.as_ref().unwrap().to_owned())
+            texture: std_materials.get(player_gltf.material.as_ref().unwrap())
                 .unwrap().base_color_texture.to_owned(),
         };
         let material = world.resource_mut::<Assets<ColorMaterial>>().add(material);

@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use bevy_pkv::PkvStore;
 use bevy_asset_loader::{ asset_collection::*, dynamic_asset::* };
-use bevy::input::keyboard::KeyboardInput;
-use bevy::tasks::{ IoTaskPool, Task };
-use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use super::{ GameState, enter_level };
@@ -33,7 +30,7 @@ fn spawn_text(
     save: &Save,
     menu_assets: &MenuAssets,
 ) {
-    let (world, level) = save.world_level();
+    let (_world, _level) = save.world_level();
     let font = menu_assets.main_font.clone();
 
     // Root node
@@ -187,8 +184,6 @@ fn tick(
     save: Option<Res<Save>>,
     mut asset_keys: ResMut<DynamicAssets>,
 ) {
-    use bevy::input::ButtonState;
-  
     for (interaction, button) in button_q.iter() {
         if *interaction != Interaction::Clicked { break; }
         match button {
