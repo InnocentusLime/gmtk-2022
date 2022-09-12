@@ -32,22 +32,24 @@ macro_rules! game_strings {
 
 pub static VERSION: &str = game_strings!(version);
 pub static GAME_NAME: &str = game_strings!(game_name);
-static TITLE: &str = game_strings!(title);
+pub static LAUNCHER_TITLE: &str = game_strings!(title);
 
 #[derive(Clone, Copy, Component)]
 pub struct GameplayCamera;
 
 fn window_descriptor() -> WindowDescriptor {
     WindowDescriptor {
-        title: TITLE.to_owned(),
+        title: LAUNCHER_TITLE.to_owned(),
         resizable: false,
         width: WINDOW_WIDTH,
         height: WINDOW_HEIGHT,
+        canvas: Some("#bevy".to_string()),
+        fit_canvas_to_parent: true,
         ..Default::default()
     }
 }
 
-pub fn create_app(log: bool, inspector: bool, test_level_path: Option<&str>) -> App {
+pub fn app(log: bool, inspector: bool, test_level_path: Option<&str>) -> App {
     let mut app = App::new();
 
     app
