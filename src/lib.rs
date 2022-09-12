@@ -18,7 +18,7 @@ use crate::level_info::LevelInfo;
 use crate::level::LevelPlugin;
 use crate::player::PlayerPlugin;
 
-#[cfg(target_arch = "x86_64")] use bevy_framepace::FramepacePlugin;
+#[cfg(target_arch = "x86_64")] use bevy_framepace::{ FramepacePlugin, FramepaceSettings, Limiter };
 
 const WINDOW_HEIGHT: f32 = 675.0f32;
 const WINDOW_WIDTH: f32 = 1200.0f32;
@@ -71,7 +71,9 @@ pub fn app(log: bool, inspector: bool, test_level_path: Option<&str>) -> App {
         .add_plugin(PlayerPlugin);
 
     #[cfg(target_arch = "x86_64")]
-    app.add_plugin(FramepacePlugin::framerate(60).without_warnings());
+    app
+        .insert_resource(FramepaceSettings::default().with_limiter(Limiter::from_framerate(60.0)))
+        .add_plugin(FramepacePlugin);
 
     app
         .add_plugin(JsonAssetPlugin::<LevelInfo>::new(&["level-info"]));
