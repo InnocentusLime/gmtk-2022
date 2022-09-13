@@ -35,7 +35,7 @@ serde = { version = "1", features = ["derive"] }
 lazy_static = "1"
 futures-lite = "1"
 image = "0.24.3"
-winit = "0.26.1"
+winit = { version = "0.26.1", default-features = false }
 # Internal deps
 bevy_tiled = { path = "bevy_tiled" }
 bevy_ecs_tilemap_cpu_anim = { path = "bevy_ecs_tilemap_cpu_anim" }
