@@ -28,8 +28,8 @@ fn set_window_icon(windows: NonSend<WinitWindows>) {
 fn main() {
     info!("Starting launcher: Native");
     let matches = command!()
-        .version(my_game::VERSION)
-        .name(my_game::GAME_NAME)
+        .version(project_dice_escape::VERSION)
+        .name(project_dice_escape::GAME_NAME)
         .propagate_version(true)
         .subcommand(
             Command::new("run")
@@ -48,15 +48,15 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
-        Some(("run", sub_matches)) => my_game::app(
+        Some(("run", sub_matches)) => project_dice_escape::app(
             sub_matches.contains_id("logging") || sub_matches.contains_id("debugging"),
             sub_matches.contains_id("inspector") || sub_matches.contains_id("debugging"),
             sub_matches.get_one::<String>("level").map(|x| x.as_str())
         )
         .add_startup_system(set_window_icon)
         .run(),
-        Some(("schedule", _)) => bevy_mod_debugdump::print_schedule(&mut my_game::app(false, false, None)),
-        None => my_game::app(false, false, None).run(),
+        Some(("schedule", _)) => bevy_mod_debugdump::print_schedule(&mut project_dice_escape::app(false, false, None)),
+        None => project_dice_escape::app(false, false, None).run(),
         _ => unreachable!(),
     }
 }
