@@ -71,6 +71,11 @@ pub fn moveable_tick(
         if let MoveableState::Moving { dir, .. } = &*moveable.state {
             if dir.apply_on_pos(moveable.position.0).map(|x| tiles.get(&x)).is_none() {
                 moveable.force_idle();
+            } else if matches!(&*moveable.side, Side::Ready(_)) {
+                *moveable.side = Side::Changing { 
+                    from: moveable.rotation.0.upper_side(), 
+                    to: moveable.rotation.0.rotate_in_dir(*dir).upper_side(), 
+                };
             }
         }
 
