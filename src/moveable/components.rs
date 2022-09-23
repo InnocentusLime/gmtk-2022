@@ -84,6 +84,7 @@ impl<'a> MoveableQueryItem<'a> {
     }
 
     pub fn slide(&mut self, dir: MoveDirection, time: Duration) {
+        if !matches!(&*self.state, MoveableState::Idle) { return; }
         *self.state = MoveableState::Moving { 
             dir,
             timer: Timer::new(time, false), 
@@ -92,6 +93,7 @@ impl<'a> MoveableQueryItem<'a> {
     }
 
     pub fn flip(&mut self, dir: MoveDirection, time: Duration) {
+        if !matches!(&*self.state, MoveableState::Idle) { return; }
         *self.side = Side::Changing { 
             from: self.rotation.0.upper_side(), 
             to: self.rotation.0.rotate_in_dir(dir).upper_side(), 
@@ -104,6 +106,7 @@ impl<'a> MoveableQueryItem<'a> {
     }
 
     pub fn rotate(&mut self, clock_wise: bool, time: Duration) {
+        if !matches!(&*self.state, MoveableState::Idle) { return; }
         *self.state = MoveableState::Rotating { 
             clock_wise, 
             timer: Timer::new(time, false), 
