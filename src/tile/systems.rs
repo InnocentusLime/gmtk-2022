@@ -1,140 +1,107 @@
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::{ CPUAnimated, CPUTileAnimations };
-use crate::moveable::{ TileInteractionEvent, Moveable, MoveDirection };
+use crate::moveable::{ TileInteractionEvent, MoveableQuery, Side as MoveableSide, MoveableBundle };
 use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
-use super::{ ActivationCondition, Active, ActivatableAnimating, FrierTag, ConveyorTag, EndTileTag, SpinningTileTag };
-
-/// Manages the transition animatons for tiles. See [ActivatableAnimating] for more info.
-pub fn tile_transition_animating(
-    animations: Res<CPUTileAnimations>,
-    player_q: Query<&Moveable, With<PlayerTag>>,
-    mut tile_q: Query<(&ActivationCondition, &Active, &mut CPUAnimated, &ActivatableAnimating)>,
-) {
-    // Check if player has just started moving
-    let try_change = player_q.get_single().map(Moveable::just_started_moving).unwrap_or(false);
-    if !try_change { return; }
-    
-    let next_side = match player_q.get_single().ok().and_then(Moveable::next_side) {
-        Some(x) => x,
-        None => return,
-    };
-    tile_q.for_each_mut(|(cond, active, mut animated, animating)| {
-        // Do not play transition animation for tiles that aren't going to 
-        // change their state.
-        if active.is_active == cond.is_active(next_side) { return; }
-
-        #[allow(clippy::single_match)]
-        match animating {
-            ActivatableAnimating::Switch { on_transition, off_transition, .. } => animated.set_animation(
-                if active.is_active { *off_transition } else { *on_transition },
-                false,
-                false,
-                &*animations,
-            ),
-            _ => (),
-        }
-    });
-}
+use super::{ ActivationCondition, ActivatableAnimating, TileState, TileQuery, TileKind };
 
 /// Switches tile animation if its state changes. See [ActivatableAnimating] for more info.
-pub fn tile_animating_switch(
+pub fn tile_animation_switch(
     animations: Res<CPUTileAnimations>,
-    mut tile_q: Query<(&Active, &mut CPUAnimated, &ActivatableAnimating), Changed<Active>>,
+    mut tile_q: Query<(&TileState, &mut CPUAnimated, &ActivatableAnimating), Changed<TileState>>,
 ) {
-    tile_q.for_each_mut(|(active, mut animated, animating)| match animating {
-        ActivatableAnimating::Switch { on_anim, off_anim, .. } => animated.set_animation(
-            if active.is_active { *on_anim } else { *off_anim },
-            false,
-            true,
-            &*animations,
-        ),
-        ActivatableAnimating::Pause { .. } => animated.paused = !active.is_active,
+    tile_q.for_each_mut(|(state, mut animated, animating)| match state {
+        TileState::Ready(x) => match animating {
+            ActivatableAnimating::Switch { on_anim, off_anim, .. } => animated.set_animation(
+                if *x { *on_anim } else { *off_anim }, 
+                false, 
+                true, 
+                &*animations,
+            ),
+            ActivatableAnimating::Pause { .. } => animated.paused = !x,
+        },
+        TileState::Changing { to } => match animating {
+            ActivatableAnimating::Switch { on_transition, off_transition, .. } => animated.set_animation(
+                if *to { *on_transition } else { *off_transition }, 
+                false, 
+                false, 
+                &*animations,
+            ),
+            ActivatableAnimating::Pause { .. } => (),
+        },
     });
 }
 
 /// Switches tile state, depending on which number the player has on their upper side.
 /// This system makes sure to trigger `Changed` only when the state of a tile actually changes.
 pub fn tile_state_switching(
-    player_q: Query<&Moveable, With<PlayerTag>>,
-    mut tile_q: Query<(&mut Active, &ActivationCondition)>, 
+    player_q: Query<&MoveableSide, (With<PlayerTag>, Changed<MoveableSide>)>,
+    mut tile_q: Query<(&mut TileState, &ActivationCondition)>, 
 ) {
-    player_q.for_each(|moveable| 
-        tile_q.for_each_mut(|(mut active, cond)| {
-            let new_state = cond.is_active(moveable.upper_side());
+    player_q.for_each(|side| match side {
+        MoveableSide::Ready(x) => tile_q.for_each_mut(|(mut state, cond)| {
+            let new_state = TileState::Ready(cond.is_active(*x));
 
-            if new_state != active.is_active {
-                // This will trigger a change only when it's neccesary
-                active.is_active = new_state;
+            // Do the state change very carefully. We want to trigger
+            // others only when we actually need to change the state.
+            if new_state != *state {
+                *state = new_state;
             }
-        })
-    );
+        }),
+        MoveableSide::Changing { from, to } => tile_q.for_each_mut(|(mut state, cond)| {
+            let new_state = cond.is_active(*to);
+
+            if cond.is_active(*from) != new_state {
+                *state = TileState::Changing { to: new_state };
+            }
+        }),
+    });
 }
 
-/// Logic for the frier tile. See [FrierTag]
-pub fn frier_tile_handler(
+pub fn special_tile_handler(
     mut interactions: EventReader<TileInteractionEvent>,
-    mut tile_query: Query<&Active, With<FrierTag>>,
-    mut move_query: Query<(), With<Moveable>>,
-    mut commands: Commands,
-) {
-    for e in interactions.iter() {
-        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
-            (Ok(state), Ok(_)) if state.is_active => commands.entity(e.interactor_id).despawn(),
-            _ => (),
-        }
-    }
-}
-
-/// Logic for the conveyor tile. See [ConveyorTag]
-pub fn conveyor_tile_handler(
-    mut interactions: EventReader<TileInteractionEvent>,
-    mut tile_query: Query<(&Active, &TileFlip), With<ConveyorTag>>,
-    mut move_query: Query<&mut Moveable>,
-) {
-    for e in interactions.iter() {
-        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
-            (Ok((state, flip)), Ok(mut moveable)) if state.is_active => {
-                let dir = MoveDirection::Up.apply_flipping_flags(flip.x, flip.y, flip.d);
-
-                moveable.slide(dir, Duration::from_millis(500));
-            },
-            _ => (),
-        }
-    }
-}
-
-/// Logic for the end tile. See [EndTileTag]
-pub fn exit_tile_handler(
-    mut interactions: EventReader<TileInteractionEvent>,
-    mut tile_query: Query<(), With<EndTileTag>>,
-    mut move_query: Query<(), (With<PlayerTag>, With<Moveable>)>,
     mut escape_event: EventWriter<PlayerEscapedEvent>,
+    mut tile_query: Query<TileQuery>,
+    mut move_query: Query<(MoveableQuery, Option<&PlayerTag>)>,
     mut commands: Commands,
 ) {
-    for e in interactions.iter() {
-        if let (Ok(_), Ok(_)) = (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
-            commands.entity(e.interactor_id).remove::<Moveable>().insert(PlayerWinnerTag::new());
-            escape_event.send(PlayerEscapedEvent);
-        }
-    }
-}
+    let res: Result<(), anyhow::Error> = interactions.iter()
+        .map(|e| {
+            let tile = tile_query.get_mut(e.tile_id)?;
+            let (moveable, player_tag) = move_query.get_mut(e.moveable_id)?;
 
-/// Logic fro the spining tile. See [SpiningTileTag]
-pub fn spinning_tile_handler(
-    mut interactions: EventReader<TileInteractionEvent>,
-    mut tile_query: Query<(&Active, &TileFlip), With<SpinningTileTag>>,
-    mut move_query: Query<&mut Moveable>,
-) {
-    for e in interactions.iter() {
-        match (tile_query.get_mut(e.tile_id), move_query.get_mut(e.interactor_id)) {
-            (Ok((state, flip)), Ok(mut moveable)) if state.is_active => {
-                let clockwise = !(flip.x ^ flip.y ^ flip.d);
+            let (tile, mut moveable, is_player, moveable_id, _tile_id) = (
+                tile, 
+                moveable, 
+                player_tag.is_some(), 
+                e.moveable_id, 
+                e.tile_id
+            );
 
-                moveable.rotate(clockwise, Duration::from_millis(500));
-            },
-            _ => (),
-        }
+            if !tile.is_active() { return Ok(()); }
+
+            match &tile.kind {
+                // Conveyor logic
+                TileKind::Conveyor => moveable.slide(tile.direction(), Duration::from_millis(500)),
+                // Frier logic
+                TileKind::FrierTile => commands.entity(moveable_id).despawn(),
+                // Spinner logic
+                TileKind::SpinningTile => moveable.rotate(tile.clock_wise(), Duration::from_millis(500)),
+                // Exit logic
+                TileKind::ExitTile if is_player => {
+                    commands.entity(moveable_id)
+                        .remove_bundle::<MoveableBundle>()
+                        .insert(PlayerWinnerTag::new());
+                    escape_event.send(PlayerEscapedEvent);
+                },
+                _ => (),
+            };
+
+            Ok(())
+        })
+        .collect();
+
+    if let Err(e) = res {
+        error!("Error while handling tile interaction: {}", e);
     }
 }

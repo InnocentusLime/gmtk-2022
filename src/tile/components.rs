@@ -1,5 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ecs::query::WorldQuery};
+use bevy_ecs_tilemap::tiles::TileFlip;
 use bevy_inspector_egui::Inspectable;
+use cube_rot::MoveDirection;
 use serde::Deserialize;
 
 // TODO this either needs a different named or should have the docs adjusted
@@ -52,17 +54,45 @@ pub enum ActivatableAnimating {
     },
 }
 
-/// Describes whether tile is active or not. This component is for tiles,
-/// which are supposed to activate and deactivate during the level.
-#[derive(Clone, Copy, Debug, Component, Inspectable)]
-pub struct Active { 
-    #[inspectable(read_only)]
-    pub is_active: bool,
+#[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq)]
+pub enum TileState {
+    Ready(bool),
+    Changing {
+        to: bool,
+    },
 }
 
-/// Conveyor tag. Conveyors push any moveable towards the direction they point at.
-#[derive(Component)]
-pub struct ConveyorTag;
+#[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq, Hash, Deserialize)]
+#[repr(u8)]
+pub enum TileKind {
+    Conveyor,
+    StartTile,
+    FrierTile,
+    SpinningTile,
+    ExitTile,
+}
+
+#[derive(WorldQuery, Debug)]
+#[world_query(mutable)]
+pub struct TileQuery {
+    pub (super) kind: &'static TileKind,
+    pub (super) state: &'static mut TileState,
+    pub (super) flip: &'static TileFlip,
+}
+
+impl<'a> TileQueryItem<'a> {
+    pub fn direction(&self) -> MoveDirection {
+        MoveDirection::Up.apply_flipping_flags(self.flip.x, self.flip.y, self.flip.d)
+    }
+
+    pub fn clock_wise(&self) -> bool {
+        !(self.flip.x ^ self.flip.y ^ self.flip.d)
+    }
+
+    pub fn is_active(&self) -> bool {
+        matches!(&*self.state, TileState::Ready(true))
+    }
+}
 
 // TODO start tiles shouldn't be separate type
 // TODO maybe start tiles should spawn the player themselves, to break the cycle
@@ -70,18 +100,3 @@ pub struct ConveyorTag;
 /// Special floor tile, which is used as player's starting point.
 #[derive(Component)]
 pub struct StartTileTag;
-
-/// Frier tag. Friers destroy any movable that stands on them.
-#[derive(Component)]
-pub struct FrierTag;
-
-/// End tile. This tile acts as floor tile for all moveables, except the
-/// player. When the player steps on this tile, the level ends.
-#[derive(Component)]
-pub struct EndTileTag;
-
-/// Spinning tile. When active, this tile rotates the player clockwise
-/// (or counter-clockwise, depending on its mirroring flags) once and then
-/// allows the player to get off.
-#[derive(Component)]
-pub struct SpinningTileTag;

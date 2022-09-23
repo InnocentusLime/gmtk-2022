@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use std::time::Duration;
 use crate::GameplayCamera;
-use crate::moveable::Moveable;
+use crate::moveable::MoveableQuery;
 use super::{ PlayerTag, PlayerWinnerTag, PlayerEscapedEvent, BasePlayerAssets };
 
 pub fn player_win_sound(
@@ -45,7 +45,7 @@ pub fn player_camera(
 
 pub fn player_controls(
     key_input: Res<Input<KeyCode>>,
-    mut query: Query<&mut Moveable, With<PlayerTag>>,
+    mut query: Query<MoveableQuery, With<PlayerTag>>,
 ) {
     use crate::moveable::MoveDirection::*;
    

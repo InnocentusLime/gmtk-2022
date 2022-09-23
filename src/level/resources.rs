@@ -4,12 +4,11 @@ use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::*;
 use bevy_tiled::*;
 use bevy::prelude::*;
-use bevy::ecs::system::EntityCommands;
 use std::collections::HashMap;
 use serde::Deserialize;
 use bevy_tiled::{ TiledMap, TilesetIndexing };
 
-use crate::tile::{ ActivationCondition, ActivatableAnimating };
+use crate::tile::{ ActivationCondition, ActivatableAnimating, TileKind };
 
 #[derive(AssetCollection)]
 pub struct BaseLevelAssets {
@@ -26,12 +25,12 @@ pub struct LevelTilesetImages {
 #[derive(Deserialize)]
 pub enum GeometryTile {
     LogicTile {
-        ty: LevelTileType,
+        ty: TileKind,
     },
     Frame,
     LevelTileAnimation {
         anim_ty: TileAnimationType,
-        target: LevelTileType,
+        target: TileKind,
     },
 }
 
@@ -48,32 +47,6 @@ pub enum TileAnimationType {
     OffAnimation,
     OnTransition,
     OffTransition,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize)]
-#[repr(u8)]
-pub enum LevelTileType {
-    Exit,
-    Conveyor,
-    Fry,
-    PlayerStart,
-    Floor,
-    SpinningTile,
-}
-
-impl LevelTileType {
-    pub fn insert_into(&self, cmds: &mut EntityCommands) {
-        use crate::tile::{ FrierTag, ConveyorTag, StartTileTag, EndTileTag, SpinningTileTag };
-                            
-        match self {
-            LevelTileType::Exit => { cmds.insert(EndTileTag); },
-            LevelTileType::Fry => { cmds.insert(FrierTag); },
-            LevelTileType::Conveyor => { cmds.insert(ConveyorTag); },
-            LevelTileType::PlayerStart => { cmds.insert(StartTileTag); },
-            LevelTileType::SpinningTile => { cmds.insert(SpinningTileTag); },
-            _ => (),
-        }
-    }
 }
 
 fn ensure_unique_tileset(layer: tiled::FiniteTileLayer) -> Result<usize, anyhow::Error> {
@@ -96,7 +69,7 @@ fn ensure_unique_tileset(layer: tiled::FiniteTileLayer) -> Result<usize, anyhow:
 pub struct LevelTile {
     pub texture: TileTexture,
     pub flip: TileFlip,
-    pub ty: LevelTileType,
+    pub ty: TileKind,
     pub activation_cond: Option<ActivationCondition>,
     pub activatable_animating: Option<ActivatableAnimating>,
 }

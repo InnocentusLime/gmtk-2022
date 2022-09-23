@@ -96,22 +96,27 @@ pub fn spawn_level(
                     let position = TilePos { x: *x, y: *y };
                     let mut cmds = commands.spawn();
 
-                    cmds.insert_bundle(TileBundle {
-                        position,
-                        tilemap_id: TilemapId(map_entity),
-                        texture: data.texture,
-                        flip: data.flip,
-                        ..default()
-                    }).insert(Name::new("level tile"));
+                    cmds
+                        .insert_bundle(TileBundle {
+                            position,
+                            tilemap_id: TilemapId(map_entity),
+                            texture: data.texture,
+                            flip: data.flip,
+                            ..default()
+                        })
+                        .insert(Name::new("level tile"))
+                        .insert(data.ty);
 
-                    data.ty.insert_into(&mut cmds);
-
+                    if let TileKind::StartTile = data.ty {
+                        cmds.insert(StartTileTag);
+                    }
+                    
                     let enabled = data.activation_cond.map(ActivationCondition::active_on_start).unwrap_or(false);
 
                     if let Some(cond) = data.activation_cond {
                         cmds
                             .insert(cond)
-                            .insert(Active { is_active: cond.active_on_start() });
+                            .insert(TileState::Ready(cond.active_on_start()));
                     }
 
                     if let Some(animating) = data.activatable_animating {

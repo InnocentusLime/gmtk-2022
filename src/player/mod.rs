@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use iyes_loopless::prelude::*;
 
-use crate::moveable::{ Moveable, MoveableTilemapTag };
+use crate::moveable::{ MoveableTilemapTag, MoveableBundle };
 use crate::tile::StartTileTag;
 use crate::states::GameState;
 use crate::level::tile_pos_to_world_pos;
@@ -72,7 +72,7 @@ pub fn spawn_player(
     commands.spawn()
         .insert(PlayerTag)
         .insert(Name::new("Player"))
-        .insert(Moveable::new(*start_pos))
+        .insert_bundle(MoveableBundle::new(*start_pos))
         .insert_bundle(MaterialMesh2dBundle {
             mesh: generated_assets.model.clone(),
             material: generated_assets.material.clone(),
