@@ -1,5 +1,5 @@
 use bevy::{prelude::*, ecs::query::WorldQuery};
-use bevy_ecs_tilemap::tiles::TileFlip;
+use bevy_ecs_tilemap::tiles::{TileFlip, TileBundle};
 use bevy_inspector_egui::Inspectable;
 use cube_rot::MoveDirection;
 use serde::Deserialize;
@@ -68,12 +68,16 @@ pub enum TileState {
     },
 }
 
+impl Default for TileState {
+    fn default() -> Self { TileState::Ready(true) }
+}
+
 /// The tile kind. This data type is mapped directly to the ones you can see in the
 /// level editor.
 /// 
 /// The tile kind dictates what graphics the game should use and how should the tile 
 /// behave.
-#[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Clone, Copy, Default, Debug, Component, Inspectable, PartialEq, Eq, Hash, Deserialize)]
 #[repr(u8)]
 pub enum TileKind {
     /// Conveyor tiles push any moveable into the direction they are facing towards
@@ -90,7 +94,17 @@ pub enum TileKind {
     /// has stepped on them.
     Exit,
     /// Floor tiles do nothing
+    #[default]
     Floor,
+}
+
+/// A bundle to quickly construct a logical tile.
+#[derive(Default, Bundle)]
+pub struct LogicTileBundle {
+    pub kind: TileKind,
+    pub state: TileState,
+    #[bundle]
+    pub tile_bundle: TileBundle,
 }
 
 /// A custom query type for exposing an easier to use tile API.
