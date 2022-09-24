@@ -95,28 +95,30 @@ pub fn spawn_level(
                 level.tiles.iter().for_each(|((x, y), data)| {
                     let position = TilePos { x: *x, y: *y };
                     let mut cmds = commands.spawn();
+                    let enabled = data.activation_cond
+                        .map(ActivationCondition::active_on_start)
+                        .unwrap_or(true);
 
                     cmds
-                        .insert_bundle(TileBundle {
-                            position,
-                            tilemap_id: TilemapId(map_entity),
-                            texture: data.texture,
-                            flip: data.flip,
-                            ..default()
-                        })
-                        .insert(Name::new("level tile"))
-                        .insert(data.ty);
+                        .insert(Name::new("logic tile"))
+                        .insert_bundle(LogicTileBundle {
+                            kind: data.ty,
+                            state: TileState::Ready(enabled),
+                            tile_bundle: TileBundle {
+                                position,
+                                tilemap_id: TilemapId(map_entity),
+                                texture: data.texture,
+                                flip: data.flip,
+                                ..default()
+                            },
+                        });
 
                     if let TileKind::Start = data.ty {
                         cmds.insert(StartTileTag);
                     }
                     
-                    let enabled = data.activation_cond.map(ActivationCondition::active_on_start).unwrap_or(false);
-
                     if let Some(cond) = data.activation_cond {
-                        cmds
-                            .insert(cond)
-                            .insert(TileState::Ready(cond.active_on_start()));
+                        cmds.insert(cond);
                     }
 
                     if let Some(animating) = data.activatable_animating {
