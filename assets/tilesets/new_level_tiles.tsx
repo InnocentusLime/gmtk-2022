@@ -27,7 +27,7 @@
  </tile>
  <tile id="9" type="LogicTile">
   <properties>
-   <property name="ty" value="PlayerStart"/>
+   <property name="ty" propertytype="LevelTileType" value="Start"/>
   </properties>
   <image width="32" height="32" source="../tiles/player_start.png"/>
  </tile>
@@ -64,14 +64,14 @@
  </tile>
  <tile id="16" type="LogicTile">
   <properties>
-   <property name="ty" value="Fry"/>
+   <property name="ty" propertytype="LevelTileType" value="Frier"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry0.png"/>
  </tile>
  <tile id="17" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OnTransition"/>
-   <property name="target" value="Fry"/>
+   <property name="target" propertytype="LevelTileType" value="Frier"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry1.png"/>
   <animation>
@@ -84,7 +84,7 @@
  <tile id="18" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OffTransition"/>
-   <property name="target" value="Fry"/>
+   <property name="target" propertytype="LevelTileType" value="Frier"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry2.png"/>
   <animation>
@@ -97,7 +97,7 @@
  <tile id="19" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OnAnimation"/>
-   <property name="target" value="Fry"/>
+   <property name="target" propertytype="LevelTileType" value="Frier"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry3.png"/>
   <animation>
@@ -111,7 +111,7 @@
  <tile id="20" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" value="OffAnimation"/>
-   <property name="target" value="Fry"/>
+   <property name="target" propertytype="LevelTileType" value="Frier"/>
   </properties>
   <image width="32" height="32" source="../tiles/fry4.png"/>
   <animation>
@@ -129,14 +129,14 @@
  </tile>
  <tile id="24" type="LogicTile">
   <properties>
-   <property name="ty" propertytype="LevelTileType" value="SpinningTile"/>
+   <property name="ty" propertytype="LevelTileType" value="Spinner"/>
   </properties>
   <image width="32" height="32" source="../tiles/spin0.png"/>
  </tile>
  <tile id="25" type="LevelTileAnimation">
   <properties>
    <property name="anim_ty" propertytype="TileAnimationType" value="OnOffAnimation"/>
-   <property name="target" propertytype="LevelTileType" value="SpinningTile"/>
+   <property name="target" propertytype="LevelTileType" value="Spinner"/>
   </properties>
   <image width="32" height="32" source="../tiles/spin1.png"/>
   <animation>

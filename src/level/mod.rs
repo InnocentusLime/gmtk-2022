@@ -107,7 +107,7 @@ pub fn spawn_level(
                         .insert(Name::new("level tile"))
                         .insert(data.ty);
 
-                    if let TileKind::StartTile = data.ty {
+                    if let TileKind::Start = data.ty {
                         cmds.insert(StartTileTag);
                     }
                     

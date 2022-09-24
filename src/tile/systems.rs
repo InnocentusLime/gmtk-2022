@@ -84,11 +84,11 @@ pub fn special_tile_handler(
                 // Conveyor logic
                 TileKind::Conveyor => moveable.slide(tile.direction(), Duration::from_millis(500)),
                 // Frier logic
-                TileKind::FrierTile => commands.entity(moveable_id).despawn(),
+                TileKind::Frier => commands.entity(moveable_id).despawn(),
                 // Spinner logic
-                TileKind::SpinningTile => moveable.rotate(tile.clock_wise(), Duration::from_millis(500)),
+                TileKind::Spinner => moveable.rotate(tile.clock_wise(), Duration::from_millis(500)),
                 // Exit logic
-                TileKind::ExitTile if is_player => {
+                TileKind::Exit if is_player => {
                     commands.entity(moveable_id)
                         .remove_bundle::<MoveableBundle>()
                         .insert(PlayerWinnerTag::new());

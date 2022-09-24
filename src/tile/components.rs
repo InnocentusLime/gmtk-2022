@@ -54,24 +54,46 @@ pub enum ActivatableAnimating {
     },
 }
 
+/// Tile state. Determines what the tile would do when someone interacts with it.
 #[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq)]
 pub enum TileState {
+    /// The tile has a ready state. The bool field tells whether the tile is turned
+    /// on or not.
     Ready(bool),
+    /// The tile is in process of changing its state. The state will then be changed
+    /// to `Ready(to)`
     Changing {
+        /// The state the tile is transitioning to.
         to: bool,
     },
 }
 
+/// The tile kind. This data type is mapped directly to the ones you can see in the
+/// level editor.
+/// 
+/// The tile kind dictates what graphics the game should use and how should the tile 
+/// behave.
 #[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq, Hash, Deserialize)]
 #[repr(u8)]
 pub enum TileKind {
+    /// Conveyor tiles push any moveable into the direction they are facing towards
+    /// when they are active.
     Conveyor,
-    StartTile,
-    FrierTile,
-    SpinningTile,
-    ExitTile,
+    /// Start tiles are pretty much floor tiles. The only thing that makes them special
+    /// is that the player spawns on them.
+    Start,
+    /// Frier tiles destroy any moveable that steps on them when they are active.
+    Frier,
+    /// Spinner tiles spin the moveable, that stepped on them, around when they are active.
+    Spinner,
+    /// Exit tiles announce that the level has been beated when the player-tagged moveable
+    /// has stepped on them.
+    Exit,
+    /// Floor tiles do nothing
+    Floor,
 }
 
+/// A custom query type for exposing an easier to use tile API.
 #[derive(WorldQuery, Debug)]
 #[world_query(mutable)]
 pub struct TileQuery {
@@ -81,14 +103,17 @@ pub struct TileQuery {
 }
 
 impl<'a> TileQueryItem<'a> {
+    /// Returns the direction towards which the tiles is facing.
     pub fn direction(&self) -> MoveDirection {
         MoveDirection::Up.apply_flipping_flags(self.flip.x, self.flip.y, self.flip.d)
     }
 
+    /// Tells whether the tile is clock-wise or counter-clock-wise oriented.
     pub fn clock_wise(&self) -> bool {
         !(self.flip.x ^ self.flip.y ^ self.flip.d)
     }
 
+    /// Tells whether the tile is active or not.
     pub fn is_active(&self) -> bool {
         matches!(&*self.state, TileState::Ready(true))
     }
