@@ -46,5 +46,5 @@ cube_rot = { path = "cube_rot" }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 bevy_framepace = "0.7.0"
-clap = { version = "3", features = ["cargo"] }
+clap = { version = "4", features = ["cargo"] }
 bevy_mod_debugdump = "0.5"
