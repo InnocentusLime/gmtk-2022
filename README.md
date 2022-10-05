@@ -10,7 +10,15 @@ After receiving some small positive feedback, I decided to finish this game.
 
 # Technical info
 
-Right now the game is using the [bevy game engine](https://bevyengine.org/) version 0.8.1, along with some third party plugins. For complete list of dependencies see the [`Cargo.toml`](Cargo.toml) manifest file, located in the project root.
+Right now the game is using [the bevy game engine](https://bevyengine.org/) version 0.8.1, along with some third party plugins. For complete list of dependencies see the [`Cargo.toml`](Cargo.toml) manifest file, located in the project root.
+
+The levels of the game were created via [the tiled level editor](https://www.mapeditor.org/).
+
+The game has different modes you can boot it up in. For more info simply run the game like this:
+
+```bash
+game_excutable --help
+```
 
 # The state of this project
 
