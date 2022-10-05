@@ -9,5 +9,5 @@ my-game = { package = "my-game", path = "../.." }
 bevy = "0.8"
 image = "0.24.3"
 winit = { version = "0.26.1", default-features = false }
-clap = { version = "3", features = ["cargo"] }
+clap = { version = "4", features = ["cargo"] }
 bevy_mod_debugdump = "0.5"
