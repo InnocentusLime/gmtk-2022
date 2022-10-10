@@ -25,7 +25,7 @@ bevy_common_assets = { version = "0.3", features = ["json"] }
 bevy_asset_loader = { version = "0.12", features = ["stageless", "dynamic_assets"] }
 iyes_loopless = "0.7"
 anyhow = "1"
-bevy_ecs_tilemap = "0.7"
+bevy_ecs_tilemap = "0.8"
 tiled = { version = "0.10", default-features = false }
 bevy-inspector-egui = "0.13"
 bevy_pkv = "0.5"

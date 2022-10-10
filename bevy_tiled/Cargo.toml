@@ -12,6 +12,6 @@ anyhow = "1.0.65"
 thiserror = "1"
 serde = "1"
 bevy = "0.8"
-bevy_ecs_tilemap = "0.7.0"
+bevy_ecs_tilemap = "0.8.0"
 tiled = "0.10.2"
 bevy_ecs_tilemap_cpu_anim = { path = "../bevy_ecs_tilemap_cpu_anim" }
