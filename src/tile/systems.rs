@@ -3,7 +3,7 @@ use bevy_ecs_tilemap_cpu_anim::{ CPUAnimated, CPUTileAnimations };
 use crate::moveable::{ TileInteractionEvent, MoveableQuery, Side as MoveableSide, MoveableBundle };
 use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
-use super::{ ActivationCondition, ActivatableAnimating, TileState, TileQuery, TileKind };
+use super::{ ActivationCondition, ActivatableAnimating, TileState, LogicTileQuery, TileKind };
 
 /// Switches tile animation if its state changes. See [ActivatableAnimating] for more info.
 pub fn tile_animation_switch(
@@ -61,7 +61,7 @@ pub fn tile_state_switching(
 pub fn special_tile_handler(
     mut interactions: EventReader<TileInteractionEvent>,
     mut escape_event: EventWriter<PlayerEscapedEvent>,
-    mut tile_query: Query<TileQuery>,
+    mut tile_query: Query<LogicTileQuery>,
     mut move_query: Query<(MoveableQuery, Option<&PlayerTag>)>,
     mut commands: Commands,
 ) {

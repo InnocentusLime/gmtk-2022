@@ -107,16 +107,24 @@ pub struct LogicTileBundle {
     pub tile_bundle: TileBundle,
 }
 
+/// A bundle to quickly construct a trigger tile.
+#[derive(Bundle)]
+pub struct TriggerTileBundle {
+    pub condition: ActivationCondition,
+    #[bundle]
+    pub tile_bundle: TileBundle,
+}
+
 /// A custom query type for exposing an easier to use tile API.
 #[derive(WorldQuery, Debug)]
 #[world_query(mutable)]
-pub struct TileQuery {
+pub struct LogicTileQuery {
     pub (super) kind: &'static TileKind,
     pub (super) state: &'static mut TileState,
     pub (super) flip: &'static TileFlip,
 }
 
-impl<'a> TileQueryItem<'a> {
+impl<'a> LogicTileQueryItem<'a> {
     /// Returns the direction towards which the tiles is facing.
     pub fn direction(&self) -> MoveDirection {
         MoveDirection::Up.apply_flipping_flags(self.flip.x, self.flip.y, self.flip.d)
@@ -139,3 +147,9 @@ impl<'a> TileQueryItem<'a> {
 /// Special floor tile, which is used as player's starting point.
 #[derive(Component)]
 pub struct StartTileTag;
+
+#[derive(Component)]
+pub struct GraphicsTilemapTag;
+
+#[derive(Component)]
+pub struct TriggerTilemapTag;
