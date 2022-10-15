@@ -22,23 +22,6 @@
             "valuesAsFlags": false
         },
         {
-            "color": "#ffff0000",
-            "id": 6,
-            "members": [
-                {
-                    "name": "active",
-                    "propertyType": "ActivationCondition",
-                    "type": "string",
-                    "value": "Odd"
-                }
-            ],
-            "name": "TriggerTile",
-            "type": "class",
-            "useAs": [
-                "tile"
-            ]
-        },
-        {
             "color": "#ffa0a0a4",
             "id": 7,
             "members": [
@@ -46,6 +29,29 @@
             "name": "Frame",
             "type": "class",
             "useAs": [
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "id": 10,
+            "members": [
+                {
+                    "name": "animation_type",
+                    "type": "string",
+                    "value": "{}"
+                }
+            ],
+            "name": "GraphicsTile",
+            "type": "class",
+            "useAs": [
+                "property",
                 "map",
                 "layer",
                 "object",
@@ -124,6 +130,23 @@
                 "OffTransition"
             ],
             "valuesAsFlags": false
+        },
+        {
+            "color": "#ffff0000",
+            "id": 6,
+            "members": [
+                {
+                    "name": "active",
+                    "propertyType": "ActivationCondition",
+                    "type": "string",
+                    "value": "Odd"
+                }
+            ],
+            "name": "TriggerTile",
+            "type": "class",
+            "useAs": [
+                "tile"
+            ]
         }
     ]
 }
