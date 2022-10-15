@@ -32,7 +32,7 @@
                     "value": "Odd"
                 }
             ],
-            "name": "ActivatorTile",
+            "name": "TriggerTile",
             "type": "class",
             "useAs": [
                 "tile"
