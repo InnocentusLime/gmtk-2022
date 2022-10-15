@@ -49,17 +49,17 @@ fn ensure_unique_tileset(layer: tiled::FiniteTileLayer) -> Result<usize, anyhow:
 }
 
 #[derive(Deserialize)]
-struct LogicTileProps {
+struct LogicTile {
     ty: TileKind,
 }
 
 #[derive(Deserialize)]
-struct TriggerTileProps {
+struct TriggerTile {
     activation_cond: ActivationCondition,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct LogicTile {
+pub struct LogicTileData {
     pub texture: TileTexture,
     pub flip: TileFlip,
     pub ty: TileKind,
@@ -113,20 +113,20 @@ where
 }
 
 #[derive(Deserialize)]
-struct GraphicsTileProps {
+struct GraphicsTile {
     #[serde(deserialize_with = "deserialize_anim_ty")]
     animation_type: GraphicsTileAnimationType,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct GraphicsTile {
+pub struct GraphicsTileData {
     pub texture: TileTexture,
     pub flip: TileFlip,
     pub activatable_animating: Option<ActivatableAnimating>,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct TriggerTile {
+pub struct TriggerTileData {
     pub texture: TileTexture,
     pub activation_cond: ActivationCondition,
 }
@@ -135,13 +135,13 @@ pub struct Level {
     width: u32,
     height: u32,
     // Logic layer
-    pub(super) logic_tiles: HashMap<(u32, u32), LogicTile>,
+    pub(super) logic_tiles: HashMap<(u32, u32), LogicTileData>,
     pub(super) logic_atlas: Handle<Image>,
     // Graphics layer
-    pub(super) graphics_tiles: HashMap<(u32, u32), GraphicsTile>,
+    pub(super) graphics_tiles: HashMap<(u32, u32), GraphicsTileData>,
     pub(super) graphics_atlas: Handle<Image>,
     // Trigger layer
-    pub(super) trigger_tiles: HashMap<(u32, u32), TriggerTile>,
+    pub(super) trigger_tiles: HashMap<(u32, u32), TriggerTileData>,
     pub(super) trigger_atlas: Handle<Image>,
 }
 
@@ -165,7 +165,7 @@ impl Level {
                 .ok_or_else(|| anyhow!("No `{}` layer in `level`", LOGIC_LAYER_ID))?;
             let logic_tileset_id = ensure_unique_tileset(logic_layer)
                 .context(format!("Failed to check that `{}` has one tileset", LOGIC_LAYER_ID))?;
-            let logic_properties: HashMap<_, LogicTileProps> = 
+            let logic_properties: HashMap<_, LogicTile> = 
                 map.map.tilesets()[logic_tileset_id].tile_properties()?;
             let mut logic_tiles = HashMap::new();
 
@@ -180,7 +180,7 @@ impl Level {
 
                     logic_tiles.insert(
                         table_pos, 
-                        LogicTile {
+                        LogicTileData {
                             ty: logic_properties[&logic_tile.id()].ty,
                             flip: logic_tile.bevy_flip_flags(),
                             texture: TileTexture(
@@ -200,7 +200,7 @@ impl Level {
                 .ok_or_else(|| anyhow!("No `{}` layer in `level`", TRIGGER_LAYER_ID))?;
             let trigger_tileset_id = ensure_unique_tileset(trigger_layer)
                 .context(format!("Failed to check that `{}` has one tileset", TRIGGER_LAYER_ID))?;
-            let trigger_properties: HashMap<_, TriggerTileProps> = 
+            let trigger_properties: HashMap<_, TriggerTile> = 
                 map.map.tilesets()[trigger_tileset_id].tile_properties()?;
             let mut trigger_tiles = HashMap::new();
 
@@ -215,7 +215,7 @@ impl Level {
 
                     trigger_tiles.insert(
                         table_pos, 
-                        TriggerTile {
+                        TriggerTileData {
                             activation_cond: trigger_properties[&trigger_tile.id()].activation_cond,
                             texture: TileTexture(
                                 tileset_indexing[trigger_tileset_id].dispatch(trigger_tile.id())
@@ -234,7 +234,7 @@ impl Level {
                 .ok_or_else(|| anyhow!("No `{}` layer", GRAPHICS_LAYER_ID))?;
             let graphics_tileset_id = ensure_unique_tileset(graphics_layer)
                 .context(format!("Failed to check that `{}` has one tileset", GRAPHICS_LAYER_ID))?;
-            let graphics_properties: HashMap<_, GraphicsTileProps> = 
+            let graphics_properties: HashMap<_, GraphicsTile> = 
                 map.map.tilesets()[graphics_tileset_id].tile_properties()?;
             let graphics_anims: HashMap<_, ActivatableAnimating> = 
                 graphics_properties.into_iter()
@@ -272,7 +272,7 @@ impl Level {
 
                     graphics_tiles.insert(
                         table_pos, 
-                        GraphicsTile { 
+                        GraphicsTileData { 
                             texture: TileTexture(
                                 tileset_indexing[graphics_tileset_id].dispatch(graphics_tile.id())
                             ), 
