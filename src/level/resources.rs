@@ -55,7 +55,7 @@ struct LogicTile {
 
 #[derive(Deserialize)]
 struct TriggerTile {
-    activation_cond: ActivationCondition,
+    active: ActivationCondition,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -216,7 +216,7 @@ impl Level {
                     trigger_tiles.insert(
                         table_pos, 
                         TriggerTileData {
-                            activation_cond: trigger_properties[&trigger_tile.id()].activation_cond,
+                            activation_cond: trigger_properties[&trigger_tile.id()].active,
                             texture: TileTexture(
                                 tileset_indexing[trigger_tileset_id].dispatch(trigger_tile.id())
                             ),
