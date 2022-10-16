@@ -74,14 +74,14 @@ struct TileAnimationFrame {
 #[derive(Debug, Deserialize)]
 struct TileAnimation(Vec<TileAnimationFrame>);
 
-impl Into<CPUTileAnimation> for TileAnimation {
-    fn into(self) -> CPUTileAnimation {
+impl TileAnimation {
+    fn into_cpu_tile_anim(self, mapping: &TilesetIndexing) -> CPUTileAnimation {
         CPUTileAnimation::from_frames(
             self.0.into_iter()
-            .map(|frame| Frame {
-                texture_id: frame.id,
-                duration: Duration::from_millis(frame.dur),
-            })
+                .map(|frame| Frame {
+                    texture_id: mapping.dispatch(frame.id),
+                    duration: Duration::from_millis(frame.dur),
+                })
         )
     }
 }
@@ -234,6 +234,7 @@ impl Level {
                 .ok_or_else(|| anyhow!("No `{}` layer", GRAPHICS_LAYER_ID))?;
             let graphics_tileset_id = ensure_unique_tileset(graphics_layer)
                 .context(format!("Failed to check that `{}` has one tileset", GRAPHICS_LAYER_ID))?;
+            let graphics_indexing = &tileset_indexing[graphics_tileset_id];
             let graphics_properties: HashMap<_, GraphicsTile> = 
                 map.map.tilesets()[graphics_tileset_id].tile_properties()?;
             let graphics_anims: HashMap<_, ActivatableAnimating> = 
@@ -243,7 +244,7 @@ impl Level {
                     GraphicsTileAnimationType::Pause { on_anim } => Some((
                         tile, 
                         ActivatableAnimating::Pause { 
-                            anim: cpu_tile_animations.add_animation(on_anim.into()), 
+                            anim: cpu_tile_animations.add_animation(on_anim.into_cpu_tile_anim(graphics_indexing)), 
                         }
                     )),
                     GraphicsTileAnimationType::Switch { 
@@ -251,10 +252,10 @@ impl Level {
                     } => Some ((
                         tile,
                         ActivatableAnimating::Switch { 
-                            on_transition: cpu_tile_animations.add_animation(on_transition.into()), 
-                            off_transition: cpu_tile_animations.add_animation(off_transition.into()), 
-                            on_anim: cpu_tile_animations.add_animation(on_anim.into()), 
-                            off_anim: cpu_tile_animations.add_animation(off_anim.into()),
+                            on_transition: cpu_tile_animations.add_animation(on_transition.into_cpu_tile_anim(graphics_indexing)), 
+                            off_transition: cpu_tile_animations.add_animation(off_transition.into_cpu_tile_anim(graphics_indexing)), 
+                            on_anim: cpu_tile_animations.add_animation(on_anim.into_cpu_tile_anim(graphics_indexing)), 
+                            off_anim: cpu_tile_animations.add_animation(off_anim.into_cpu_tile_anim(graphics_indexing)),
                         }
                     )),
                 })
@@ -274,7 +275,7 @@ impl Level {
                         table_pos, 
                         GraphicsTileData { 
                             texture: TileTexture(
-                                tileset_indexing[graphics_tileset_id].dispatch(graphics_tile.id())
+                                graphics_indexing.dispatch(graphics_tile.id())
                             ), 
                             flip: graphics_tile.bevy_flip_flags(), 
                             activatable_animating: graphics_anims.get(&graphics_tile.id()).map(|x| *x),
