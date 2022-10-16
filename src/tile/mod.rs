@@ -18,7 +18,6 @@ pub struct TilePlugin;
 enum TileSystem {
     StateSwitch,
     AnimationSwitch,
-    TransitionAnimation,
 }
 
 impl Plugin for TilePlugin {
@@ -36,7 +35,7 @@ impl Plugin for TilePlugin {
                 TileUpdateStage, 
                 SystemSet::new()
                     .with_system(tile_state_switching.label(TileSystem::StateSwitch))
-                    .with_system(tile_animation_switch.label(TileSystem::AnimationSwitch).after(TileSystem::TransitionAnimation))
+                    .with_system(tile_animation_switch.label(TileSystem::AnimationSwitch).after(TileSystem::StateSwitch))
             )
             .add_system_set_to_stage(
                 CoreStage::Update,
