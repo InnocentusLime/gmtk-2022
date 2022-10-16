@@ -133,6 +133,7 @@ pub fn spawn_level(
             transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
             ..default()
         })
+        .insert(LogicTilemapTag)
         .insert(MoveableTilemapTag);
     
     // Build the trigger tile layer

@@ -152,4 +152,7 @@ pub struct StartTileTag;
 pub struct GraphicsTilemapTag;
 
 #[derive(Component)]
+pub struct LogicTilemapTag;
+
+#[derive(Component)]
 pub struct TriggerTilemapTag;
