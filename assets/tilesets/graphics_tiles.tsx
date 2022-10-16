@@ -3,7 +3,14 @@
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="0" type="GraphicsTile">
   <properties>
-   <property name="animation_type" value="null"/>
+   <property name="animation_type">{
+  &quot;on_anim&quot;: [
+    {&quot;id&quot;:0, &quot;dur&quot;:125},
+    {&quot;id&quot;:1, &quot;dur&quot;:125},
+    {&quot;id&quot;:2, &quot;dur&quot;:125},
+    {&quot;id&quot;:3, &quot;dur&quot;:125}
+  ]
+}</property>
   </properties>
   <image width="32" height="32" source="../tiles/conveyor1.png"/>
  </tile>
