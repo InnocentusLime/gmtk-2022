@@ -107,7 +107,7 @@ where
 {
     let s = <&'_ str as Deserialize>::deserialize(des)?;
     Ok(
-        ron::from_str(s)
+        serde_json::from_str(s)
         .map_err(|e| <D::Error as serde::de::Error>::custom(e))?
     )
 }

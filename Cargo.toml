@@ -32,6 +32,7 @@ bevy_pkv = "0.5"
 # Other deps
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 lazy_static = "1"
 futures-lite = "1"
 image = "0.24.3"
@@ -40,7 +41,6 @@ winit = { version = "0.26.1", default-features = false }
 bevy_tiled = { path = "bevy_tiled" }
 bevy_ecs_tilemap_cpu_anim = { path = "bevy_ecs_tilemap_cpu_anim" }
 cube_rot = { path = "cube_rot" }
-ron = "0.8"
 
 [target.'cfg(target_arch = "wasm")'.dependencies]
 # Nothing
