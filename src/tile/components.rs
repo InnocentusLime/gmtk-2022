@@ -17,14 +17,6 @@ pub enum ActivationCondition {
 }
 
 impl ActivationCondition {
-    /// Tests whether the tile is active during the start of
-    /// the level or not.
-    pub fn active_on_start(self) -> bool {
-        use crate::moveable::DecomposedRotation;
-
-        self.is_active(DecomposedRotation::new().upper_side())
-    }
-
     /// Tell whether the tile is active or not, assuming player
     /// has `upper_side` number on their upper side.
     pub fn is_active(self, upper_side: u8) -> bool {
