@@ -131,6 +131,7 @@ pub fn spawn_level(
             grid_size: TilemapGridSize { x: 32.0f32, y: 32.0f32 },
             size: tilemap_size,
             transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
+            visibility: Visibility { is_visible: false },
             ..default()
         })
         .insert(LogicTilemapTag)
@@ -170,6 +171,7 @@ pub fn spawn_level(
             grid_size: TilemapGridSize { x: 32.0f32, y: 32.0f32 },
             size: tilemap_size,
             transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
+            visibility: Visibility { is_visible: false },
             ..default()
         })
         .insert(TriggerTilemapTag);
@@ -213,6 +215,7 @@ pub fn spawn_level(
             grid_size: TilemapGridSize { x: 32.0f32, y: 32.0f32 },
             size: tilemap_size,
             transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
+            visibility: Visibility { is_visible: true },
             ..default()
         })
         .insert(GraphicsTilemapTag);
