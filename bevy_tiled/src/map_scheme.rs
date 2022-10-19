@@ -44,7 +44,7 @@ where
         for (id, tile) in tileset.tiles() {
             let props = tile.properties()?;
 
-            (self.tileset_callback)(&props, tileset, indexing);
+            (self.tileset_callback)(&props, tileset, indexing)?;
             self.deserialized_props.insert((set_id, id), props);
         }
 
