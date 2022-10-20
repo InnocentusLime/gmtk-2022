@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 bevy_asset_loader = { version = "0.12.1", features = ["stageless", "dynamic_assets"] }
-anyhow = "1.0.65"
+anyhow = "1.0.66"
 thiserror = "1"
 serde = "1"
 bevy = "0.8"
