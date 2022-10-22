@@ -241,8 +241,8 @@ pub fn init_level_resource(
                 &mut graphics_tile_builder
             ],
             picker: |name| match name {
-                "logic" => 0,
-                "triggers" => 1,
+                "logic_tiles" => 0,
+                "activator_tiles" => 1,
                 _ => 2,
             },
         }
