@@ -9,7 +9,7 @@ pub mod map_scheme;
 
 pub use tiled_ext::*;
 pub use tiled_map_asset::*;
-//pub use map_scheme::*;
+pub use map_scheme::*;
 
 use bevy::prelude::*;
 

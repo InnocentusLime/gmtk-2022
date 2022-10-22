@@ -6,85 +6,138 @@ use bevy::{ecs::system::EntityCommands, prelude::*};
 use serde::de::DeserializeOwned;
 use tiled::{Tileset, Map, Layer, LayerType, TileLayer, FiniteTileLayer, LayerTileData};
 
-use crate::{TiledTileExt, TilesetIndexing, TiledLayerTileExt};
+use crate::{TileExt, TilesetIndexing, TiledLayerTileExt};
 
-pub trait TileBuilderProvider {
-    fn process_tileset(&mut self, set_id: usize, tileset: &Tileset, indexing: &TilesetIndexing) -> anyhow::Result<()>;
-    fn run_builder(&mut self, set_id: usize, id: u32, cmds: &mut EntityCommands) -> anyhow::Result<()>;
-    fn tilemap_post_build(&mut self, cmds: &mut EntityCommands) -> anyhow::Result<()>;
-}
-
-struct TileBuilderProviderImpl<T, F, G, H> 
-where
-    F: FnMut(&T, &mut EntityCommands) -> anyhow::Result<()>,
-    G: FnMut(&T, &Tileset, &TilesetIndexing) -> anyhow::Result<()>,
-    H: FnMut(&mut EntityCommands) -> anyhow::Result<()>,
-{
-    deserialized_props: HashMap<(usize, u32), T>,
-    tileset_callback: G,
-    tile_builder: F,
-    tilemap_post: H,
-}
-
-impl<T, F, G, H> TileBuilderProvider for TileBuilderProviderImpl<T, F, G, H> 
-where
-    T: DeserializeOwned,
-    F: FnMut(&T, &mut EntityCommands) -> anyhow::Result<()>,
-    G: FnMut(&T, &Tileset, &TilesetIndexing) -> anyhow::Result<()>,
-    H: FnMut(&mut EntityCommands) -> anyhow::Result<()>,
-{
+/// An interface for the tilemap parser to call as it visits different
+/// parts of the tilemap asset.
+pub trait TileBuilder {
+    /// Gets called by the parser for each tilesets **before** processing
+    /// the layers and tiles.
     fn process_tileset(
         &mut self, 
         set_id: usize, 
         tileset: &Tileset, 
         indexing: &TilesetIndexing
+    ) -> anyhow::Result<()>;
+    
+    /// Gets called for each tile on each layer.
+    fn run_builder(
+        &mut self, 
+        set_id: usize, 
+        id: u32, 
+        cmds: &mut EntityCommands
+    ) -> anyhow::Result<()>;
+    
+    /// Gets called by the parser after finishing a layer.
+    fn tilemap_post_build(
+        &mut self, 
+        set_id: usize, 
+        cmds: &mut EntityCommands
+    ) -> anyhow::Result<()>;
+}
+
+pub struct BasicDeserBuilder<T, F = fn(&mut EntityCommands)>
+where
+    T: DeserializeOwned + Bundle,
+    F: Fn(&mut EntityCommands),
+{
+    bundle_builder: F,
+    deserialized_props: HashMap<(usize, u32), T>,
+}
+
+impl<T, F> BasicDeserBuilder<T, F>
+where
+    T: DeserializeOwned + Bundle,
+    F: Fn(&mut EntityCommands),
+{
+    pub fn new(bundle_builder: F) -> Self {
+        BasicDeserBuilder { 
+            bundle_builder, 
+            deserialized_props: HashMap::new(), 
+        }
+    }
+}
+
+impl<T> BasicDeserBuilder<T, fn(&mut EntityCommands)>
+where
+    T: DeserializeOwned + Bundle,
+{
+    pub fn new_default<B: Bundle + Default>() -> Self {
+        BasicDeserBuilder::new(|cmds| { cmds.insert_bundle(B::default()); })
+    }
+}
+
+impl<T, F> TileBuilder for BasicDeserBuilder<T, F> 
+where
+    T: DeserializeOwned + Bundle + Clone,
+    F: Fn(&mut EntityCommands),
+{
+    fn process_tileset(
+        &mut self, 
+        set_id: usize, 
+        tileset: &Tileset, 
+        _indexing: &TilesetIndexing
     ) -> anyhow::Result<()> {
         self.deserialized_props.reserve(tileset.tilecount as usize);
 
         for (id, tile) in tileset.tiles() {
             let props = tile.properties()?;
-
-            (self.tileset_callback)(&props, tileset, indexing)?;
             self.deserialized_props.insert((set_id, id), props);
         }
 
         Ok(())
     }
 
-    fn run_builder(&mut self, set_id: usize, id: u32, cmds: &mut EntityCommands) -> anyhow::Result<()> {
+    fn run_builder(
+        &mut self, 
+        set_id: usize, 
+        id: u32, 
+        cmds: &mut EntityCommands
+    ) -> anyhow::Result<()> {
         let props = self.deserialized_props.get(&(set_id, id))
             .ok_or_else(|| anyhow!("Tile {} didn't have any deserialized properties", id))?;
-        (self.tile_builder)(props, cmds)
+        
+        cmds.insert_bundle(props.clone());
+
+        Ok(())
     }
 
-    fn tilemap_post_build(&mut self, cmds: &mut EntityCommands) -> anyhow::Result<()> {
-        (self.tilemap_post)(cmds)
-    }
-}
+    fn tilemap_post_build(
+        &mut self, 
+        _set_id: usize, 
+        cmds: &mut EntityCommands
+    ) -> anyhow::Result<()> {
+        (self.bundle_builder)(cmds);
 
-pub fn tile_builder_provider<T: DeserializeOwned>(
-    tile_builder: impl FnMut(&T, &mut EntityCommands) -> anyhow::Result<()>,
-    tileset_callback: impl FnMut(&T, &Tileset, &TilesetIndexing) -> anyhow::Result<()>,
-    tilemap_post: impl FnMut(&mut EntityCommands) -> anyhow::Result<()>,
-) -> impl TileBuilderProvider {
-    TileBuilderProviderImpl {
-        tilemap_post,
-        tile_builder,
-        tileset_callback,
-        deserialized_props: HashMap::new(),
+        Ok(())
     }
 }
 
-pub fn parse_map<'a>(
+pub trait CallbackSelector {
+    fn select(&mut self, tileset: &Tileset) -> &mut dyn TileBuilder;
+}
+
+pub struct SimpleCallbackSelector<'a, const N: usize> {
+    pub pool: [&'a mut dyn TileBuilder; N],
+    pub picker: fn(&str) -> usize,
+}
+
+impl<'a, const N: usize> CallbackSelector for SimpleCallbackSelector<'a, N> {
+    fn select(&mut self, tileset: &Tileset) -> &mut dyn TileBuilder {
+        self.pool[(self.picker)(&tileset.name)]
+    }
+}
+
+pub fn parse_map<C: CallbackSelector>(
     commands: &mut Commands,
     indexing: &[TilesetIndexing],
     atlases: &[Handle<Image>],
     map: &Map,
-    callback_selector: impl Fn(&Tileset) -> &'a mut dyn TileBuilderProvider,
+    callback_selector: &mut C,
 ) -> anyhow::Result<()> {
     // Visit all tilesets
     for (id, set) in map.tilesets().iter().enumerate() {
-        callback_selector(set).process_tileset(id, set, &indexing[id])?;
+        callback_selector.select(set).process_tileset(id, set, &indexing[id])?;
     }
 
     let mut map_commands = commands.spawn();
@@ -105,7 +158,7 @@ pub fn parse_map<'a>(
                 indexing,
                 atlases,
                 layer,
-                &callback_selector
+                callback_selector
             );
             if local_res.is_err() {
                 result = local_res.context(format!("While parsing layer {:?}", layer.name));
@@ -117,16 +170,13 @@ pub fn parse_map<'a>(
     result
 }
 
-fn parse_layer<'a, F>(
+fn parse_layer<C: CallbackSelector>(
     layer_cmds: &mut EntityCommands,
     indexing: &[TilesetIndexing],
     atlases: &[Handle<Image>],
     layer: Layer,
-    callback_selector: &F,
-) -> anyhow::Result<()> 
-where
-    F: Fn(&Tileset) -> &'a mut dyn TileBuilderProvider,
-{
+    callback_selector: &mut C,
+) -> anyhow::Result<()> {
     // Start visitting layers
     match layer.layer_type() {
         LayerType::GroupLayer(group) => {
@@ -174,18 +224,16 @@ where
     }
 }
 
-fn parse_finite_tile_layer<'a, F>(
+fn parse_finite_tile_layer<C: CallbackSelector>(
     layer_cmds: &mut EntityCommands,
     indexing: &[TilesetIndexing],
     atlases: &[Handle<Image>],
     tiles: FiniteTileLayer,
-    callback_selector: &F,
+    callback_selector: &mut C,
 ) -> anyhow::Result<()> 
-where
-    F: Fn(&Tileset) -> &'a mut dyn TileBuilderProvider,
 {
     let (tileset_index, tileset) = ensure_unique_tileset(&tiles)?;
-    let provider = callback_selector(tileset);
+    let provider = callback_selector.select(tileset);
     let mut result = Ok(());
     let tilemap_size = TilemapSize { x: tiles.map().width, y: tiles.map().height };
     let mut storage = TileStorage::empty(tilemap_size);
@@ -237,7 +285,7 @@ where
             ..default()
         });  
 
-    provider.tilemap_post_build(layer_cmds)?;
+    provider.tilemap_post_build(tileset_index, layer_cmds)?;
 
     result
 }
@@ -270,7 +318,7 @@ fn spawn_tile(
     tile: &LayerTileData,
     indexing: &[TilesetIndexing],
     builder: &mut ChildBuilder,
-    provider: &mut dyn TileBuilderProvider,
+    provider: &mut dyn TileBuilder,
 ) -> anyhow::Result<(TilePos, Entity)> {
     let position = TilePos { x, y };
     let mut tile_commands = builder.spawn_bundle(TileBundle {
