@@ -1,18 +1,19 @@
 use bevy::prelude::*;
+use bevy::reflect::TypeUuid;
 use bevy_ecs_tilemap::prelude::*;
 
 use std::time::Duration;
 
 #[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-struct CPUTileAnimateStage;
+pub struct CPUTileAnimateStage;
 
 pub struct CPUTileAnimationPlugin;
 
 impl Plugin for CPUTileAnimationPlugin {
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(CPUTileAnimations::new())
+            .add_asset::<CPUTileAnimation>()
             .add_stage_before(
                 CoreStage::PostUpdate,
                 CPUTileAnimateStage,
@@ -22,59 +23,69 @@ impl Plugin for CPUTileAnimationPlugin {
     }
 }
 
+/// An animation frame.
 #[derive(Clone, Copy, Debug)]
 pub struct Frame {
-    pub texture_id: u32, // Texture ID (the bevy_ecs_tilemap one)
-    pub duration: Duration, // Duration in milliseconds
+    /// Texture ID (the bevy_ecs_tilemap one)
+    pub texture_id: u32,
+    /// Duration of the frame
+    pub duration: Duration,
 }
 
-#[derive(Clone, Debug)]
+/// The animation asset.
+#[derive(Clone, Debug, TypeUuid)]
+#[uuid = "deabdd26-c64a-4edb-85d6-f167c53a840a"]
 pub struct CPUTileAnimation(Vec<Frame>);
 
 impl CPUTileAnimation {
-    pub fn from_frames(it: impl IntoIterator<Item = Frame>) -> Self {
+    pub fn new(it: impl IntoIterator<Item = Frame>) -> Self {
         CPUTileAnimation(it.into_iter().collect())
     }
 }
 
-pub struct CPUTileAnimations(Vec<CPUTileAnimation>);
-
-impl CPUTileAnimations {
-    fn new() -> Self { CPUTileAnimations(vec![]) }
-
-    pub fn add_animation(&mut self, anim: CPUTileAnimation) -> usize {
-        let id = self.0.len();
-        self.0.push(anim);
-        id
-    }
-
-    pub fn new_cpu_animated(
-        &self,
-        anim_id: usize,
-        looping: bool,
-        paused: bool,
-    ) -> CPUAnimated {
-        CPUAnimated {
-            paused, looping, anim_id,
-            passed_time: Duration::new(0, 0),
-            current_frame: 0,
-        }
-    }
-
-    pub fn clear(&mut self) { self.0.clear() }
-}
-
-#[derive(Clone, Copy, Component, Debug)]
+/// The component, that you should attach to the tiles for
+/// them to animate. 
+/// 
+/// # About the animation handle
+/// 
+/// Currently this plugin mimics bevy's default behaviour for
+/// unloaded assets, as in animations that haven't been loaded yet
+/// are simply not played and their state is not updated.
+/// 
+/// # About the default value
+/// 
+/// The default value of this component is carefully crafted to 
+/// not update the texture of the tile it's attached to, while also
+/// not referencing any valid assets.
+#[derive(Clone, Component, Debug)]
 pub struct CPUAnimated {
     pub paused: bool,
     pub looping: bool,
-    anim_id: usize,
+    animation: Handle<CPUTileAnimation>,
     current_frame: usize,
     passed_time: Duration,
 }
 
 impl CPUAnimated {
-    fn update(&mut self, animation: &CPUTileAnimation) -> bool {
+    pub fn new(
+        animation: Handle<CPUTileAnimation>,
+        looping: bool,
+        paused: bool,
+    ) -> CPUAnimated {
+        CPUAnimated {
+            paused, 
+            looping, 
+            animation,
+            passed_time: Duration::new(0, 0),
+            current_frame: 0,
+        }
+    }
+
+    fn update(&mut self, dt: Duration, animation: &CPUTileAnimation) -> bool {
+        if self.paused { return false; }
+
+        self.passed_time += dt;
+
         let old_frame = self.current_frame;
         while self.passed_time > animation.0[self.current_frame].duration {
             if self.current_frame == animation.0.len() - 1 && !self.looping {
@@ -87,43 +98,48 @@ impl CPUAnimated {
         old_frame == self.current_frame
     }
 
-    fn update_from_anims(&mut self, animations: &CPUTileAnimations) -> bool { 
-        self.update(&animations.0[self.anim_id])
-    }
-
-    fn tick(&mut self, dt: Duration) {
-        if !self.paused {
-            self.passed_time += dt;
-        }
-    }
-
+    /// Changes the current animation 
     pub fn set_animation(
         &mut self, 
-        id: usize, 
+        animation: Handle<CPUTileAnimation>, 
         paused: bool, 
         looping: bool,
-        animations: &CPUTileAnimations
     ) {
-        if animations.0.len() <= id { panic!("Bad animation ID"); }
         self.paused = paused;
         self.looping = looping;
-        self.anim_id = id;
+        self.animation = animation;
         self.current_frame = 0;
         self.passed_time = Duration::new(0, 0);
     }
 }
 
+impl Default for CPUAnimated {
+    fn default() -> Self {
+        CPUAnimated {
+            paused: false,
+            looping: false,
+            animation: default(),
+            current_frame: 0,
+            passed_time: Duration::ZERO,
+        }
+    }
+}
+
 pub fn update_animation_frames(
     time: Res<Time>,
-    animations: Res<CPUTileAnimations>,
+    animations: Res<Assets<CPUTileAnimation>>,
     mut animated_tile_q: Query<(&mut CPUAnimated, &mut TileTexture)>,
 ) {
     let dt = time.delta();
 
     animated_tile_q.par_for_each_mut(10, |(mut state, mut tile)| {
-        state.tick(dt);
-        if state.update_from_anims(&*animations) {
-            tile.0 = animations.0[state.anim_id].0[state.current_frame].texture_id;
+        let animation = match animations.get(&state.animation) {
+            Some(x) => x,
+            None => return,
+        };
+
+        if state.update(dt, animation) {
+            tile.0 = animation.0[state.current_frame].texture_id;
         }
     });
 }
