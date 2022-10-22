@@ -1,14 +1,20 @@
 mod resources;
 
+use std::{time::Duration, path::Path};
+use std::collections::HashMap;
+
+use bevy::asset::AssetPath;
 use bevy_asset_loader::dynamic_asset::*;
 use bevy_ecs_tilemap::prelude::*;
-use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
-use bevy::prelude::*;
+use bevy::{prelude::*, asset::HandleId};
 
+use bevy_ecs_tilemap_cpu_anim::{CPUTileAnimation, Frame};
+use cube_rot::MoveDirection;
 pub use resources::*;
 
 use crate::tile::*;
-use bevy_tiled::{ TiledPlugin, TiledMap, TilesetIndexing };
+use serde::Deserialize;
+use bevy_tiled::{ TiledPlugin, TiledMap, TilesetIndexing, TileBuilder, TileExt, parse_map, SimpleCallbackSelector };
 use crate::moveable::MoveableTilemapTag;
 
 #[derive(Default)]
@@ -55,168 +61,197 @@ pub fn get_level_map(
     )
 }
 
+#[derive(Clone, Copy, Debug, Deserialize)]
+struct TileAnimationFrame {
+    id: u32,
+    dur: u64,
+}
+
+#[derive(Debug, Deserialize)]
+struct TileAnimation(Vec<TileAnimationFrame>);
+
+impl TileAnimation {
+    pub fn into_cpu_tile_anim(
+        self, 
+        mapping: &TilesetIndexing,
+    ) -> CPUTileAnimation {
+        CPUTileAnimation::new(
+            self.0.into_iter()
+                .map(|frame| Frame {
+                    texture_id: mapping.dispatch(frame.id),
+                    duration: Duration::from_millis(frame.dur),
+                })
+        )
+    }
+}
+
+impl TileAnimation {
+    fn decode(self, indexing: &TilesetIndexing) -> CPUTileAnimation {
+        CPUTileAnimation::new(
+            self.0.into_iter()
+                .map(|frame| Frame {
+                    texture_id: indexing.dispatch(frame.id),
+                    duration: Duration::from_millis(frame.dur),
+                })
+        )
+    }
+
+    fn acquire_asset(
+        self, 
+        tileset: usize,
+        tile: u32,
+        assets: &mut Assets<CPUTileAnimation>, 
+        map_path: Option<&Path>,
+        indexing: &TilesetIndexing,
+    ) -> Handle<CPUTileAnimation> {
+        let asset = Self::decode(self, indexing);
+
+        match map_path {
+            Some(path) => assets.set(AssetPath::new_ref(
+                path, Some(&format!("anim{}_{}", tileset, tile))
+            ), asset),
+            None => assets.add(asset),
+        }
+    }
+}
+
+impl ActivatableAnimating<TileAnimation> {
+    fn decode(
+        self,
+        tileset: usize,
+        tile: u32,
+        assets: &mut Assets<CPUTileAnimation>, 
+        map_path: Option<&Path>,
+        indexing: &TilesetIndexing,
+    ) -> ActivatableAnimating {
+        self.convert(move |anim| anim.acquire_asset(tileset, tile, assets, map_path, indexing))
+    }
+}
+
+struct GraphicsTileBuilder<'a> {
+    map_path: Option<&'a Path>,
+    anims: &'a mut Assets<CPUTileAnimation>,
+    deserialized_props: HashMap<(usize, u32), GraphicsTileBundle>,
+}
+
+impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
+    fn process_tileset(
+        &mut self, 
+        set_id: usize, 
+        tileset: &tiled::Tileset, 
+        indexing: &TilesetIndexing,
+    ) -> anyhow::Result<()> {
+        self.deserialized_props.reserve(tileset.tilecount as usize);
+
+        for (id, tile) in tileset.tiles() {
+            let props: GraphicsTileBundle<TileAnimation> = tile.properties()?;
+            self.deserialized_props.insert(
+                (set_id, id), 
+                GraphicsTileBundle { 
+                    animating: props.animating.decode(
+                        set_id, 
+                        id, 
+                        self.anims, 
+                        self.map_path, 
+                        indexing
+                    ), 
+                    anim: props.anim, 
+                }
+            );
+        }
+
+        Ok(())
+    }
+
+    fn run_builder(
+        &mut self, 
+        set_id: usize, 
+        id: u32, 
+        cmds: &mut bevy::ecs::system::EntityCommands,
+    ) -> anyhow::Result<()> {
+        cmds.insert_bundle(self.deserialized_props[&(set_id, id)].clone());
+
+        Ok(())
+    }
+
+    fn tilemap_post_build(
+        &mut self, 
+        _set_id: usize, 
+        cmds: &mut bevy::ecs::system::EntityCommands,
+    ) -> anyhow::Result<()> {
+        cmds
+            .insert(GraphicsTilemapTag)
+            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                1.6f32, 1.6f32, 1.6f32
+            ))));
+
+        Ok(())
+    }
+}
+
 pub fn init_level_resource(
     In(tileset_indexing): In<Vec<TilesetIndexing>>,
+    asset_server: Res<AssetServer>,
     mut commands: Commands, 
     base_level_assets: Res<BaseLevelAssets>,
     tilesets: Res<LevelTilesetImages>,
     atlases: Res<Assets<TextureAtlas>>,
     maps: Res<Assets<TiledMap>>,
-    mut animations: ResMut<CPUTileAnimations>,
+    mut animations: ResMut<Assets<CPUTileAnimation>>,
 ) {
-    let map = maps.get(&base_level_assets.map).expect("Level map should be loaded by now");
-    let level = match Level::new(
-        map, 
-        &mut *animations,
-        &tileset_indexing, 
-        &tilesets.images.iter().filter_map(|h| atlases.get(h)).collect::<Vec<_>>(),
-    ) {
-        Ok(x) => x,
-        Err(e) => { e.chain().for_each(|e| error!("{}", e)); return },
-    };
+    use bevy_tiled::BasicDeserBuilder;
 
-    commands.insert_resource(level);
+    let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| { 
+        cmds
+            .insert(LogicTilemapTag)
+            .insert(MoveableTilemapTag)
+            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                1.6f32, 1.6f32, 1.6f32
+            ))))
+            .insert(Visibility { is_visible: false });
+    });
+    let mut trigger_tile_builder = BasicDeserBuilder::<TriggerTileBundle, _>::new(|cmds| { 
+        cmds
+            .insert(TriggerTilemapTag)
+            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                1.6f32, 1.6f32, 1.6f32
+            ))))
+            .insert(Visibility { is_visible: false });
+    });
+    let map_asset_path = asset_server.get_handle_path(base_level_assets.map.clone());
+    let mut graphics_tile_builder = GraphicsTileBuilder {
+        map_path: map_asset_path.as_ref().map(|x| x.path()),
+        anims: &mut *animations,
+        deserialized_props: HashMap::new(),
+    };
+    let map = maps.get(&base_level_assets.map).unwrap();
+    let atlases = tilesets.images.iter()
+        .map(|x| atlases.get(&x).unwrap().texture.clone())
+        .collect::<Vec<_>>(); 
+
+    let res = parse_map(
+        &mut commands, 
+        &tileset_indexing, 
+        &atlases, 
+        &map.map, 
+        &mut SimpleCallbackSelector {
+            pool: [
+                &mut logic_tile_builder, 
+                &mut trigger_tile_builder, 
+                &mut graphics_tile_builder
+            ],
+            picker: |name| match name {
+                "logic" => 0,
+                "triggers" => 1,
+                _ => 2,
+            },
+        }
+    );
+    if let Err(e) = res {
+        error!("Error parsing map: {}", e);
+    }
 }
 
 pub fn spawn_level(
     mut commands: Commands, 
-    level: Res<Level>,
-    animations: Res<CPUTileAnimations>,
-) {
-    let tilemap_size = TilemapSize { x: level.width(), y: level.height() };
-    // Maps
-    let logic_map_entity = commands.spawn().insert(Name::new("Logic map")).id();
-    let graphics_map_entity = commands.spawn().insert(Name::new("Graphics map")).id();
-    let trigger_map_entity = commands.spawn().insert(Name::new("Trigger map")).id();
-    // Storages for the tiles
-    let mut logic_tile_store = TileStorage::empty(tilemap_size);
-    let mut graphics_tile_store = TileStorage::empty(tilemap_size);
-    let mut trigger_tile_store = TileStorage::empty(tilemap_size);
-
-    // Build the logic tile layer
-    commands.entity(logic_map_entity)
-        .with_children(|commands| {
-            level.logic_tiles.iter().for_each(|((x, y), data)| {
-                let position = TilePos { x: *x, y: *y };
-                let mut cmds = commands.spawn();
-
-                cmds
-                    .insert(Name::new("logic tile"))
-                    .insert_bundle(LogicTileBundle {
-                        kind: data.ty,
-                        state: TileState::Ready(true),
-                        tile_bundle: TileBundle {
-                            position,
-                            tilemap_id: TilemapId(logic_map_entity),
-                            texture: data.texture,
-                            flip: data.flip,
-                            ..default()
-                        },
-                    });
-
-                if let TileKind::Start = data.ty {
-                    cmds.insert(StartTileTag);
-                }
-                        
-                logic_tile_store.set(&position, Some(cmds.id()));
-            });
-        })
-        .insert_bundle(TilemapBundle {
-            storage: logic_tile_store,
-            texture: TilemapTexture(level.logic_atlas.clone()),
-            mesh_type: TilemapMeshType::Square,
-            // FIXME hardcoded
-            tile_size: TilemapTileSize { x: 32.0f32, y: 32.0f32 },
-            // FIXME hardcoded
-            grid_size: TilemapGridSize { x: 32.0f32, y: 32.0f32 },
-            size: tilemap_size,
-            transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
-            visibility: Visibility { is_visible: false },
-            ..default()
-        })
-        .insert(LogicTilemapTag)
-        .insert(MoveableTilemapTag);
-    
-    // Build the trigger tile layer
-    commands.entity(trigger_map_entity)
-        .with_children(|commands| {
-            level.trigger_tiles.iter().for_each(|((x, y), data)| {
-                let position = TilePos { x: *x, y: *y };
-                
-                let mut cmds = commands.spawn();
-                    
-                cmds
-                    .insert(Name::new("trigger tile"))
-                    .insert_bundle(TriggerTileBundle {
-                        condition: data.activation_cond,
-                        tile_bundle: TileBundle {
-                            position,
-                            tilemap_id: TilemapId(trigger_map_entity),
-                            texture: data.texture,
-                            ..default()
-                        },
-                    });
-                    
-                trigger_tile_store.set(&position, Some(cmds.id()));
-
-            });
-        })
-        .insert_bundle(TilemapBundle {
-            storage: trigger_tile_store,
-            texture: TilemapTexture(level.trigger_atlas.clone()),
-            mesh_type: TilemapMeshType::Square,
-            // FIXME hardcoded
-            tile_size: TilemapTileSize { x: 32.0f32, y: 32.0f32 },
-            // FIXME hardcoded
-            grid_size: TilemapGridSize { x: 32.0f32, y: 32.0f32 },
-            size: tilemap_size,
-            transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
-            visibility: Visibility { is_visible: false },
-            ..default()
-        })
-        .insert(TriggerTilemapTag);
-
-    // Build the graphics tile layer
-    commands.entity(graphics_map_entity)
-        .with_children(|commands| {
-            level.graphics_tiles.iter().for_each(|((x, y), data)| {
-                let position = TilePos { x: *x, y: *y };
-                let mut cmds = commands.spawn();
-
-                cmds
-                    .insert_bundle(TileBundle {
-                        position,
-                        tilemap_id: TilemapId(graphics_map_entity),
-                        texture: data.texture,
-                        ..default()
-                    });
-
-                if let Some(animating) = data.activatable_animating {
-                    match animating {
-                        ActivatableAnimating::Switch { on_anim, .. } => cmds.insert(
-                            animations.new_cpu_animated(on_anim, true, false)
-                        ),
-                        ActivatableAnimating::Pause { anim } => cmds.insert(
-                            animations.new_cpu_animated(anim, true, true)
-                        ),
-                    }.insert(animating);
-                }
-
-                graphics_tile_store.set(&position, Some(cmds.id()));
-            });
-        })
-        .insert_bundle(TilemapBundle {
-            storage: graphics_tile_store,
-            texture: TilemapTexture(level.graphics_atlas.clone()),
-            mesh_type: TilemapMeshType::Square,
-            // FIXME hardcoded
-            tile_size: TilemapTileSize { x: 32.0f32, y: 32.0f32 },
-            // FIXME hardcoded
-            grid_size: TilemapGridSize { x: 32.0f32, y: 32.0f32 },
-            size: tilemap_size,
-            transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
-            visibility: Visibility { is_visible: true },
-            ..default()
-        })
-        .insert(GraphicsTilemapTag);
-}
+) {}

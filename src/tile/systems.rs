@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TileStorage, TilePos};
-use bevy_ecs_tilemap_cpu_anim::{ CPUAnimated, CPUTileAnimations };
+use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 use crate::moveable::{ TileInteractionEvent, MoveableQuery, Side as MoveableSide, MoveableBundle };
 use crate::player::{ PlayerEscapedEvent, PlayerTag, PlayerWinnerTag };
 use std::time::Duration;
@@ -9,7 +9,6 @@ use super::{ ActivationCondition, ActivatableAnimating, TileState, LogicTileQuer
 
 /// Switches tile animation if its state changes. See [ActivatableAnimating] for more info.
 pub fn tile_animation_switch(
-    animations: Res<CPUTileAnimations>,
     graphics_map_q: Query<&TileStorage, With<GraphicsTilemapTag>>,
     logic_q: Query<(&TileState, &TilePos), Changed<TileState>>,
     mut graphics_q: Query<(&mut CPUAnimated, &ActivatableAnimating)>,
@@ -27,21 +26,21 @@ pub fn tile_animation_switch(
         match state {
             TileState::Ready(x) => match animating {
                 ActivatableAnimating::Switch { on_anim, off_anim, .. } => animated.set_animation(
-                    if *x { *on_anim } else { *off_anim }, 
+                    if *x { on_anim } else { off_anim }.clone(), 
                     false, 
-                    true, 
-                    &*animations,
+                    true,
                 ),
                 ActivatableAnimating::Pause { .. } => animated.paused = !x,
+                _ => (),
             },
             TileState::Changing { to } => match animating {
                 ActivatableAnimating::Switch { on_transition, off_transition, .. } => animated.set_animation(
-                    if *to { *on_transition } else { *off_transition }, 
+                    if *to { on_transition } else { off_transition }.clone(), 
                     false, 
-                    false, 
-                    &*animations,
+                    false,
                 ),
                 ActivatableAnimating::Pause { .. } => (),
+                _ => (),
             },
         }
     }));

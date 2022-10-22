@@ -1,5 +1,7 @@
 use bevy::{prelude::*, ecs::query::WorldQuery};
-use bevy_ecs_tilemap::tiles::{TileFlip, TileBundle};
+use bevy_ecs_tilemap::tiles::TileFlip;
+use bevy_ecs_tilemap_cpu_anim::{CPUTileAnimation, CPUAnimated};
+use bevy_tiled::deserailize_from_json_str;
 use bevy_inspector_egui::Inspectable;
 use cube_rot::MoveDirection;
 use serde::Deserialize;
@@ -28,22 +30,46 @@ impl ActivationCondition {
 }
 
 /// Describes how the tile should be animated, based off its state.
-#[derive(Debug, Clone, Copy, Component)]
-pub enum ActivatableAnimating {
+#[derive(Debug, Default, Clone, Component, Deserialize)]
+#[serde(untagged)]
+pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> {
+    /// The tile has no animation by activation
+    #[default]
+    None,
     /// The tile will switch between two different animatons, also
     /// playing a special transition animation when the state is about
     /// to switch.
     Switch {
-        on_transition: usize,
-        off_transition: usize,
-        on_anim: usize,
-        off_anim: usize,
+        on_transition: Anim,
+        off_transition: Anim,
+        on_anim: Anim,
+        off_anim: Anim,
     },
     /// The tile will simply pause its animation when it gets deactivated
     /// and will unpause it when it gets activated.
     Pause {
-        anim: usize
+        anim: Anim,
     },
+}
+
+impl<T> ActivatableAnimating<T> {
+    pub fn convert<S>(self, mut conv: impl FnMut(T) -> S) -> ActivatableAnimating<S> {
+        match self {
+            Self::None => ActivatableAnimating::None,
+            Self::Pause { anim } => ActivatableAnimating::Pause { anim: conv(anim) },
+            Self::Switch { 
+                on_transition, 
+                off_transition, 
+                on_anim, 
+                off_anim, 
+            } => ActivatableAnimating::Switch {
+                on_transition: conv(on_transition), 
+                off_transition: conv(off_transition), 
+                on_anim: conv(on_anim), 
+                off_anim: conv(off_anim),
+            },
+        }
+    }
 }
 
 /// Tile state. Determines what the tile would do when someone interacts with it.
@@ -91,20 +117,29 @@ pub enum TileKind {
 }
 
 /// A bundle to quickly construct a logical tile.
-#[derive(Default, Bundle)]
+#[derive(Clone, Default, Bundle, Deserialize)]
 pub struct LogicTileBundle {
-    pub kind: TileKind,
+    pub ty: TileKind,
+    #[serde(skip)]
     pub state: TileState,
-    #[bundle]
-    pub tile_bundle: TileBundle,
 }
 
 /// A bundle to quickly construct a trigger tile.
-#[derive(Bundle)]
+#[derive(Clone, Bundle, Deserialize)]
 pub struct TriggerTileBundle {
-    pub condition: ActivationCondition,
-    #[bundle]
-    pub tile_bundle: TileBundle,
+    pub active: ActivationCondition,
+}
+
+/// A bundle to quickly construct a graphics tile.
+#[derive(Clone, Bundle, Deserialize)]
+pub struct GraphicsTileBundle<Anim = Handle<CPUTileAnimation>> 
+where
+    Anim: 'static + Send + Sync,
+{
+    #[serde(bound = "Anim: Deserialize<'de>", deserialize_with = "deserailize_from_json_str")]
+    pub animating: ActivatableAnimating<Anim>,
+    #[serde(skip)]
+    pub anim: CPUAnimated,
 }
 
 /// A custom query type for exposing an easier to use tile API.
@@ -137,14 +172,14 @@ impl<'a> LogicTileQueryItem<'a> {
 // TODO maybe start tiles should spawn the player themselves, to break the cycle
 // dependency of `player` and `tile`
 /// Special floor tile, which is used as player's starting point.
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Default)]
 pub struct StartTileTag;
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Default)]
 pub struct GraphicsTilemapTag;
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Default)]
 pub struct LogicTilemapTag;
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Default)]
 pub struct TriggerTilemapTag;
