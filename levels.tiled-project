@@ -43,7 +43,7 @@
             "id": 10,
             "members": [
                 {
-                    "name": "animation_type",
+                    "name": "animating",
                     "type": "string",
                     "value": "{}"
                 }
