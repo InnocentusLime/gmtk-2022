@@ -48,7 +48,7 @@ pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> {
     /// The tile will simply pause its animation when it gets deactivated
     /// and will unpause it when it gets activated.
     Pause {
-        anim: Anim,
+        on_anim: Anim,
     },
 }
 
@@ -56,7 +56,7 @@ impl<T> ActivatableAnimating<T> {
     pub fn convert<S>(self, mut conv: impl FnMut(T) -> S) -> ActivatableAnimating<S> {
         match self {
             Self::None => ActivatableAnimating::None,
-            Self::Pause { anim } => ActivatableAnimating::Pause { anim: conv(anim) },
+            Self::Pause { on_anim: anim } => ActivatableAnimating::Pause { on_anim: conv(anim) },
             Self::Switch { 
                 on_transition, 
                 off_transition, 
