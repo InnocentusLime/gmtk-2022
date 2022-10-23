@@ -48,7 +48,7 @@
                     "value": "{}"
                 }
             ],
-            "name": "GraphicsTile",
+            "name": "GraphicsTileBundle",
             "type": "class",
             "useAs": [
                 "property",
@@ -111,7 +111,7 @@
                     "value": "Frier"
                 }
             ],
-            "name": "LogicTile",
+            "name": "LogicTileBundle",
             "type": "class",
             "useAs": [
                 "tile"
@@ -142,7 +142,7 @@
                     "value": "Odd"
                 }
             ],
-            "name": "TriggerTile",
+            "name": "TriggerTileBundle",
             "type": "class",
             "useAs": [
                 "tile"
