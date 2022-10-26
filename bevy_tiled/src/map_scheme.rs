@@ -184,14 +184,15 @@ fn parse_layer<C: CallbackSelector>(
 
             // Spawn the children layers
             layer_cmds.with_children(|child_builder| {
-                // Setup the parent components (transform and name)
-                let mut layer_cmds = child_builder.spawn();
-                layer_cmds    
-                    .insert_bundle(TransformBundle::default())
-                    .insert_bundle(VisibilityBundle::default())
-                    .insert(Name::new(layer.name.clone()));
 
                 for layer in group.layers() {
+                    // Setup the parent components (transform and name)
+                    let mut layer_cmds = child_builder.spawn();
+                    layer_cmds    
+                        .insert_bundle(TransformBundle::default())
+                        .insert_bundle(VisibilityBundle::default())
+                        .insert(Name::new(layer.name.clone()));
+                        
                     let local_res = parse_layer(
                         &mut layer_cmds, 
                         indexing,
