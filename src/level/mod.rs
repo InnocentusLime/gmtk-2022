@@ -6,10 +6,9 @@ use std::collections::HashMap;
 use bevy::asset::AssetPath;
 use bevy_asset_loader::dynamic_asset::*;
 use bevy_ecs_tilemap::prelude::*;
-use bevy::{prelude::*, asset::HandleId};
+use bevy::{prelude::*};
 
 use bevy_ecs_tilemap_cpu_anim::{CPUTileAnimation, Frame};
-use cube_rot::MoveDirection;
 pub use resources::*;
 
 use crate::tile::*;
@@ -69,21 +68,6 @@ struct TileAnimationFrame {
 
 #[derive(Debug, Deserialize)]
 struct TileAnimation(Vec<TileAnimationFrame>);
-
-impl TileAnimation {
-    pub fn into_cpu_tile_anim(
-        self, 
-        mapping: &TilesetIndexing,
-    ) -> CPUTileAnimation {
-        CPUTileAnimation::new(
-            self.0.into_iter()
-                .map(|frame| Frame {
-                    texture_id: mapping.dispatch(frame.id),
-                    duration: Duration::from_millis(frame.dur),
-                })
-        )
-    }
-}
 
 impl TileAnimation {
     fn decode(self, indexing: &TilesetIndexing) -> CPUTileAnimation {
@@ -252,6 +236,4 @@ pub fn init_level_resource(
     }
 }
 
-pub fn spawn_level(
-    mut commands: Commands, 
-) {}
+pub fn spawn_level() {}

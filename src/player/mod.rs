@@ -11,7 +11,7 @@ use iyes_loopless::prelude::*;
 use crate::level::tile_pos_to_world_pos;
 use crate::moveable::{MoveableBundle, MoveableTilemapTag};
 use crate::states::GameState;
-use crate::tile::{StartTileTag, TileKind};
+use crate::tile::{TileKind};
 
 pub use components::*;
 pub use events::*;

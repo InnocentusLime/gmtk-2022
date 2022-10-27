@@ -2,8 +2,8 @@ mod components;
 mod systems;
 
 use bevy::prelude::*;
-use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimationPlugin;
+use bevy_inspector_egui::{InspectableRegistry, RegisterInspectable};
 
 pub use components::*;
 
@@ -25,22 +25,33 @@ impl Plugin for TilePlugin {
         if app.world.get_resource::<InspectableRegistry>().is_some() {
             app
                 //.register_inspectable::<Active>()
+                .register_inspectable::<TileState>()
+                .register_inspectable::<TileKind>()
+                //.register_inspectable::<ActivatableAnimating>()
                 .register_inspectable::<ActivationCondition>();
         }
 
-        app
-            .add_plugin(CPUTileAnimationPlugin)
-            .add_stage_before(CoreStage::Update, TileUpdateStage, SystemStage::parallel())
+        app.add_plugin(CPUTileAnimationPlugin)
+            .add_stage_before(
+                CoreStage::Update,
+                TileUpdateStage,
+                SystemStage::parallel(),
+            )
             .add_system_set_to_stage(
-                TileUpdateStage, 
+                TileUpdateStage,
                 SystemSet::new()
-                    .with_system(tile_state_switching.label(TileSystem::StateSwitch))
-                    .with_system(tile_animation_switch.label(TileSystem::AnimationSwitch).after(TileSystem::StateSwitch))
+                    .with_system(
+                        tile_state_switching.label(TileSystem::StateSwitch),
+                    )
+                    .with_system(
+                        tile_animation_switch
+                            .label(TileSystem::AnimationSwitch)
+                            .after(TileSystem::StateSwitch),
+                    ),
             )
             .add_system_set_to_stage(
                 CoreStage::Update,
-                SystemSet::new()
-                    .with_system(special_tile_handler)
+                SystemSet::new().with_system(special_tile_handler),
             );
     }
 }

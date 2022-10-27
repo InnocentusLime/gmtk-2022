@@ -1,13 +1,13 @@
-use bevy::{prelude::*, ecs::query::WorldQuery};
+use bevy::{ecs::query::WorldQuery, prelude::*};
 use bevy_ecs_tilemap::tiles::TileFlip;
-use bevy_ecs_tilemap_cpu_anim::{CPUTileAnimation, CPUAnimated};
-use bevy_tiled::deserailize_from_json_str;
+use bevy_ecs_tilemap_cpu_anim::{CPUAnimated, CPUTileAnimation};
 use bevy_inspector_egui::Inspectable;
+use bevy_tiled::deserailize_from_json_str;
 use cube_rot::MoveDirection;
 use serde::Deserialize;
 
 // TODO this either needs a different named or should have the docs adjusted
-/// Describes when a tile should be active, depending on what 
+/// Describes when a tile should be active, depending on what
 /// number in on player's upper side. To actually have any effect,
 /// the tile needs to have [Active] attached.
 #[derive(Clone, Copy, Debug, Component, Deserialize, Inspectable)]
@@ -47,25 +47,28 @@ pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> {
     },
     /// The tile will simply pause its animation when it gets deactivated
     /// and will unpause it when it gets activated.
-    Pause {
-        on_anim: Anim,
-    },
+    Pause { on_anim: Anim },
 }
 
 impl<T> ActivatableAnimating<T> {
-    pub fn convert<S>(self, mut conv: impl FnMut(T) -> S) -> ActivatableAnimating<S> {
+    pub fn convert<S>(
+        self,
+        mut conv: impl FnMut(T) -> S,
+    ) -> ActivatableAnimating<S> {
         match self {
             Self::None => ActivatableAnimating::None,
-            Self::Pause { on_anim: anim } => ActivatableAnimating::Pause { on_anim: conv(anim) },
-            Self::Switch { 
-                on_transition, 
-                off_transition, 
-                on_anim, 
-                off_anim, 
+            Self::Pause { on_anim: anim } => ActivatableAnimating::Pause {
+                on_anim: conv(anim),
+            },
+            Self::Switch {
+                on_transition,
+                off_transition,
+                on_anim,
+                off_anim,
             } => ActivatableAnimating::Switch {
-                on_transition: conv(on_transition), 
-                off_transition: conv(off_transition), 
-                on_anim: conv(on_anim), 
+                on_transition: conv(on_transition),
+                off_transition: conv(off_transition),
+                on_anim: conv(on_anim),
                 off_anim: conv(off_anim),
             },
         }
@@ -87,15 +90,28 @@ pub enum TileState {
 }
 
 impl Default for TileState {
-    fn default() -> Self { TileState::Ready(true) }
+    fn default() -> Self {
+        TileState::Ready(true)
+    }
 }
 
 /// The tile kind. This data type is mapped directly to the ones you can see in the
 /// level editor.
-/// 
-/// The tile kind dictates what graphics the game should use and how should the tile 
+///
+/// The tile kind dictates what graphics the game should use and how should the tile
 /// behave.
-#[derive(Clone, Copy, Default, Debug, Component, Inspectable, PartialEq, Eq, Hash, Deserialize)]
+#[derive(
+    Clone,
+    Copy,
+    Default,
+    Debug,
+    Component,
+    Inspectable,
+    PartialEq,
+    Eq,
+    Hash,
+    Deserialize,
+)]
 #[repr(u8)]
 pub enum TileKind {
     /// Conveyor tiles push any moveable into the direction they are facing towards
@@ -132,11 +148,14 @@ pub struct TriggerTileBundle {
 
 /// A bundle to quickly construct a graphics tile.
 #[derive(Clone, Bundle, Deserialize)]
-pub struct GraphicsTileBundle<Anim = Handle<CPUTileAnimation>> 
+pub struct GraphicsTileBundle<Anim = Handle<CPUTileAnimation>>
 where
     Anim: 'static + Send + Sync,
 {
-    #[serde(bound = "Anim: Deserialize<'de>", deserialize_with = "deserailize_from_json_str")]
+    #[serde(
+        bound = "Anim: Deserialize<'de>",
+        deserialize_with = "deserailize_from_json_str"
+    )]
     pub animating: ActivatableAnimating<Anim>,
     #[serde(skip)]
     pub anim: CPUAnimated,
@@ -146,15 +165,19 @@ where
 #[derive(WorldQuery, Debug)]
 #[world_query(mutable)]
 pub struct LogicTileQuery {
-    pub (super) kind: &'static TileKind,
-    pub (super) state: &'static mut TileState,
-    pub (super) flip: &'static TileFlip,
+    pub(super) kind: &'static TileKind,
+    pub(super) state: &'static mut TileState,
+    pub(super) flip: &'static TileFlip,
 }
 
 impl<'a> LogicTileQueryItem<'a> {
     /// Returns the direction towards which the tiles is facing.
     pub fn direction(&self) -> MoveDirection {
-        MoveDirection::Up.apply_flipping_flags(self.flip.x, self.flip.y, self.flip.d)
+        MoveDirection::Up.apply_flipping_flags(
+            self.flip.x,
+            self.flip.y,
+            self.flip.d,
+        )
     }
 
     /// Tells whether the tile is clock-wise or counter-clock-wise oriented.
@@ -167,13 +190,6 @@ impl<'a> LogicTileQueryItem<'a> {
         matches!(&*self.state, TileState::Ready(true))
     }
 }
-
-// TODO start tiles shouldn't be separate type
-// TODO maybe start tiles should spawn the player themselves, to break the cycle
-// dependency of `player` and `tile`
-/// Special floor tile, which is used as player's starting point.
-#[derive(Component, Clone, Copy, Default)]
-pub struct StartTileTag;
 
 #[derive(Component, Clone, Copy, Default)]
 pub struct GraphicsTilemapTag;
