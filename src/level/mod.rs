@@ -139,7 +139,6 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
                         self.map_path, 
                         indexing
                     ), 
-                    anim: props.anim, 
                 }
             );
         }

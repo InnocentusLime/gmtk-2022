@@ -157,8 +157,6 @@ where
         deserialize_with = "deserailize_from_json_str"
     )]
     pub animating: ActivatableAnimating<Anim>,
-    #[serde(skip)]
-    pub anim: CPUAnimated,
 }
 
 /// A custom query type for exposing an easier to use tile API.
