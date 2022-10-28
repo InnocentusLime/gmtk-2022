@@ -57,7 +57,8 @@ impl Plugin for TilePlugin {
                     )
                     .with_system(
                         special_tile_handler
-                            .label(TileSystem::TileSetup)
+                            .label(TileSystem::TileUpdate)
+                            .after(TileSystem::StateSwitch)
                     ),
             );
     }

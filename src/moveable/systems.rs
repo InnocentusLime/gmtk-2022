@@ -12,7 +12,9 @@ fn update_moveable(
 ) -> bool {
     match &mut *item.state {
         MoveableState::Idle => false,
-        MoveableState::Moving { timer, dir, ty, .. } if timer.finished() => {
+        MoveableState::Moving { timer, dir, ty, .. } => {
+            if !timer.tick(dt).finished() { return false; }
+
             match dir.apply_on_pos(item.position.0) {
                 Some(new_pos) => item.position.0 = new_pos,
                 None => error!("Failed to change moveble position"),
@@ -21,25 +23,17 @@ fn update_moveable(
             if *ty == MoveTy::Flip {
                 item.rotation.0 = item.rotation.0.rotate_in_dir(*dir);
             }
-                
+
             *item.state = MoveableState::Idle;
             *item.side = Side::Ready(item.rotation.0.upper_side());
 
             true
         },
-        MoveableState::Moving { timer, .. } => { 
-            timer.tick(dt); 
+        MoveableState::Rotating { timer, clock_wise } => {
+            if !timer.tick(dt).finished() { return false; }
 
-            false 
-        },
-        MoveableState::Rotating { timer, clock_wise } if timer.finished() => {
             item.rotation.0 = item.rotation.0.rotate_ortho(*clock_wise);
             *item.state = MoveableState::Idle;
-
-            false
-        },
-        MoveableState::Rotating { timer, .. } => {
-            timer.tick(dt);
 
             false
         },
