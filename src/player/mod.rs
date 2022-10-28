@@ -11,7 +11,7 @@ use iyes_loopless::prelude::*;
 use crate::level::tile_pos_to_world_pos;
 use crate::moveable::{MoveableBundle, MoveableTilemapTag};
 use crate::states::GameState;
-use crate::tile::{TileKind};
+use crate::tile::{TileKind, TileUpdateStage};
 
 pub use components::*;
 pub use events::*;
@@ -31,7 +31,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerEscapedEvent>()
             .add_stage_after(
-                CoreStage::PreUpdate,
+                TileUpdateStage,
                 PlayerInputStage,
                 SystemStage::parallel(),
             )
