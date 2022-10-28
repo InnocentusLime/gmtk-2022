@@ -31,7 +31,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlayerEscapedEvent>()
             .add_stage_after(
-                TileUpdateStage,
+                CoreStage::PostUpdate,
                 PlayerInputStage,
                 SystemStage::parallel(),
             )

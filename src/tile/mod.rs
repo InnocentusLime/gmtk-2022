@@ -16,6 +16,7 @@ pub struct TilePlugin;
 
 #[derive(Clone, Copy, SystemLabel)]
 enum TileSystem {
+    TileUpdate,
     TileSetup,
     StateSwitch,
     AnimationSwitch,
@@ -53,11 +54,11 @@ impl Plugin for TilePlugin {
                         tile_animation_switch
                             .label(TileSystem::AnimationSwitch)
                             .after(TileSystem::StateSwitch),
+                    )
+                    .with_system(
+                        special_tile_handler
+                            .label(TileSystem::TileSetup)
                     ),
-            )
-            .add_system_set_to_stage(
-                CoreStage::Update,
-                SystemSet::new().with_system(special_tile_handler),
             );
     }
 }
