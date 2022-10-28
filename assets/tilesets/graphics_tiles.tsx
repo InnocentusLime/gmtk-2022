@@ -64,7 +64,30 @@
  </tile>
  <tile id="9" type="GraphicsTileBundle">
   <properties>
-   <property name="animating" value="null"/>
+   <property name="animating">{
+  &quot;on_transition&quot;: [
+    {&quot;id&quot;:9, &quot;dur&quot;:100},
+    {&quot;id&quot;:10, &quot;dur&quot;:100},
+    {&quot;id&quot;:11, &quot;dur&quot;:100},
+    {&quot;id&quot;:12, &quot;dur&quot;:100}
+  ],
+  &quot;off_transition&quot;: [
+    {&quot;id&quot;:12, &quot;dur&quot;:100},
+    {&quot;id&quot;:11, &quot;dur&quot;:100},
+    {&quot;id&quot;:10, &quot;dur&quot;:100},
+    {&quot;id&quot;:9, &quot;dur&quot;:100}
+  ],
+  &quot;on_anim&quot;: [
+    {&quot;id&quot;:12, &quot;dur&quot;:125},
+    {&quot;id&quot;:13, &quot;dur&quot;:50},
+    {&quot;id&quot;:14, &quot;dur&quot;:200},
+    {&quot;id&quot;:15, &quot;dur&quot;:50},
+    {&quot;id&quot;:16, &quot;dur&quot;:125},
+  ],
+  &quot;off_anim&quot;: [
+    {&quot;id&quot;:9, &quot;dur&quot;:125}
+  ]
+}</property>
   </properties>
   <image width="32" height="32" source="../tiles/fry0.png"/>
  </tile>
@@ -112,7 +135,14 @@
  </tile>
  <tile id="17" type="GraphicsTileBundle">
   <properties>
-   <property name="animating" value="null"/>
+   <property name="animating">{
+  &quot;on_anim&quot;: [
+    {&quot;id&quot;:17, &quot;dur&quot;:100},
+    {&quot;id&quot;:18, &quot;dur&quot;:100},
+    {&quot;id&quot;:19, &quot;dur&quot;:100},
+    {&quot;id&quot;:20, &quot;dur&quot;:100}
+  ]
+}</property>
   </properties>
   <image width="32" height="32" source="../tiles/spin0.png"/>
  </tile>
