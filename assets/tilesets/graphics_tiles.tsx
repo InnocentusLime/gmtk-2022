@@ -82,7 +82,7 @@
     {&quot;id&quot;:13, &quot;dur&quot;:50},
     {&quot;id&quot;:14, &quot;dur&quot;:200},
     {&quot;id&quot;:15, &quot;dur&quot;:50},
-    {&quot;id&quot;:16, &quot;dur&quot;:125},
+    {&quot;id&quot;:16, &quot;dur&quot;:125}
   ],
   &quot;off_anim&quot;: [
     {&quot;id&quot;:9, &quot;dur&quot;:125}
