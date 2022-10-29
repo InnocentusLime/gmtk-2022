@@ -9,4 +9,4 @@ edition = "2021"
 # Bevy deps
 bevy = "0.8"
 bevy_ecs_tilemap = "0.7.0"
-bevy-inspector-egui = "0.12"
+bevy-inspector-egui = "0.13"

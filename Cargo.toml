@@ -27,7 +27,7 @@ iyes_loopless = "0.7"
 anyhow = "1"
 bevy_ecs_tilemap = "0.7"
 tiled = { version = "0.10", default-features = false }
-bevy-inspector-egui = "0.12"
+bevy-inspector-egui = "0.13"
 bevy_pkv = "0.5"
 # Other deps
 thiserror = "1"
