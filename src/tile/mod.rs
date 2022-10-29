@@ -43,8 +43,7 @@ impl Plugin for TilePlugin {
                 SystemSet::new()
                     .with_system(
                         tile_state_switching
-                            .label(TileSystem::StateSwitch)
-                            .after(TileSystem::TileSetup),
+                            .label(TileSystem::StateSwitch),
                     )
                     .with_system(
                         tile_animation_switch
