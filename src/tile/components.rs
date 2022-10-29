@@ -53,31 +53,6 @@ where
     Pause { on_anim: Anim },
 }
 
-impl<T: Default> ActivatableAnimating<T> {
-    pub fn convert<S: Default>(
-        self,
-        mut conv: impl FnMut(T) -> S,
-    ) -> ActivatableAnimating<S> {
-        match self {
-            Self::None => ActivatableAnimating::None,
-            Self::Pause { on_anim: anim } => ActivatableAnimating::Pause {
-                on_anim: conv(anim),
-            },
-            Self::Switch {
-                on_transition,
-                off_transition,
-                on_anim,
-                off_anim,
-            } => ActivatableAnimating::Switch {
-                on_transition: conv(on_transition),
-                off_transition: conv(off_transition),
-                on_anim: conv(on_anim),
-                off_anim: conv(off_anim),
-            },
-        }
-    }
-}
-
 /// Tile state. Determines what the tile would do when someone interacts with it.
 #[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq)]
 pub enum TileState {

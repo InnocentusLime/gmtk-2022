@@ -79,25 +79,6 @@ impl TileAnimation {
                 })
         )
     }
-
-    fn acquire_asset(
-        self, 
-        tileset: usize,
-        tile: u32,
-        assets: &mut Assets<CPUTileAnimation>, 
-        map_path: Option<&Path>,
-        indexing: &TilesetIndexing,
-    ) -> Handle<CPUTileAnimation> {
-        let asset = Self::decode(self, indexing);
-        info!("anim{tileset:}_{tile:}\n{asset:?}");
-
-        match map_path {
-            Some(path) => assets.set(AssetPath::new_ref(
-                path, Some(&format!("anim{}_{}", tileset, tile))
-            ), asset),
-            None => assets.add(asset),
-        }
-    }
 }
 
 impl ActivatableAnimating<TileAnimation> {
@@ -109,7 +90,35 @@ impl ActivatableAnimating<TileAnimation> {
         map_path: Option<&Path>,
         indexing: &TilesetIndexing,
     ) -> ActivatableAnimating {
-        self.convert(move |anim| anim.acquire_asset(tileset, tile, assets, map_path, indexing))
+        let mut acquire_asset = |anim, tag: &'static str| {
+            let asset = TileAnimation::decode(anim, indexing);
+            debug!("anim{tileset:}_{tile:}_{tag:}\n{asset:?}");
+
+            match map_path {
+                Some(path) => assets.set(AssetPath::new_ref(
+                    path, Some(&format!("anim{}_{}_{}", tileset, tile, tag))
+                ), asset),
+                None => assets.add(asset),
+            }
+        };
+
+        match self {
+            ActivatableAnimating::None => ActivatableAnimating::None,
+            ActivatableAnimating::Pause { on_anim } => ActivatableAnimating::Pause { 
+                on_anim: acquire_asset(on_anim, "on_anim"),
+            },
+            ActivatableAnimating::Switch { 
+                on_transition, 
+                off_transition, 
+                on_anim, 
+                off_anim,
+            } => ActivatableAnimating::Switch { 
+                on_transition: acquire_asset(on_transition, "on_transition"), 
+                off_transition: acquire_asset(off_transition, "off_transition"), 
+                on_anim: acquire_asset(on_anim, "off_anim"), 
+                off_anim: acquire_asset(off_anim, "on_anim"), 
+            }
+        }
     }
 }
 
