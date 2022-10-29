@@ -77,6 +77,8 @@ pub fn tile_animation_switch(
                     _ => (),
                 },
             }
+
+            info!("New state: {animated:?}");
         })
     });
 }

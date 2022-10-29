@@ -89,6 +89,7 @@ impl TileAnimation {
         indexing: &TilesetIndexing,
     ) -> Handle<CPUTileAnimation> {
         let asset = Self::decode(self, indexing);
+        info!("anim{tileset:}_{tile:}\n{asset:?}");
 
         match map_path {
             Some(path) => assets.set(AssetPath::new_ref(
