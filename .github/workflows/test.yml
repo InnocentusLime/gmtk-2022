@@ -14,6 +14,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Update package index
+        run: sudo apt update
+
       - name: Install dependencies
         run: sudo apt install libasound2-dev libudev-dev pkg-config
 

@@ -22,23 +22,6 @@
             "valuesAsFlags": false
         },
         {
-            "color": "#ffff0000",
-            "id": 6,
-            "members": [
-                {
-                    "name": "active",
-                    "propertyType": "ActivationCondition",
-                    "type": "string",
-                    "value": "Odd"
-                }
-            ],
-            "name": "ActivatorTile",
-            "type": "class",
-            "useAs": [
-                "tile"
-            ]
-        },
-        {
             "color": "#ffa0a0a4",
             "id": 7,
             "members": [
@@ -46,6 +29,29 @@
             "name": "Frame",
             "type": "class",
             "useAs": [
+                "map",
+                "layer",
+                "object",
+                "tile",
+                "tileset",
+                "wangcolor",
+                "wangset"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "id": 10,
+            "members": [
+                {
+                    "name": "animating",
+                    "type": "string",
+                    "value": "{}"
+                }
+            ],
+            "name": "GraphicsTileBundle",
+            "type": "class",
+            "useAs": [
+                "property",
                 "map",
                 "layer",
                 "object",
@@ -69,7 +75,7 @@
                     "name": "target",
                     "propertyType": "LevelTileType",
                     "type": "string",
-                    "value": "Fry"
+                    "value": "Frier"
                 }
             ],
             "name": "LevelTileAnimation",
@@ -85,12 +91,12 @@
             "storageType": "string",
             "type": "enum",
             "values": [
-                "Fry",
+                "Frier",
                 "Conveyor",
                 "Floor",
-                "PlayerStart",
+                "Start",
                 "Exit",
-                "SpinningTile"
+                "Spinner"
             ],
             "valuesAsFlags": false
         },
@@ -102,10 +108,10 @@
                     "name": "ty",
                     "propertyType": "LevelTileType",
                     "type": "string",
-                    "value": "Fry"
+                    "value": "Frier"
                 }
             ],
-            "name": "LogicTile",
+            "name": "LogicTileBundle",
             "type": "class",
             "useAs": [
                 "tile"
@@ -124,6 +130,23 @@
                 "OffTransition"
             ],
             "valuesAsFlags": false
+        },
+        {
+            "color": "#ffff0000",
+            "id": 6,
+            "members": [
+                {
+                    "name": "active",
+                    "propertyType": "ActivationCondition",
+                    "type": "string",
+                    "value": "Odd"
+                }
+            ],
+            "name": "TriggerTileBundle",
+            "type": "class",
+            "useAs": [
+                "tile"
+            ]
         }
     ]
 }

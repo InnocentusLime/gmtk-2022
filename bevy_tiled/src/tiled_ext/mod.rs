@@ -6,7 +6,7 @@
 mod deser_impl;
 
 use bevy_ecs_tilemap::prelude::*;
-use serde::{ Deserialize, de::DeserializeOwned };
+use serde::{ Deserialize, de::DeserializeOwned, Deserializer };
 use std::collections::HashMap;
 use tiled::{ Layer, Map, LayerType, TileLayer, FiniteTileLayer, GroupLayer };
 
@@ -59,11 +59,11 @@ impl TiledLayerTileExt for tiled::LayerTileData {
     }
 }
 
-pub trait TiledTileExt<'de> {
+pub trait TileExt<'de> {
     fn properties<D: Deserialize<'de>>(&'de self) -> Result<D, TilePropertyDeserError>;
 }
 
-impl<'de> TiledTileExt<'de> for tiled::Tile<'de> {
+impl<'de> TileExt<'de> for tiled::Tile<'de> {
     fn properties<D: Deserialize<'de>>(&'de self) -> Result<D, TilePropertyDeserError> {
         D::deserialize(TilePropertyDes { tile: self })
     }
@@ -84,4 +84,16 @@ impl LayerSearch for Map {
 
 impl<'a> LayerSearch for GroupLayer<'a> {
     fn layers(&self) -> Box<dyn ExactSizeIterator<Item = Layer<'_>> + '_> { Box::new(self.layers()) }
+}
+
+pub fn deserailize_from_json_str<'de, D, T>(des: D) -> Result<T, D::Error>
+where
+    T: Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    let s = <&'_ str as Deserialize>::deserialize(des)?;
+    Ok(
+        serde_json::from_str(s)
+            .map_err(|e| <D::Error as serde::de::Error>::custom(e))?
+    )
 }

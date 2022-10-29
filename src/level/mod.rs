@@ -1,14 +1,19 @@
 mod resources;
 
+use std::{time::Duration, path::Path};
+use std::collections::HashMap;
+
+use bevy::asset::AssetPath;
 use bevy_asset_loader::dynamic_asset::*;
 use bevy_ecs_tilemap::prelude::*;
-use bevy_ecs_tilemap_cpu_anim::CPUTileAnimations;
-use bevy::prelude::*;
+use bevy::{prelude::*};
 
+use bevy_ecs_tilemap_cpu_anim::{CPUTileAnimation, Frame};
 pub use resources::*;
 
 use crate::tile::*;
-use bevy_tiled::{ TiledPlugin, TiledMap, TilesetIndexing };
+use serde::Deserialize;
+use bevy_tiled::{ TiledPlugin, TiledMap, TilesetIndexing, TileBuilder, TileExt, parse_map, SimpleCallbackSelector };
 use crate::moveable::MoveableTilemapTag;
 
 #[derive(Default)]
@@ -55,96 +60,187 @@ pub fn get_level_map(
     )
 }
 
-pub fn init_level_resource(
+#[derive(Default, Clone, Copy, Debug, Deserialize)]
+struct TileAnimationFrame {
+    id: u32,
+    dur: u64,
+}
+
+#[derive(Default, Debug, Deserialize)]
+struct TileAnimation(Vec<TileAnimationFrame>);
+
+impl TileAnimation {
+    fn decode(self, indexing: &TilesetIndexing) -> CPUTileAnimation {
+        CPUTileAnimation::new(
+            self.0.into_iter()
+                .map(|frame| Frame {
+                    texture_id: indexing.dispatch(frame.id),
+                    duration: Duration::from_millis(frame.dur),
+                })
+        )
+    }
+}
+
+impl ActivatableAnimating<TileAnimation> {
+    fn decode(
+        self,
+        tileset: usize,
+        tile: u32,
+        assets: &mut Assets<CPUTileAnimation>, 
+        map_path: Option<&Path>,
+        indexing: &TilesetIndexing,
+    ) -> ActivatableAnimating {
+        let mut acquire_asset = |anim, tag: &'static str| {
+            let asset = TileAnimation::decode(anim, indexing);
+            debug!("anim{tileset:}_{tile:}_{tag:}\n{asset:?}");
+
+            match map_path {
+                Some(path) => assets.set(AssetPath::new_ref(
+                    path, Some(&format!("anim{}_{}_{}", tileset, tile, tag))
+                ), asset),
+                None => assets.add(asset),
+            }
+        };
+
+        match self {
+            ActivatableAnimating::None => ActivatableAnimating::None,
+            ActivatableAnimating::Pause { on_anim } => ActivatableAnimating::Pause { 
+                on_anim: acquire_asset(on_anim, "on_anim"),
+            },
+            ActivatableAnimating::Switch { 
+                on_transition, 
+                off_transition, 
+                on_anim, 
+                off_anim,
+            } => ActivatableAnimating::Switch { 
+                on_transition: acquire_asset(on_transition, "on_transition"), 
+                off_transition: acquire_asset(off_transition, "off_transition"), 
+                on_anim: acquire_asset(on_anim, "off_anim"), 
+                off_anim: acquire_asset(off_anim, "on_anim"), 
+            }
+        }
+    }
+}
+
+struct GraphicsTileBuilder<'a> {
+    map_path: Option<&'a Path>,
+    anims: &'a mut Assets<CPUTileAnimation>,
+    deserialized_props: HashMap<(usize, u32), GraphicsTileBundle>,
+}
+
+impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
+    fn process_tileset(
+        &mut self, 
+        set_id: usize, 
+        tileset: &tiled::Tileset, 
+        indexing: &TilesetIndexing,
+    ) -> anyhow::Result<()> {
+        self.deserialized_props.reserve(tileset.tilecount as usize);
+
+        for (id, tile) in tileset.tiles() {
+            let props: GraphicsTileBundle<TileAnimation> = tile.properties()?;
+            self.deserialized_props.insert(
+                (set_id, id), 
+                GraphicsTileBundle { 
+                    animating: props.animating.decode(
+                        set_id, 
+                        id, 
+                        self.anims, 
+                        self.map_path, 
+                        indexing
+                    ), 
+                }
+            );
+        }
+
+        Ok(())
+    }
+
+    fn run_builder(
+        &mut self, 
+        set_id: usize, 
+        id: u32, 
+        cmds: &mut bevy::ecs::system::EntityCommands,
+    ) -> anyhow::Result<()> {
+        cmds.insert_bundle(self.deserialized_props[&(set_id, id)].clone());
+
+        Ok(())
+    }
+
+    fn tilemap_post_build(
+        &mut self, 
+        _set_id: usize, 
+        cmds: &mut bevy::ecs::system::EntityCommands,
+    ) -> anyhow::Result<()> {
+        cmds
+            .insert(GraphicsTilemapTag)
+            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                1.6f32, 1.6f32, 1.6f32
+            ))));
+
+        Ok(())
+    }
+}
+
+pub fn spawn_level(
     In(tileset_indexing): In<Vec<TilesetIndexing>>,
+    asset_server: Res<AssetServer>,
     mut commands: Commands, 
     base_level_assets: Res<BaseLevelAssets>,
     tilesets: Res<LevelTilesetImages>,
     atlases: Res<Assets<TextureAtlas>>,
     maps: Res<Assets<TiledMap>>,
-    mut animations: ResMut<CPUTileAnimations>,
+    mut animations: ResMut<Assets<CPUTileAnimation>>,
 ) {
-    let map = maps.get(&base_level_assets.map).expect("Level map should be loaded by now");
-    let level = match Level::new(
-        map, 
-        &mut *animations,
-        &tileset_indexing, 
-        &tilesets.images.iter().filter_map(|h| atlases.get(h)).collect::<Vec<_>>(),
-    ) {
-        Ok(x) => x,
-        Err(e) => { e.chain().for_each(|e| error!("{}", e)); return },
+    use bevy_tiled::BasicDeserBuilder;
+
+    let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| { 
+        cmds
+            .insert(LogicTilemapTag)
+            .insert(MoveableTilemapTag)
+            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                1.6f32, 1.6f32, 1.6f32
+            ))))
+            .insert(Visibility { is_visible: false });
+    });
+    let mut trigger_tile_builder = BasicDeserBuilder::<TriggerTileBundle, _>::new(|cmds| { 
+        cmds
+            .insert(TriggerTilemapTag)
+            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                1.6f32, 1.6f32, 1.6f32
+            ))))
+            .insert(Visibility { is_visible: false });
+    });
+    let map_asset_path = asset_server.get_handle_path(base_level_assets.map.clone());
+    let mut graphics_tile_builder = GraphicsTileBuilder {
+        map_path: map_asset_path.as_ref().map(|x| x.path()),
+        anims: &mut *animations,
+        deserialized_props: HashMap::new(),
     };
+    let map = maps.get(&base_level_assets.map).unwrap();
+    let atlases = tilesets.images.iter()
+        .map(|x| atlases.get(&x).unwrap().texture.clone())
+        .collect::<Vec<_>>(); 
 
-    commands.insert_resource(level);
-}
-
-pub fn spawn_level(
-    mut commands: Commands, 
-    level: Res<Level>,
-    animations: Res<CPUTileAnimations>,
-) {
-    // Create the loaded map
-    let map_entity = commands.spawn().insert(Name::new("Map")).id();
-    let tilemap_size = TilemapSize { x: level.width(), y: level.height() };
-    let mut tile_store = TileStorage::empty(tilemap_size);
-
-    // Build the geometry layer
-    let _map_commands = 
-        commands.entity(map_entity)
-            .with_children(|commands| {
-                level.tiles.iter().for_each(|((x, y), data)| {
-                    let position = TilePos { x: *x, y: *y };
-                    let mut cmds = commands.spawn();
-
-                    cmds.insert_bundle(TileBundle {
-                        position,
-                        tilemap_id: TilemapId(map_entity),
-                        texture: data.texture,
-                        flip: data.flip,
-                        ..default()
-                    }).insert(Name::new("level tile"));
-
-                    data.ty.insert_into(&mut cmds);
-
-                    let enabled = data.activation_cond.map(ActivationCondition::active_on_start).unwrap_or(false);
-
-                    if let Some(cond) = data.activation_cond {
-                        cmds
-                            .insert(cond)
-                            .insert(Active { is_active: cond.active_on_start() });
-                    }
-
-                    if let Some(animating) = data.activatable_animating {
-                        match animating {
-                            ActivatableAnimating::Switch { on_anim, off_anim, .. } => cmds.insert(
-                                if enabled {
-                                    animations.new_cpu_animated(on_anim, true, false)
-                                } else {
-                                    animations.new_cpu_animated(off_anim, true, false)
-                                }
-                            ),
-                            ActivatableAnimating::Pause { anim } => cmds.insert(
-                                animations.new_cpu_animated(anim, true, enabled)
-                            ),
-                        }.insert(animating);
-                    }
-                        
-                    tile_store.set(&position, Some(cmds.id()));
-                });
-            });
-
-    commands.entity(map_entity)
-        .insert_bundle(TilemapBundle {
-            storage: tile_store,
-            texture: TilemapTexture(level.geometry_atlas.clone()),
-            mesh_type: TilemapMeshType::Square,
-            // FIXME hardcoded
-            tile_size: TilemapTileSize { x: 32.0f32, y: 32.0f32 },
-            // FIXME hardcoded
-            grid_size: TilemapGridSize { x: 32.0f32, y: 32.0f32 },
-            size: tilemap_size,
-            transform: Transform::from_scale(Vec3::new(1.6f32, 1.6f32, 1.6f32)),
-            ..default()
-        })
-        .insert(MoveableTilemapTag);
+    let res = parse_map(
+        &mut commands, 
+        &tileset_indexing, 
+        &atlases, 
+        &map.map, 
+        &mut SimpleCallbackSelector {
+            pool: [
+                &mut logic_tile_builder, 
+                &mut trigger_tile_builder, 
+                &mut graphics_tile_builder
+            ],
+            picker: |name| match name {
+                "logic_tiles" => 0,
+                "activator_tiles" => 1,
+                _ => 2,
+            },
+        }
+    );
+    if let Err(e) = res {
+        error!("Error parsing map: {}", e);
+    }
 }

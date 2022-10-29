@@ -6,37 +6,34 @@ use bevy_ecs_tilemap::prelude::*;
 
 /// Updates the internals of a moveable. Returns `true` if the moveable
 /// reached the destination (if it was in process of moving from one position to another).
-fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
-    match &mut moveable.state {
+fn update_moveable(
+    item: &mut MoveableQueryItem,
+    dt: Duration,
+) -> bool {
+    match &mut *item.state {
         MoveableState::Idle => false,
-        MoveableState::Moving { timer, dir, ty, .. } if timer.finished() => {
-            match dir.apply_on_pos(moveable.pos) {
-                Some(pos) => moveable.pos = pos,
+        MoveableState::Moving { timer, dir, ty, .. } => {
+            if !timer.tick(dt).finished() { return false; }
+
+            match dir.apply_on_pos(item.position.0) {
+                Some(new_pos) => item.position.0 = new_pos,
                 None => error!("Failed to change moveble position"),
             }
                 
             if *ty == MoveTy::Flip {
-                moveable.rot = moveable.rot.rotate_in_dir(*dir);
+                item.rotation.0 = item.rotation.0.rotate_in_dir(*dir);
             }
-                
-            moveable.state = MoveableState::Idle;
+
+            *item.state = MoveableState::Idle;
+            *item.side = Side::Ready(item.rotation.0.upper_side());
 
             true
         },
-        MoveableState::Moving { timer, just_started, .. } => { 
-            *just_started = false;
-            timer.tick(dt); 
+        MoveableState::Rotating { timer, clock_wise } => {
+            if !timer.tick(dt).finished() { return false; }
 
-            false 
-        },
-        MoveableState::Rotating { timer, clock_wise } if timer.finished() => {
-            moveable.rot = moveable.rot.rotate_ortho(*clock_wise);
-            moveable.state = MoveableState::Idle;
-
-            false
-        },
-        MoveableState::Rotating { timer, .. } => {
-            timer.tick(dt);
+            item.rotation.0 = item.rotation.0.rotate_ortho(*clock_wise);
+            *item.state = MoveableState::Idle;
 
             false
         },
@@ -53,7 +50,7 @@ fn update_moveable(moveable: &mut Moveable, dt: Duration) -> bool {
 /// * Performs state transitions on the moveables when they are done moving.
 pub fn moveable_tick(
     mut interaction_events: EventWriter<TileInteractionEvent>,
-    mut moveable_q: Query<(Entity, &mut Moveable)>,
+    mut moveable_q: Query<(Entity, MoveableQuery)>,
     map_q: Query<&TileStorage, With<MoveableTilemapTag>>,
     time: Res<Time>,
 ) {
@@ -65,19 +62,24 @@ pub fn moveable_tick(
             Err(_) => return,
         };
 
-        if let Some(pos) = moveable.going_to_occupy() {
-            if tiles.get(&pos).is_none() {
+        if let MoveableState::Moving { dir, .. } = &*moveable.state {
+            if dir.apply_on_pos(moveable.position.0).map(|x| tiles.get(&x)).is_none() {
                 moveable.force_idle();
+            } else if matches!(&*moveable.side, Side::Ready(_)) {
+                *moveable.side = Side::Changing { 
+                    from: moveable.rotation.0.upper_side(), 
+                    to: moveable.rotation.0.rotate_in_dir(*dir).upper_side(), 
+                };
             }
         }
 
-        if update_moveable(&mut *moveable, dt) {
-            match tiles.get(&moveable.pos()) {
+        if update_moveable(&mut moveable, dt) {
+            match tiles.get(&moveable.position.0) {
                 Some(tile_id) => interaction_events.send(TileInteractionEvent {
                     tile_id,
-                    interactor_id: id,
+                    moveable_id: id,
                 }),
-                None => error!("Entity {id:?} has ended up on an illegal tiles pos ({:?}).", moveable.pos()),
+                None => error!("Entity {id:?} has ended up on an illegal tiles pos ({:?}).", moveable.position.0),
             }
         } 
     });
@@ -88,7 +90,7 @@ pub fn moveable_tick(
 /// create the animations.
 pub fn moveable_animation(
     map_q: Query<(&Transform, &TilemapGridSize), With<MoveableTilemapTag>>,
-    mut moveable_q: Query<(&mut Transform, &Moveable), Without<MoveableTilemapTag>>,
+    mut moveable_q: Query<(&mut Transform, MoveableQuery), Without<MoveableTilemapTag>>,
 ) {
     use crate::level::tile_pos_to_world_pos;
 
@@ -96,37 +98,34 @@ pub fn moveable_animation(
     let (map_tf, map_grid) = map_q.single();
 
     moveable_q.for_each_mut(|(mut tf, moveable)| {
-        let current_pos = tile_pos_to_world_pos(moveable.pos(), map_tf, map_grid).extend(1.0f32);
+        let current_pos = tile_pos_to_world_pos(moveable.position.0, map_tf, map_grid).extend(1.0f32);
 
-        // Other animation curves for moving
-        // t = ((2.0f32 * t - 1.0f32).powi(3) + 1.0f32) / 2.0f32
-        // t = 2.0 * t.powi(3) - t
-        match (&moveable.state, moveable.going_to_occupy()) {
-            (MoveableState::Moving { timer, ty, dir, .. }, Some(n_pos)) => {
+        match &*moveable.state {
+            MoveableState::Moving { timer, dir, ty } => {
                 let t = 1.0f32 - timer.percent_left();
-                let start_pos = current_pos;
-                let end_pos = tile_pos_to_world_pos(n_pos, map_tf, map_grid).extend(1.0f32);
-                
-                tf.translation = start_pos + (end_pos - start_pos) * t;
-            
-                if *ty == MoveTy::Flip {
-                    tf.rotation = dir.to_quat(t) * moveable.rotation().rot_quat();
+                if let Some(n_pos) = dir.apply_on_pos(moveable.position.0) {
+                    let start_pos = current_pos;
+                    let end_pos = tile_pos_to_world_pos(n_pos, map_tf, map_grid).extend(1.0f32);
+                    
+                    tf.translation = start_pos + (end_pos - start_pos) * t;
+                    if *ty == MoveTy::Flip {
+                        tf.rotation = dir.to_quat(t) * moveable.rotation.0.rot_quat();
+                    }
                 }
             },
-            (MoveableState::Idle, _) => {
+            MoveableState::Idle => {
                 tf.translation = current_pos;
-                tf.rotation = moveable.rotation().rot_quat();
+                tf.rotation = moveable.rotation.0.rot_quat();
             },
-            (MoveableState::Rotating { timer, clock_wise }, _) => {
+            MoveableState::Rotating { timer, clock_wise } => {
                 let t = 1.0f32 - timer.percent_left();
 
-                if *clock_wise {
-                    tf.rotation = Quat::from_rotation_z(-t * std::f32::consts::FRAC_PI_2) * moveable.rotation().rot_quat();
-                } else {
-                    tf.rotation = Quat::from_rotation_z(t * std::f32::consts::FRAC_PI_2) * moveable.rotation().rot_quat();
-                }
+                tf.rotation = if *clock_wise {
+                        Quat::from_rotation_z(-t * std::f32::consts::FRAC_PI_2)
+                    } else {
+                        Quat::from_rotation_z(t * std::f32::consts::FRAC_PI_2)
+                    } * moveable.rotation.0.rot_quat();
             },
-            _ => (),
         }
     });
 }
