@@ -77,8 +77,6 @@ pub fn tile_animation_switch(
                     _ => (),
                 },
             }
-
-            info!("New state: {animated:?}");
         })
     });
 }
@@ -86,7 +84,7 @@ pub fn tile_animation_switch(
 /// Switches tile state, depending on which number the player has on their upper side.
 /// This system makes sure to trigger `Changed` only when the state of a tile actually changes.
 pub fn tile_state_switching(
-    player_q: Query<&MoveableSide, (With<PlayerTag>, Changed<MoveableSide>)>,
+    player_q: Query<&MoveableSide, (With<PlayerTag>, Or<(Changed<MoveableSide>, Added<MoveableSide>)>)>,
     trigger_q: Query<(&ActivationCondition, &TilePos)>,
     logic_map_q: Query<&TileStorage, With<LogicTilemapTag>>,
     mut logic_q: Query<&mut TileState>,
