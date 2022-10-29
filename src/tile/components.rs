@@ -30,9 +30,12 @@ impl ActivationCondition {
 }
 
 /// Describes how the tile should be animated, based off its state.
-#[derive(Debug, Default, Clone, Component, Deserialize)]
+#[derive(Inspectable, Debug, Default, Clone, Component, Deserialize)]
 #[serde(untagged)]
-pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> {
+pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> 
+where
+    Anim: Default,
+{
     /// The tile has no animation by activation
     #[default]
     None,
@@ -50,8 +53,8 @@ pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> {
     Pause { on_anim: Anim },
 }
 
-impl<T> ActivatableAnimating<T> {
-    pub fn convert<S>(
+impl<T: Default> ActivatableAnimating<T> {
+    pub fn convert<S: Default>(
         self,
         mut conv: impl FnMut(T) -> S,
     ) -> ActivatableAnimating<S> {
@@ -150,7 +153,7 @@ pub struct TriggerTileBundle {
 #[derive(Clone, Bundle, Deserialize)]
 pub struct GraphicsTileBundle<Anim = Handle<CPUTileAnimation>>
 where
-    Anim: 'static + Send + Sync,
+    Anim: 'static + Send + Sync + Default,
 {
     #[serde(
         bound = "Anim: Deserialize<'de>",

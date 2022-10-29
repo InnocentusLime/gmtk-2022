@@ -60,13 +60,13 @@ pub fn get_level_map(
     )
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Default, Clone, Copy, Debug, Deserialize)]
 struct TileAnimationFrame {
     id: u32,
     dur: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Default, Debug, Deserialize)]
 struct TileAnimation(Vec<TileAnimationFrame>);
 
 impl TileAnimation {

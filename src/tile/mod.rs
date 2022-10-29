@@ -29,7 +29,7 @@ impl Plugin for TilePlugin {
                 //.register_inspectable::<Active>()
                 .register_inspectable::<TileState>()
                 .register_inspectable::<TileKind>()
-                //.register_inspectable::<ActivatableAnimating>()
+                .register_inspectable::<ActivatableAnimating>()
                 .register_inspectable::<ActivationCondition>();
         }
 
