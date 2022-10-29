@@ -50,7 +50,6 @@ pub fn tile_animation_switch(
                 Err(_) => return,
             };
 
-            info!("POS={pos:?}\tSTATE={state:?}");
 
             match state {
                 TileState::Ready(x) => match animating {
