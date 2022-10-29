@@ -50,6 +50,8 @@ pub fn tile_animation_switch(
                 Err(_) => return,
             };
 
+            info!("POS={pos:?}\tSTATE={state:?}");
+
             match state {
                 TileState::Ready(x) => match animating {
                     ActivatableAnimating::Switch {
@@ -119,7 +121,6 @@ pub fn tile_state_switching(
 
                 // Do the state change very carefully. We want to trigger
                 // others only when we actually need to change the state.
-                info!("POS={pos:?}\tOLD={state:?}\tNEW={new_state:?}");
                 if new_state != *state {
                     *state = new_state;
                 }
