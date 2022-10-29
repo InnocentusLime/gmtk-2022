@@ -36,7 +36,7 @@ pub fn tile_animation_setup(
 /// Switches tile animation if its state changes. See [ActivatableAnimating] for more info.
 pub fn tile_animation_switch(
     graphics_map_q: Query<&TileStorage, With<GraphicsTilemapTag>>,
-    logic_q: Query<(&TileState, &TilePos), Or<(Changed<TileState>, Added<TileState>)>>,
+    logic_q: Query<(&TileState, &TilePos), Changed<TileState>>,
     mut graphics_q: Query<(&mut CPUAnimated, &ActivatableAnimating)>,
 ) {
     logic_q.for_each(|(state, pos)| {
@@ -119,6 +119,7 @@ pub fn tile_state_switching(
 
                 // Do the state change very carefully. We want to trigger
                 // others only when we actually need to change the state.
+                info!("POS={pos:?}\tOLD={state:?}\tNEW={new_state:?}");
                 if new_state != *state {
                     *state = new_state;
                 }
