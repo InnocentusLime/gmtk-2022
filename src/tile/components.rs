@@ -1,6 +1,6 @@
 use bevy::{ecs::query::WorldQuery, prelude::*};
 use bevy_ecs_tilemap::tiles::TileFlip;
-use bevy_ecs_tilemap_cpu_anim::{CPUAnimated, CPUTileAnimation};
+use bevy_ecs_tilemap_cpu_anim::CPUTileAnimation;
 use bevy_inspector_egui::Inspectable;
 use bevy_tiled::deserailize_from_json_str;
 use cube_rot::MoveDirection;

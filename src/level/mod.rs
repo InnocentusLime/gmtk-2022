@@ -182,7 +182,7 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
     }
 }
 
-pub fn init_level_resource(
+pub fn spawn_level(
     In(tileset_indexing): In<Vec<TilesetIndexing>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands, 
@@ -244,5 +244,3 @@ pub fn init_level_resource(
         error!("Error parsing map: {}", e);
     }
 }
-
-pub fn spawn_level() {}

@@ -10,12 +10,11 @@ use anyhow::anyhow;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage};
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
-use std::arch::x86_64::CpuidResult;
 use std::time::Duration;
 
 pub fn tile_animation_setup(
     mut commands: Commands,
-    mut tile_q: Query<
+    tile_q: Query<
         (Entity, &ActivatableAnimating),
         Added<ActivatableAnimating>,
     >,
