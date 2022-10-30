@@ -10,15 +10,25 @@ After receiving some small positive feedback, I decided to finish this game.
 
 # Technical info
 
+## Used tech
+
 Right now the game is using [the bevy game engine](https://bevyengine.org/) version 0.8.1, along with some third party plugins. For complete list of dependencies see the [`Cargo.toml`](Cargo.toml) manifest file, located in the project root.
 
 The levels of the game were created via [the tiled level editor](https://www.mapeditor.org/).
+
+## Game's CLI
 
 The game has different modes you can boot it up in. For more info simply run the game like this:
 
 ```bash
 game_excutable --help
 ```
+
+## Where is my save file?
+
+| Windows | Linux | MAC |
+| --- | --- | --- |
+| %appdata%\SeptemModi\gluttony | $XDG_DATA_HOME/gluttony[^1] | Library/Application Support/SeptemMody.gluttony |
 
 # The state of this project
 
@@ -39,11 +49,12 @@ The game is avaliable for free under the conditions of the **MIT license**. Ther
 
 ## Building the game yourself
 
-1. Clone the repository and select the branch you want to build[^1]
+1. Clone the repository and select the branch you want to build[^2]
 2. Install Rust with version not older than 1.64.x. Installation guide: https://www.rust-lang.org/tools/install
 3. Make sure you have `cargo` installed
 4. If you are building on Linux, make sure you have `libasound2-dev` and `libudev-dev` installed (these packages are required by the bevy game engine)
 5. Run `cargo build --release`
 6. The result of the build is a single executable located in `target/release`. Alternatively, you can run the game simply by writing `cargo run`
 
-[^1]: **KEEP IN MIND**, that the `main` branch might not contain a working version of the game. Be aware, that all other branches except `main` might not even compile.
+[^1]: If `$XDG_DATA_HOME` is empty, then you should try `~/.local/share/gluttony`
+[^2]: **KEEP IN MIND**, that the `main` branch might not contain a working version of the game. Be aware, that all other branches except `main` might not even compile.
