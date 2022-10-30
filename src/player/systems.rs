@@ -25,7 +25,7 @@ pub fn player_win_anim(
 
         // TODO hardcoded player size
         tf.scale = Vec3::new(25.0f32, 25.0f32, 25.0f32) * t;
-        col_mats.get_mut(&*mat_handle).unwrap().color = Color::Rgba {
+        col_mats.get_mut(mat_handle).unwrap().color = Color::Rgba {
             red: t,
             green: t,
             blue: t,

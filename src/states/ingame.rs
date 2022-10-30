@@ -47,7 +47,7 @@ fn level_complete_system_normal(
         if timer.0.finished() {
             let level_info = level_infos.get(&menu_assets.level_info).unwrap();
          
-            save.register_level_complete(&*level_info);
+            save.register_level_complete(level_info);
             
             // TODO retry?
             match pkv.set("save", &*save) {

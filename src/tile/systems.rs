@@ -99,21 +99,15 @@ pub fn tile_state_switching(
         _ => return,
     };
 
-    let log_error = |x: Result<(), anyhow::Error>| match x {
-        Ok(()) => (),
-        Err(e) => {
-            error!("{}", e);
-        }
-    };
-
-    match player_side {
+    // TODO this reacks of copy-paste
+    let res: anyhow::Result<()> = match player_side {
         MoveableSide::Ready(x) => trigger_q
             .iter()
-            .map(|(cond, pos)| {
+            .try_for_each(|(cond, pos)| {
                 let mut state = logic_q.get_mut(
                     logic_map
                         .get(pos)
-                        .ok_or(anyhow!("Trigger at {:?} has no target", pos))?,
+                        .ok_or_else(|| anyhow!("Trigger at {:?} has no target", pos))?,
                 )?;
                 let new_state = TileState::Ready(cond.is_active(*x));
 
@@ -124,15 +118,14 @@ pub fn tile_state_switching(
                 }
 
                 Ok(())
-            })
-            .for_each(log_error),
+            }),
         MoveableSide::Changing { from, to } => trigger_q
             .iter()
-            .map(|(cond, pos)| {
+            .try_for_each(|(cond, pos)| {
                 let mut state = logic_q.get_mut(
                     logic_map
                         .get(pos)
-                        .ok_or(anyhow!("Trigger at {:?} has no target", pos))?,
+                        .ok_or_else(|| anyhow!("Trigger at {:?} has no target", pos))?,
                 )?;
                 let new_state = cond.is_active(*to);
 
@@ -141,8 +134,11 @@ pub fn tile_state_switching(
                 }
 
                 Ok(())
-            })
-            .for_each(log_error),
+            }),
+    };
+
+    if let Err(e) = res {
+        error!("{}", e);
     }
 }
 
@@ -154,8 +150,7 @@ pub fn special_tile_handler(
     mut commands: Commands,
 ) {
     let res: Result<(), anyhow::Error> = interactions
-        .iter()
-        .map(|e| {
+        .iter().try_for_each(|e| {
             let tile = tile_query.get_mut(e.tile_id)?;
             let (moveable, player_tag) = move_query.get_mut(e.moveable_id)?;
 
@@ -193,8 +188,7 @@ pub fn special_tile_handler(
             };
 
             Ok(())
-        })
-        .collect();
+        });
 
     if let Err(e) = res {
         error!("Error while handling tile interaction: {}", e);

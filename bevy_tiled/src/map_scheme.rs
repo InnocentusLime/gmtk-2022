@@ -311,6 +311,8 @@ fn ensure_unique_tileset<'a>(layer: &'a tiled::FiniteTileLayer) -> Result<(usize
     result.ok_or_else(|| anyhow!("The layer uses no tileset"))
 }
 
+// TODO reduce the amount of arguments
+#[allow(clippy::too_many_arguments)]
 fn spawn_tile(
     x: u32,
     y: u32,

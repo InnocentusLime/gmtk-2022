@@ -182,6 +182,9 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
     }
 }
 
+// NOTE I don't think I can do anything here to satisfy clippy.
+// Maybe some further investigation will prove me wrong.
+#[allow(clippy::too_many_arguments)]
 pub fn spawn_level(
     In(tileset_indexing): In<Vec<TilesetIndexing>>,
     asset_server: Res<AssetServer>,
@@ -219,7 +222,7 @@ pub fn spawn_level(
     };
     let map = maps.get(&base_level_assets.map).unwrap();
     let atlases = tilesets.images.iter()
-        .map(|x| atlases.get(&x).unwrap().texture.clone())
+        .map(|x| atlases.get(x).unwrap().texture.clone())
         .collect::<Vec<_>>(); 
 
     let res = parse_map(
