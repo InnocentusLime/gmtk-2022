@@ -51,10 +51,10 @@ pub fn player_controls(
    
     // TODO pretify?
     let mut movement = None;
-    if key_input.pressed(KeyCode::W) { movement = Some(Up); } 
-    if key_input.pressed(KeyCode::A) { movement = Some(Left); }
-    if key_input.pressed(KeyCode::S) { movement = Some(Down); }
-    if key_input.pressed(KeyCode::D) { movement = Some(Right); }
+    if key_input.pressed(KeyCode::W) { movement = movement.or(Some(Up)); } 
+    if key_input.pressed(KeyCode::A) { movement = movement.or(Some(Left)); }
+    if key_input.pressed(KeyCode::S) { movement = movement.or(Some(Down)); }
+    if key_input.pressed(KeyCode::D) { movement = movement.or(Some(Right)); }
 
     if let Some(dir) = movement {
         query.for_each_mut(|mut m| { m.flip(dir, Duration::from_secs_f32(0.52f32)); });

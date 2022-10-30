@@ -22,8 +22,8 @@ pub enum MoveTy {
     /// The object will move into some direction, potentially also
     /// changing its side.
     Slide {
-        flip: bool,
         dir: MoveDirection,
+        next_pos: TilePos,
     },
     /// The object is rotating around its orthogonal axis.
     Rotate {
@@ -118,10 +118,7 @@ impl<'a> MoveableQueryItem<'a> {
     /// Note that all this method does is **asking** the game to do that. The
     /// game might actually deny the request.
     pub fn slide(&mut self, dir: MoveDirection, time: Duration) {
-        self.try_set_state(MoveableState::Moving { 
-            timer: Timer::new(time, false), 
-            ty: MoveTy::Slide { dir, flip: false }, 
-        });
+        self.try_slide(dir, time);
     }
 
     /// Asks the game to flip the moveable in some direction (See [MoveableState::Moving]).
@@ -132,10 +129,12 @@ impl<'a> MoveableQueryItem<'a> {
     /// Note that all this method does is **asking** the game to do that. The
     /// game might actually deny the request.
     pub fn flip(&mut self, dir: MoveDirection, time: Duration) {
-        self.try_set_state(MoveableState::Moving { 
-            timer: Timer::new(time, false), 
-            ty: MoveTy::Slide { dir, flip: true }, 
-        });
+        if self.try_slide(dir, time) {
+            *self.side = Side::Changing { 
+                from: self.rotation.0.upper_side(), 
+                to: self.rotation.0.rotate_in_dir(dir).upper_side(), 
+            };
+        }
     }
 
     /// Asks the game rotate the moveable clockwise or couterclockwise
@@ -149,9 +148,23 @@ impl<'a> MoveableQueryItem<'a> {
         });
     }
 
+    fn try_slide(&mut self, dir: MoveDirection, time: Duration) -> bool {
+        let next_pos = match dir.apply_on_pos(self.position.0) {
+            Some(x) => x,
+            None => return false,
+        };
+
+        self.try_set_state(MoveableState::Moving { 
+            timer: Timer::new(time, false), 
+            ty: MoveTy::Slide { dir, next_pos }, 
+        })
+    }
+
     /// Sets the state to `new_state` as long as `self.state` is `Idle`.
-    fn try_set_state(&mut self, new_state: MoveableState) {
-        if !matches!(&*self.state, MoveableState::Idle) { return; }
-        *self.state = new_state;
+    fn try_set_state(&mut self, state: MoveableState) -> bool {
+        if !matches!(&*self.state, MoveableState::Idle) { return false; }
+        *self.state = state;
+
+        true
     }
 }

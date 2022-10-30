@@ -155,9 +155,7 @@ pub fn special_tile_handler(
 
             match &tile.kind {
                 // Conveyor logic
-                TileKind::Conveyor => {
-                    moveable.slide(tile.direction(), Duration::from_millis(500))
-                }
+                TileKind::Conveyor => moveable.slide(tile.direction(), Duration::from_millis(500)),
                 // Frier logic
                 TileKind::Frier => commands.entity(moveable_id).despawn(),
                 // Spinner logic

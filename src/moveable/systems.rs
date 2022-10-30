@@ -28,41 +28,25 @@ fn update_moveable(
                 None
             },
             // If we are actually changing our current tile, we will interact
-            MoveTy::Slide { flip, dir } => {
+            MoveTy::Slide { dir, next_pos } => {
                 // Verify the presence of the tile and the validity of the ID
-                // NOTE those checks feel like they aren't that needed. ESPECIALLY EACH FRAME
-                let pos = match dir.apply_on_pos(item.position.0) {
+                let tile_id = match tiles.get(&next_pos) {
                     Some(x) => x,
                     None => {
                         item.force_idle();
                         return None;
                     },
                 };
-                let tile_id = match tiles.get(&pos) {
-                    Some(x) => x,
-                    None => {
-                        item.force_idle();
-                        return None;
-                    },
-                };
-
-                // If we haven't set our side to `Changing` -- do that 
-                // NOTE (Again, feels redundant to do it HERE)
-                if *flip && matches!(&*item.side, Side::Ready(_)) {
-                    *item.side = Side::Changing { 
-                        from: item.rotation.0.upper_side(), 
-                        to: item.rotation.0.rotate_in_dir(*dir).upper_side(), 
-                    };
-                }
 
                 // When we have finished moving, update our pos and rotation (if needed)
                 if timer.tick(dt).just_finished() {
-                    if *flip {
+                    // If we were changing our side, finish it
+                    if let Side::Changing { to, .. } = *item.side {
                         item.rotation.0 = item.rotation.0.rotate_in_dir(*dir);
-                        *item.side = Side::Ready(item.rotation.0.upper_side());
+                        *item.side = Side::Ready(to);
                     }
                     
-                    item.position.0 = pos;
+                    item.position.0 = *next_pos;
                     *item.state = MoveableState::Idle;
     
                     Some(TileInteractionEvent { moveable_id, tile_id })
@@ -121,15 +105,16 @@ pub fn moveable_animation(
                 let t = timer.percent();
 
                 match &ty {
-                    MoveTy::Slide { dir, flip } => {      
-                        if let Some(n_pos) = dir.apply_on_pos(moveable.position.0) {
-                            let start_pos = current_pos;
-                            let end_pos = tile_pos_to_world_pos(n_pos, map_tf, map_grid);
+                    MoveTy::Slide { dir, next_pos } => {      
+                        let start_pos = current_pos;
+                        let end_pos = tile_pos_to_world_pos(*next_pos, map_tf, map_grid);
                             
-                            tf.translation = (start_pos + (end_pos - start_pos) * t).extend(1.0f32);
-                            if *flip {
-                                tf.rotation = dir.to_quat(t) * moveable.rotation.0.rot_quat();
-                            }
+                        // Animate the sliding
+                        tf.translation = (start_pos + (end_pos - start_pos) * t).extend(1.0f32);
+
+                        // Add some rotation if we are changing the side
+                        if matches!(&*moveable.side, Side::Changing { .. }) {
+                            tf.rotation = dir.to_quat(t) * moveable.rotation.0.rot_quat();
                         }
                     },
                     MoveTy::Rotate { clock_wise } => {
