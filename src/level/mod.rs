@@ -96,7 +96,7 @@ impl ActivatableAnimating<TileAnimation> {
 
             match map_path {
                 Some(path) => assets.set(AssetPath::new_ref(
-                    path, Some(&format!("anim{}_{}_{}", tileset, tile, tag))
+                    path, Some(&format!("anim{tileset:}_{tile:}_{tag:}"))
                 ), asset),
                 None => assets.add(asset),
             }
@@ -197,6 +197,8 @@ pub fn spawn_level(
 ) {
     use bevy_tiled::BasicDeserBuilder;
 
+    let map_asset_path = asset_server.get_handle_path(base_level_assets.map.clone());
+
     let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| { 
         cmds
             .insert(LogicTilemapTag)
@@ -214,12 +216,12 @@ pub fn spawn_level(
             ))))
             .insert(Visibility { is_visible: false });
     });
-    let map_asset_path = asset_server.get_handle_path(base_level_assets.map.clone());
     let mut graphics_tile_builder = GraphicsTileBuilder {
         map_path: map_asset_path.as_ref().map(|x| x.path()),
         anims: &mut *animations,
         deserialized_props: HashMap::new(),
     };
+
     let map = maps.get(&base_level_assets.map).unwrap();
     let atlases = tilesets.images.iter()
         .map(|x| atlases.get(x).unwrap().texture.clone())

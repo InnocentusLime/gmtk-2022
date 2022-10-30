@@ -4,39 +4,73 @@ use super::components::*;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-/// Updates the internals of a moveable. Returns `true` if the moveable
-/// reached the destination (if it was in process of moving from one position to another).
+/// Updates the internals of a moveable. Returns an iteraction event if one should
+/// be posted.
 fn update_moveable(
+    moveable_id: Entity,
     item: &mut MoveableQueryItem,
+    tiles: &TileStorage,
     dt: Duration,
-) -> bool {
+) -> Option<TileInteractionEvent> {
     match &mut *item.state {
-        MoveableState::Idle => false,
-        MoveableState::Moving { timer, dir, ty, .. } => {
-            if !timer.tick(dt).finished() { return false; }
+        // No interactions when idle
+        MoveableState::Idle => None,
+        // Moving objects might attempt interacting
+        MoveableState::Moving { timer, ty } => match &ty {
+            // If we are rotating -- we don't interact with the tile
+            MoveTy::Rotate { clock_wise } => {
+                // Update the rotation and become idle once the timer ticks down
+                if timer.tick(dt).just_finished() {
+                    item.rotation.0 = item.rotation.0.rotate_ortho(*clock_wise);
+                    *item.state = MoveableState::Idle;
+                }
 
-            match dir.apply_on_pos(item.position.0) {
-                Some(new_pos) => item.position.0 = new_pos,
-                None => error!("Failed to change moveble position"),
-            }
-                
-            if *ty == MoveTy::Flip {
-                item.rotation.0 = item.rotation.0.rotate_in_dir(*dir);
-            }
+                None
+            },
+            // If we are actually changing our current tile, we will interact
+            MoveTy::Slide { flip, dir } => {
+                // Verify the presence of the tile and the validity of the ID
+                // NOTE those checks feel like they aren't that needed. ESPECIALLY EACH FRAME
+                let pos = match dir.apply_on_pos(item.position.0) {
+                    Some(x) => x,
+                    None => {
+                        item.force_idle();
+                        return None;
+                    },
+                };
+                let tile_id = match tiles.get(&pos) {
+                    Some(x) => x,
+                    None => {
+                        item.force_idle();
+                        return None;
+                    },
+                };
 
-            *item.state = MoveableState::Idle;
-            *item.side = Side::Ready(item.rotation.0.upper_side());
+                // If we haven't set our side to `Changing` -- do that 
+                // NOTE (Again, feels redundant to do it HERE)
+                if *flip && matches!(&*item.side, Side::Ready(_)) {
+                    *item.side = Side::Changing { 
+                        from: item.rotation.0.upper_side(), 
+                        to: item.rotation.0.rotate_in_dir(*dir).upper_side(), 
+                    };
+                }
 
-            true
-        },
-        MoveableState::Rotating { timer, clock_wise } => {
-            if !timer.tick(dt).finished() { return false; }
-
-            item.rotation.0 = item.rotation.0.rotate_ortho(*clock_wise);
-            *item.state = MoveableState::Idle;
-
-            false
-        },
+                // When we have finished moving, update our pos and rotation (if needed)
+                if timer.tick(dt).just_finished() {
+                    if *flip {
+                        item.rotation.0 = item.rotation.0.rotate_in_dir(*dir);
+                        *item.side = Side::Ready(item.rotation.0.upper_side());
+                    }
+                    
+                    item.position.0 = pos;
+                    *item.state = MoveableState::Idle;
+    
+                    Some(TileInteractionEvent { moveable_id, tile_id })
+                } else {
+                    None
+                }
+            },
+        }
     }
 }
 
@@ -55,32 +89,14 @@ pub fn moveable_tick(
     time: Res<Time>,
 ) {
     let dt = time.delta();
+    let tiles = match map_q.get_single() {
+        Ok(x) => x,
+        Err(_) => return,
+    };
 
     moveable_q.for_each_mut(|(id, mut moveable)| {
-        let tiles = match map_q.get_single() {
-            Ok(x) => x,
-            Err(_) => return,
-        };
-
-        if let MoveableState::Moving { dir, .. } = &*moveable.state {
-            if dir.apply_on_pos(moveable.position.0).map(|x| tiles.get(&x)).is_none() {
-                moveable.force_idle();
-            } else if matches!(&*moveable.side, Side::Ready(_)) {
-                *moveable.side = Side::Changing { 
-                    from: moveable.rotation.0.upper_side(), 
-                    to: moveable.rotation.0.rotate_in_dir(*dir).upper_side(), 
-                };
-            }
-        }
-
-        if update_moveable(&mut moveable, dt) {
-            match tiles.get(&moveable.position.0) {
-                Some(tile_id) => interaction_events.send(TileInteractionEvent {
-                    tile_id,
-                    moveable_id: id,
-                }),
-                None => error!("Entity {id:?} has ended up on an illegal tiles pos ({:?}).", moveable.position.0),
-            }
+        if let Some(e) = update_moveable(id, &mut moveable, tiles, dt) {
+            interaction_events.send(e);
         } 
     });
 }
@@ -98,33 +114,36 @@ pub fn moveable_animation(
     let (map_tf, map_grid) = map_q.single();
 
     moveable_q.for_each_mut(|(mut tf, moveable)| {
-        let current_pos = tile_pos_to_world_pos(moveable.position.0, map_tf, map_grid).extend(1.0f32);
+        let current_pos = tile_pos_to_world_pos(moveable.position.0, map_tf, map_grid);
 
         match &*moveable.state {
-            MoveableState::Moving { timer, dir, ty } => {
-                let t = 1.0f32 - timer.percent_left();
-                if let Some(n_pos) = dir.apply_on_pos(moveable.position.0) {
-                    let start_pos = current_pos;
-                    let end_pos = tile_pos_to_world_pos(n_pos, map_tf, map_grid).extend(1.0f32);
-                    
-                    tf.translation = start_pos + (end_pos - start_pos) * t;
-                    if *ty == MoveTy::Flip {
-                        tf.rotation = dir.to_quat(t) * moveable.rotation.0.rot_quat();
+            MoveableState::Moving { timer, ty } => {
+                let t = timer.percent();
+
+                match &ty {
+                    MoveTy::Slide { dir, flip } => {      
+                        if let Some(n_pos) = dir.apply_on_pos(moveable.position.0) {
+                            let start_pos = current_pos;
+                            let end_pos = tile_pos_to_world_pos(n_pos, map_tf, map_grid);
+                            
+                            tf.translation = (start_pos + (end_pos - start_pos) * t).extend(1.0f32);
+                            if *flip {
+                                tf.rotation = dir.to_quat(t) * moveable.rotation.0.rot_quat();
+                            }
+                        }
+                    },
+                    MoveTy::Rotate { clock_wise } => {
+                        tf.rotation = if *clock_wise {
+                            Quat::from_rotation_z(-t * std::f32::consts::FRAC_PI_2)
+                        } else {
+                            Quat::from_rotation_z(t * std::f32::consts::FRAC_PI_2)
+                        } * moveable.rotation.0.rot_quat();
                     }
-                }
+                } 
             },
             MoveableState::Idle => {
-                tf.translation = current_pos;
+                tf.translation = current_pos.extend(1.0f32);
                 tf.rotation = moveable.rotation.0.rot_quat();
-            },
-            MoveableState::Rotating { timer, clock_wise } => {
-                let t = 1.0f32 - timer.percent_left();
-
-                tf.rotation = if *clock_wise {
-                        Quat::from_rotation_z(-t * std::f32::consts::FRAC_PI_2)
-                    } else {
-                        Quat::from_rotation_z(t * std::f32::consts::FRAC_PI_2)
-                    } * moveable.rotation.0.rot_quat();
             },
         }
     });

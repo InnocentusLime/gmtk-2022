@@ -87,7 +87,7 @@ pub fn tile_state_switching(
     player_q: Query<&MoveableSide, (With<PlayerTag>, Changed<MoveableSide>)>,
     trigger_q: Query<(&ActivationCondition, &TilePos)>,
     logic_map_q: Query<&TileStorage, With<LogicTilemapTag>>,
-    mut logic_q: Query<&mut TileState>,
+    logic_q: Query<&mut TileState>,
 ) {
     let player_side = match player_q.get_single() {
         Ok(x) => x,
@@ -99,16 +99,10 @@ pub fn tile_state_switching(
         _ => return,
     };
 
-    // TODO this reacks of copy-paste
     let res: anyhow::Result<()> = match player_side {
-        MoveableSide::Ready(x) => trigger_q
-            .iter()
-            .try_for_each(|(cond, pos)| {
-                let mut state = logic_q.get_mut(
-                    logic_map
-                        .get(pos)
-                        .ok_or_else(|| anyhow!("Trigger at {:?} has no target", pos))?,
-                )?;
+        MoveableSide::Ready(x) => apply_on_logic(
+            logic_map, logic_q, trigger_q.iter(),
+            |cond, mut state| {
                 let new_state = TileState::Ready(cond.is_active(*x));
 
                 // Do the state change very carefully. We want to trigger
@@ -116,25 +110,18 @@ pub fn tile_state_switching(
                 if new_state != *state {
                     *state = new_state;
                 }
-
-                Ok(())
-            }),
-        MoveableSide::Changing { from, to } => trigger_q
-            .iter()
-            .try_for_each(|(cond, pos)| {
-                let mut state = logic_q.get_mut(
-                    logic_map
-                        .get(pos)
-                        .ok_or_else(|| anyhow!("Trigger at {:?} has no target", pos))?,
-                )?;
+            }
+        ),
+        MoveableSide::Changing { from, to } => apply_on_logic(
+            logic_map, logic_q, trigger_q.iter(),
+            |cond, mut state| {
                 let new_state = cond.is_active(*to);
 
                 if cond.is_active(*from) != new_state {
                     *state = TileState::Changing { to: new_state };
                 }
-
-                Ok(())
-            }),
+            }
+        )
     };
 
     if let Err(e) = res {
@@ -193,4 +180,27 @@ pub fn special_tile_handler(
     if let Err(e) = res {
         error!("Error while handling tile interaction: {}", e);
     }
+}
+
+fn apply_on_logic<'a, F, I>(
+    logic_map: &TileStorage,
+    mut logic_q: Query<&mut TileState>,
+    mut it: I,
+    f: F,
+) -> anyhow::Result<()> 
+where
+    I: Iterator<Item = (&'a ActivationCondition, &'a TilePos)>,
+    F: Fn(&ActivationCondition, Mut<TileState>),
+{
+    it.try_for_each(|(cond, pos)| {
+        let state = logic_q.get_mut(
+            logic_map
+                .get(pos)
+                .ok_or_else(|| anyhow!("Trigger at {:?} has no target", pos))?,
+        )?;
+
+        f(cond, state);
+
+        Ok(())
+    })
 }

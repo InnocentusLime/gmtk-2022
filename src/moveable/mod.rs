@@ -25,12 +25,6 @@ pub struct MoveablePlugin;
 
 impl Plugin for MoveablePlugin {
     fn build(&self, app: &mut App) {
-        /*
-        if app.world.get_resource::<InspectableRegistry>().is_some() {
-            app.register_inspectable::<Moveable>();
-        }
-        */
-        
         app
             .add_event::<TileInteractionEvent>()
             .add_stage_after(CoreStage::Update, MoveableUpdateStage, SystemStage::parallel())

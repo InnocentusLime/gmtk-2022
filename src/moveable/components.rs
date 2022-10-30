@@ -17,14 +17,18 @@ pub struct Rotation(pub (super) DecomposedRotation);
 pub struct Position(pub (super) TilePos);
 
 /// The type of the move. 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy)]
 pub enum MoveTy {
-    /// The object will simply slide towards its destination.
-    #[default]
-    Slide,
-    /// The object will move towards its destination, also changing
-    /// its side.
-    Flip,
+    /// The object will move into some direction, potentially also
+    /// changing its side.
+    Slide {
+        flip: bool,
+        dir: MoveDirection,
+    },
+    /// The object is rotating around its orthogonal axis.
+    Rotate {
+        clock_wise: bool,
+    }
 }
 
 /// Moveables current state. While the fields of that component are
@@ -36,12 +40,7 @@ pub enum MoveableState {
     Idle,
     Moving {
         timer: Timer,
-        dir: MoveDirection,
         ty: MoveTy,
-    },
-    Rotating {
-        timer: Timer,
-        clock_wise: bool,
     },
 }
 
@@ -119,12 +118,10 @@ impl<'a> MoveableQueryItem<'a> {
     /// Note that all this method does is **asking** the game to do that. The
     /// game might actually deny the request.
     pub fn slide(&mut self, dir: MoveDirection, time: Duration) {
-        if !matches!(&*self.state, MoveableState::Idle) { return; }
-        *self.state = MoveableState::Moving { 
-            dir,
+        self.try_set_state(MoveableState::Moving { 
             timer: Timer::new(time, false), 
-            ty: MoveTy::Slide, 
-        };
+            ty: MoveTy::Slide { dir, flip: false }, 
+        });
     }
 
     /// Asks the game to flip the moveable in some direction (See [MoveableState::Moving]).
@@ -135,12 +132,10 @@ impl<'a> MoveableQueryItem<'a> {
     /// Note that all this method does is **asking** the game to do that. The
     /// game might actually deny the request.
     pub fn flip(&mut self, dir: MoveDirection, time: Duration) {
-        if !matches!(&*self.state, MoveableState::Idle) { return; }
-        *self.state = MoveableState::Moving { 
-            dir,
+        self.try_set_state(MoveableState::Moving { 
             timer: Timer::new(time, false), 
-            ty: MoveTy::Flip, 
-        };
+            ty: MoveTy::Slide { dir, flip: true }, 
+        });
     }
 
     /// Asks the game rotate the moveable clockwise or couterclockwise
@@ -148,10 +143,15 @@ impl<'a> MoveableQueryItem<'a> {
     /// Note that all this method does is **asking** the game to do that. The
     /// game might actually deny the request.
     pub fn rotate(&mut self, clock_wise: bool, time: Duration) {
-        if !matches!(&*self.state, MoveableState::Idle) { return; }
-        *self.state = MoveableState::Rotating { 
-            clock_wise, 
+        self.try_set_state(MoveableState::Moving { 
             timer: Timer::new(time, false), 
-        };
+            ty: MoveTy::Rotate { clock_wise }, 
+        });
+    }
+
+    /// Sets the state to `new_state` as long as `self.state` is `Idle`.
+    fn try_set_state(&mut self, new_state: MoveableState) {
+        if !matches!(&*self.state, MoveableState::Idle) { return; }
+        *self.state = new_state;
     }
 }
