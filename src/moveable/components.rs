@@ -7,11 +7,13 @@ pub use cube_rot::*;
 /// Tracks moveable's rotation. This component has not public
 /// API and is used by the systems internally.
 #[derive(Debug, Clone, Copy, Default, Component)]
+#[repr(transparent)]
 pub struct Rotation(pub (super) DecomposedRotation);
 
 /// Tracks moveable's position. This component has not public
 /// API and is used by the systems internally.
 #[derive(Debug, Clone, Copy, Default, Component)]
+#[repr(transparent)]
 pub struct Position(pub (super) TilePos);
 
 /// The type of the move. 
