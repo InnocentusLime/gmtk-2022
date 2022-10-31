@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use std::time::Duration;
 use crate::GameplayCamera;
-use crate::moveable::Moveable;
+use crate::moveable::MoveableQuery;
 use super::{ PlayerTag, PlayerWinnerTag, PlayerEscapedEvent, BasePlayerAssets };
 
 pub fn player_win_sound(
@@ -25,7 +25,7 @@ pub fn player_win_anim(
 
         // TODO hardcoded player size
         tf.scale = Vec3::new(25.0f32, 25.0f32, 25.0f32) * t;
-        col_mats.get_mut(&*mat_handle).unwrap().color = Color::Rgba {
+        col_mats.get_mut(mat_handle).unwrap().color = Color::Rgba {
             red: t,
             green: t,
             blue: t,
@@ -45,16 +45,16 @@ pub fn player_camera(
 
 pub fn player_controls(
     key_input: Res<Input<KeyCode>>,
-    mut query: Query<&mut Moveable, With<PlayerTag>>,
+    mut query: Query<MoveableQuery, With<PlayerTag>>,
 ) {
     use crate::moveable::MoveDirection::*;
    
     // TODO pretify?
     let mut movement = None;
-    if key_input.pressed(KeyCode::W) { movement = Some(Up); } 
-    if key_input.pressed(KeyCode::A) { movement = Some(Left); }
-    if key_input.pressed(KeyCode::S) { movement = Some(Down); }
-    if key_input.pressed(KeyCode::D) { movement = Some(Right); }
+    if key_input.pressed(KeyCode::W) { movement = movement.or(Some(Up)); } 
+    if key_input.pressed(KeyCode::A) { movement = movement.or(Some(Left)); }
+    if key_input.pressed(KeyCode::S) { movement = movement.or(Some(Down)); }
+    if key_input.pressed(KeyCode::D) { movement = movement.or(Some(Right)); }
 
     if let Some(dir) = movement {
         query.for_each_mut(|mut m| { m.flip(dir, Duration::from_secs_f32(0.52f32)); });

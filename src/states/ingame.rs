@@ -8,7 +8,7 @@ use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
 use crate::player::{ PlayerTag, PlayerEscapedEvent };
-use crate::GameplayCamera;
+use crate::{GameplayCamera, LaunchParams};
 
 struct LevelCompleteCountdown(Timer);
 
@@ -16,10 +16,17 @@ fn enter() {
     info!("Entered ingame state");
 }
 
-fn death_system(mut commands: Commands, player_q: Query<(), With<PlayerTag>>) {
+fn death_system_normal(mut commands: Commands, player_q: Query<(), With<PlayerTag>>) {
     if player_q.is_empty() {
         info!("You are dead");
         commands.insert_resource(NextState(GameState::MainMenu));
+    }
+}
+
+fn death_system_testing_level(mut writer: EventWriter<bevy::app::AppExit>, player_q: Query<(), With<PlayerTag>>) {
+    if player_q.is_empty() {
+        info!("You are dead");
+        writer.send(bevy::app::AppExit);
     }
 }
 
@@ -47,7 +54,7 @@ fn level_complete_system_normal(
         if timer.0.finished() {
             let level_info = level_infos.get(&menu_assets.level_info).unwrap();
          
-            save.register_level_complete(&*level_info);
+            save.register_level_complete(level_info);
             
             // TODO retry?
             match pkv.set("save", &*save) {
@@ -87,16 +94,19 @@ fn exit(
     }
 }
 
-pub fn setup_states(app: &mut App, testing_level: bool) {
+pub fn setup_states(app: &mut App, params: &LaunchParams) {
     app
         .add_enter_system(GameState::InGame, enter)
         .add_system(beat_system.run_in_state(GameState::InGame))
-        .add_system(death_system.run_in_state(GameState::InGame))
         .add_exit_system(GameState::InGame, exit);
 
-    if testing_level {
-        app.add_system(level_complete_system_testing_level.run_in_state(GameState::InGame));
+    if params.level_file.is_some() {
+        app
+            .add_system(level_complete_system_testing_level.run_in_state(GameState::InGame))
+            .add_system(death_system_testing_level.run_in_state(GameState::InGame));
     } else {
-        app.add_system(level_complete_system_normal.run_in_state(GameState::InGame));
+        app
+            .add_system(level_complete_system_normal.run_in_state(GameState::InGame))
+            .add_system(death_system_normal.run_in_state(GameState::InGame));
     }
 }

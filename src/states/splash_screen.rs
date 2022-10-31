@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use bevy_asset_loader::asset_collection::*;
 use iyes_loopless::prelude::*;
 
+use crate::LaunchParams;
+
 use super::GameState;
 
 #[derive(AssetCollection)]
@@ -67,7 +69,7 @@ fn exit(
     commands.entity(logo_query.single()).despawn_recursive();
 }
 
-pub fn setup_states(app: &mut App) { 
+pub fn setup_states(app: &mut App, _params: &LaunchParams) { 
     app
         .add_enter_system(GameState::SplashScreen, enter)
         .add_system(tick.run_in_state(GameState::SplashScreen))

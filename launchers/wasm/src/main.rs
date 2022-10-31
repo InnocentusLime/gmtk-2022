@@ -3,7 +3,7 @@ use stylist::yew::styled_component;
 use stylist::{css, global_style};
 use yew::prelude::*;
 
-use my_game::LAUNCHER_TITLE;
+use project_dice_escape::LAUNCHER_TITLE;
 
 fn set_window_title(title: &str) {
     web_sys::window()
@@ -55,7 +55,7 @@ fn main() {
     // Mount the DOM
     yew::start_app::<Root>();
     // Start the Bevy App
-    let mut app = my_game::app(false, false, None);
+    let mut app = project_dice_escape::app(default());
     info!("Starting launcher: WASM");
     app.run();
 }

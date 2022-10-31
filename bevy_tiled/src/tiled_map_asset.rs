@@ -66,7 +66,7 @@ impl TilesetIndexing {
 
     /// Maps a tiled animation into an CPUTileAnimation
     pub fn cpu_tile_anim(&self, anim: &[tiled::Frame]) -> CPUTileAnimation {
-        CPUTileAnimation::from_frames(anim.iter().map(|frame| Frame {
+        CPUTileAnimation::new(anim.iter().map(|frame| Frame {
             texture_id: self.dispatch(frame.tile_id),
             duration: Duration::from_millis(frame.duration as u64),
         }))
