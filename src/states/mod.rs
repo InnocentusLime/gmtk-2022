@@ -9,6 +9,8 @@ use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::* };
 use iyes_loopless::prelude::*;
 use loading::LoadingLevel;
 
+use crate::LaunchParams;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameState {
     // The booting state loads the assets for 
@@ -35,14 +37,14 @@ pub fn enter_level(level_path: String, commands: &mut Commands, asset_keys: &mut
     commands.insert_resource(NextState(LoadingLevel::BaseAssets));
 }
 
-pub fn setup_states(app: &mut App, testing_level: Option<&str>) {
+pub fn setup_states(app: &mut App, params: &LaunchParams) {
     app.add_loopless_state(GameState::Booting);
     app.add_loopless_state(LoadingLevel::Done); 
 
-    booting::setup_states(app, testing_level);
-    splash_screen::setup_states(app);
-    main_menu::setup_states(app);
-    loading::setup_states(app);
+    booting::setup_states(app, params);
+    splash_screen::setup_states(app, params);
+    main_menu::setup_states(app, params);
+    loading::setup_states(app, params);
 
-    ingame::setup_states(app, testing_level.is_some());
+    ingame::setup_states(app, params);
 }

@@ -55,7 +55,7 @@ fn main() {
     // Mount the DOM
     yew::start_app::<Root>();
     // Start the Bevy App
-    let mut app = project_dice_escape::app(false, false, None);
+    let mut app = project_dice_escape::app(default());
     info!("Starting launcher: WASM");
     app.run();
 }

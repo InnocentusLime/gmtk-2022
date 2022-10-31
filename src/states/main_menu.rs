@@ -6,7 +6,7 @@ use iyes_loopless::prelude::*;
 use super::{ GameState, enter_level };
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::GameplayCamera;
+use crate::{GameplayCamera, LaunchParams};
 
 #[derive(AssetCollection)]
 pub struct MenuAssets {
@@ -211,7 +211,7 @@ fn exit(
     }
 }
 
-pub fn setup_states(app: &mut App) {
+pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     app
         .add_enter_system(GameState::MainMenu, enter)
         .add_system(tick.run_in_state(GameState::MainMenu))

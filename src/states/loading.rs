@@ -4,6 +4,7 @@ use iyes_loopless::prelude::*;
 
 use super::{ GameState, jump_to_state };
 use bevy_tiled::tileset_indexing;
+use crate::LaunchParams;
 use crate::level::{ LevelTilesetImages, BaseLevelAssets, queue_level_tileset_images, spawn_level, get_level_map };
 use crate::player::{ GeneratedPlayerAssets, BasePlayerAssets, spawn_player };
 
@@ -17,7 +18,7 @@ pub enum LoadingLevel {
     Done,
 }
 
-pub fn setup_states(app: &mut App) {
+pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     // Loading base assets
     app
         .add_loading_state(LoadingState::new(LoadingLevel::BaseAssets)
