@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 # Bevy deps
-bevy = "0.8"
-bevy_ecs_tilemap = "0.7.0"
-bevy-inspector-egui = "0.13"
+bevy = { workspace = true }
+bevy_ecs_tilemap = { workspace = true }
+bevy-inspector-egui = { workspace = true }

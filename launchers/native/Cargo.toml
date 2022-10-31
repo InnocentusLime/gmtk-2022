@@ -6,7 +6,7 @@ workspace = "../.."
 
 [dependencies]
 project-dice-escape = { package = "project-dice-escape", path = "../.." }
-bevy = "0.8"
+bevy = { workspace = true }
 image = "0.24.3"
 winit = { version = "0.26.1", default-features = false }
 clap = { version = "4", features = ["cargo", "derive"] }
