@@ -30,7 +30,7 @@ fn update_moveable(
             // If we are actually changing our current tile, we will interact
             MoveTy::Slide { dir, next_pos } => {
                 // Verify the presence of the tile and the validity of the ID
-                let tile_id = match tiles.get(&next_pos) {
+                let tile_id = match tiles.get(next_pos) {
                     Some(x) => x,
                     None => {
                         item.force_idle();
