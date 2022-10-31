@@ -24,7 +24,7 @@ bevy = { workspace = true }
 bevy_ecs_tilemap = { workspace = true }
 bevy_common_assets = { version = "0.3", features = ["json"] }
 bevy_asset_loader = { workspace = true, features = ["stageless", "dynamic_assets"] }
-iyes_loopless = "0.7"
+iyes_loopless = "0.8"
 tiled = { workspace = true }
 bevy-inspector-egui = { workspace = true }
 bevy_pkv = "0.5"
