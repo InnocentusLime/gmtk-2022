@@ -24,7 +24,7 @@ bevy = { workspace = true }
 bevy_ecs_tilemap = { workspace = true }
 bevy_common_assets = { version = "0.3", features = ["json"] }
 bevy_asset_loader = { workspace = true, features = ["stageless", "dynamic_assets"] }
-iyes_loopless = "0.7"
+iyes_loopless = "0.8"
 tiled = { workspace = true }
 bevy-inspector-egui = { workspace = true }
 bevy_pkv = "0.5"
@@ -46,13 +46,13 @@ bevy_framepace = "0.7.0"
 clap = { version = "4", features = ["cargo", "derive"] }
 bevy_mod_debugdump = "0.5"
 winit = { version = "0.26.1", default-features = false }
-image = "0.24.3"
+image = "0.24.4"
 
 [workspace.dependencies]
 serde = "1"
 anyhow = "1"
 bevy = "0.8"
-bevy_ecs_tilemap = "0.7"
+bevy_ecs_tilemap = "0.8"
 bevy-inspector-egui = "0.13"
 tiled = { version = "0.10", default-features = false }
 bevy_asset_loader = { version = "0.12" }

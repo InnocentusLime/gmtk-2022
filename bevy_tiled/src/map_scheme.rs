@@ -1,5 +1,5 @@
 use anyhow::{anyhow, bail, ensure, Context};
-use bevy_ecs_tilemap::{tiles::{TileBundle, TilePos, TileTexture, TileStorage}, prelude::{TilemapId, TilemapSize, TilemapTexture, TilemapMeshType, TilemapTileSize, TilemapGridSize}, TilemapBundle};
+use bevy_ecs_tilemap::{tiles::{TileBundle, TilePos, TileTexture, TileStorage}, prelude::{TilemapId, TilemapSize, TilemapTexture, TilemapType, TilemapTileSize, TilemapGridSize}, TilemapBundle};
 use std::collections::HashMap;
 
 use bevy::{ecs::system::EntityCommands, prelude::*};
@@ -259,7 +259,7 @@ fn parse_finite_tile_layer<C: CallbackSelector>(
                     builder, 
                     provider
                 ) {
-                    Ok((pos, id)) => storage.set(&pos, Some(id)),
+                    Ok((pos, id)) => storage.set(&pos, id),
                     Err(e) => {
                         result = Err(e).context(format!("Error while spawning tile ({}, {})", x, y));
                         return;
@@ -272,8 +272,8 @@ fn parse_finite_tile_layer<C: CallbackSelector>(
     layer_cmds
         .insert_bundle(TilemapBundle {
             storage,
-            texture: TilemapTexture(atlases[tileset_index].clone()),
-            mesh_type: TilemapMeshType::Square,
+            texture: TilemapTexture::Single(atlases[tileset_index].clone()),
+            map_type: TilemapType::Square { diagonal_neighbors: false },
             tile_size: TilemapTileSize { 
                 x: tileset.tile_width as f32, 
                 y: tileset.tile_height as f32, 
