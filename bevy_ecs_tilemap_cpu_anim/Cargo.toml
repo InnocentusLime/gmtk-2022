@@ -1,11 +1,12 @@
 [package]
 name = "bevy_ecs_tilemap_cpu_anim"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # Bevy deps
-bevy = "0.8"
-bevy_ecs_tilemap = "0.8.0"
+bevy = { workspace = true }
+bevy_ecs_tilemap = { workspace = true }
+bevy-inspector-egui = { workspace = true }

@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use bevy_asset_loader::{ dynamic_asset::*, loading_state::* };
 use iyes_loopless::prelude::*;
 
+use crate::LaunchParams;
+
 use super::{ GameState, enter_level };
 
 fn enter_normal() {
@@ -12,13 +14,13 @@ fn exit() {
     info!("Exited booting state");
 }
 
-pub fn setup_states(app: &mut App, testing_level: Option<&str>) {
+pub fn setup_states(app: &mut App, params: &LaunchParams) {
     use super::main_menu::MenuAssets;
     use super::splash_screen::ScreenAssets;
     
     app.add_exit_system(GameState::Booting, exit);
 
-    match testing_level {
+    match params.level_file {
         Some(testing_level) => {
             let path = testing_level.to_owned();
             app.add_enter_system(
