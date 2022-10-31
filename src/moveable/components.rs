@@ -117,8 +117,8 @@ impl<'a> MoveableQueryItem<'a> {
     /// 
     /// Note that all this method does is **asking** the game to do that. The
     /// game might actually deny the request.
-    pub fn slide(&mut self, dir: MoveDirection, time: Duration) {
-        self.try_slide(dir, time);
+    pub fn slide(&mut self, dir: MoveDirection, time: Duration) -> bool {
+        self.try_slide(dir, time)
     }
 
     /// Asks the game to flip the moveable in some direction (See [MoveableState::Moving]).
@@ -128,12 +128,15 @@ impl<'a> MoveableQueryItem<'a> {
     /// 
     /// Note that all this method does is **asking** the game to do that. The
     /// game might actually deny the request.
-    pub fn flip(&mut self, dir: MoveDirection, time: Duration) {
+    pub fn flip(&mut self, dir: MoveDirection, time: Duration) -> bool {
         if self.try_slide(dir, time) {
             *self.side = Side::Changing { 
                 from: self.rotation.0.upper_side(), 
                 to: self.rotation.0.rotate_in_dir(dir).upper_side(), 
             };
+            true
+        } else {
+            false
         }
     }
 

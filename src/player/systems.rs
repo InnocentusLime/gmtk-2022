@@ -1,7 +1,8 @@
 use bevy::prelude::*;
+use cube_rot::MoveDirection;
 use std::time::Duration;
 use crate::GameplayCamera;
-use crate::moveable::MoveableQuery;
+use crate::moveable::{ MoveableQuery, MoveableQueryItem };
 use super::{ PlayerTag, PlayerWinnerTag, PlayerEscapedEvent, BasePlayerAssets };
 
 pub fn player_win_sound(
@@ -43,11 +44,17 @@ pub fn player_camera(
     })
 }
 
+#[derive(Default)]
+pub struct InputQueue(Option<MoveDirection>);
+
 pub fn player_controls(
+    mut queue: Local<InputQueue>,
     key_input: Res<Input<KeyCode>>,
     mut query: Query<MoveableQuery, With<PlayerTag>>,
 ) {
     use crate::moveable::MoveDirection::*;
+
+    let player_flip = |mut m: MoveableQueryItem, dir| m.flip(dir, Duration::from_secs_f32(0.52f32));
    
     // TODO pretify?
     let mut movement = None;
@@ -56,7 +63,16 @@ pub fn player_controls(
     if key_input.pressed(KeyCode::S) { movement = movement.or(Some(Down)); }
     if key_input.pressed(KeyCode::D) { movement = movement.or(Some(Right)); }
 
-    if let Some(dir) = movement {
-        query.for_each_mut(|mut m| { m.flip(dir, Duration::from_secs_f32(0.52f32)); });
+    match movement {
+        Some(dir) => query.for_each_mut(|m| { 
+            if !player_flip(m, dir) {
+                queue.0 = movement;
+            } 
+        }),
+        None => if let Some(dir) = queue.0 {
+            query.for_each_mut(|m| {
+                player_flip(m, dir);
+            }) 
+        },
     }
 }
