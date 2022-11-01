@@ -71,8 +71,10 @@ pub fn player_controls(
         }),
         None => if let Some(dir) = queue.0 {
             query.for_each_mut(|m| {
-                player_flip(m, dir);
-            }) 
+                if player_flip(m, dir) {
+                    queue.0 = None;
+                }
+            });
         },
     }
 }

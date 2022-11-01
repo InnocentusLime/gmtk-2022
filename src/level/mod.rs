@@ -34,8 +34,8 @@ pub fn tile_pos_to_world_pos(
     map_grid: &TilemapGridSize,
 ) -> Vec2 {
     map_transform.mul_vec3(Vec3::new(
-        tile_pos.x as f32 * map_grid.x + map_grid.x / 2.0f32, 
-        tile_pos.y as f32 * map_grid.y + map_grid.y / 2.0f32, 
+        tile_pos.x as f32 * map_grid.x, 
+        tile_pos.y as f32 * map_grid.y, 
         0.0f32
     )).truncate()
 }
