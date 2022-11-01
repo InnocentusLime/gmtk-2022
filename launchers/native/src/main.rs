@@ -31,7 +31,7 @@ fn set_window_icon(windows: NonSend<WinitWindows>) {
 #[command(propagate_version = true)]
 struct Cli {
     #[command(subcommand)]
-    commands: Commands,
+    commands: Option<Commands>,
 }
 
 #[derive(Debug, Subcommand)]
@@ -67,12 +67,15 @@ fn main() {
     let args = Cli::parse();
 
     match args.commands {
-        Commands::Run { 
+        None => project_dice_escape::app(default())
+            .add_startup_system(set_window_icon)
+            .run(),
+        Some(Commands::Run { 
             level_file, 
             logging, 
             inspector, 
             debugging 
-        } => {
+        }) => {
             let params = LaunchParams {
                 logging: logging || debugging,
                 inspector: inspector || debugging,
@@ -82,7 +85,7 @@ fn main() {
                 .add_startup_system(set_window_icon)
                 .run();
         },
-        Commands::Schedule => bevy_mod_debugdump::print_schedule(
+        Some(Commands::Schedule) => bevy_mod_debugdump::print_schedule(
             &mut project_dice_escape::app(LaunchParams { 
                 logging: false, 
                 inspector: false, 
