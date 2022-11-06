@@ -110,6 +110,15 @@ impl<'a> MoveableQueryItem<'a> {
         *self.state = MoveableState::Idle;
     }
 
+    /// Returns the progress of the movement of a moveable.
+    /// If the moveable is idle, `None` is returned.
+    pub fn movement_progress(&self) -> Option<f32> {
+        match &*self.state {
+            MoveableState::Idle => None,
+            MoveableState::Moving { timer, .. } => Some(timer.percent()),
+        }
+    }
+
     /// Asks the game to slide the moveable in some direction (See [MoveableState::Moving]).
     /// 
     /// Note that this won't announce to other systems that the moveable has

@@ -65,6 +65,12 @@ pub fn player_controls(
 
     match movement {
         Some(dir) => query.for_each_mut(|m| { 
+            // Ignore inputs, that happened too early
+            match m.movement_progress() {
+                Some(x) if x <= 0.1f32 => return, 
+                _ => (),
+            }
+
             if !player_flip(m, dir) {
                 queue.0 = movement;
             } 
