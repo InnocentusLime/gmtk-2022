@@ -55,7 +55,24 @@ pub fn player_controls(
     use crate::moveable::MoveDirection::*;
 
     let player_flip = |mut m: MoveableQueryItem, dir| m.flip(dir, Duration::from_secs_f32(0.52f32));
-   
+    let mut move_player = |dir| {
+        let player = match query.get_single_mut() {
+            Ok(x) => x,
+            Err(_) => return None,
+        };
+        
+        match player.movement_progress() {
+            Some(x) if x <= 0.1f32 => return Some(dir), 
+            _ => (),
+        }
+
+        if !player_flip(player, dir) {
+            Some(dir)
+        } else {
+            None
+        }
+    };
+
     // TODO pretify?
     let mut movement = None;
     if key_input.pressed(KeyCode::W) { movement = movement.or(Some(Up)); } 
@@ -64,23 +81,9 @@ pub fn player_controls(
     if key_input.pressed(KeyCode::D) { movement = movement.or(Some(Right)); }
 
     match movement {
-        Some(dir) => query.for_each_mut(|m| { 
-            // Ignore inputs, that happened too early
-            match m.movement_progress() {
-                Some(x) if x <= 0.1f32 => return, 
-                _ => (),
-            }
-
-            if !player_flip(m, dir) {
-                queue.0 = movement;
-            } 
-        }),
+        Some(dir) => queue.0 = move_player(dir),
         None => if let Some(dir) = queue.0 {
-            query.for_each_mut(|m| {
-                if player_flip(m, dir) {
-                    queue.0 = None;
-                }
-            });
+            queue.0 = move_player(dir)
         },
     }
 }
