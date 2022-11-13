@@ -22,7 +22,7 @@ path="launchers/native/src/main.rs"
 # bevy deps
 bevy = { workspace = true }
 bevy_ecs_tilemap = { workspace = true }
-bevy_common_assets = { version = "0.3", features = ["json"] }
+bevy_common_assets = { version = "0.4", features = ["json"] }
 bevy_asset_loader = { workspace = true, features = ["stageless", "dynamic_assets"] }
 iyes_loopless = "0.7"
 tiled = { workspace = true }
