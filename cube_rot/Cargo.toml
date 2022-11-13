@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.8"
-bevy_ecs_tilemap = "0.8"
+bevy_ecs_tilemap = "0.9"
