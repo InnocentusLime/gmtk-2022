@@ -27,7 +27,7 @@ bevy_asset_loader = { workspace = true, features = ["stageless", "dynamic_assets
 iyes_loopless = "0.7"
 tiled = { workspace = true }
 bevy-inspector-egui = { workspace = true }
-bevy_pkv = "0.5"
+bevy_pkv = "0.6"
 # Other deps
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
