@@ -62,7 +62,7 @@ pub fn player_controls(
         };
         
         match player.movement_progress() {
-            Some(x) if x <= 0.1f32 => return Some(dir), 
+            Some(x) if x > 0.35f32 => return Some(dir), 
             _ => (),
         }
 
