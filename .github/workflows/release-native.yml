@@ -36,11 +36,11 @@ jobs:
           cargo build --release
       - name: Rename
         run: |
-          mv ./target/release/native-launcher${{ $app-ext }} ./${{ env.RELEASE_NAME }}
+          mv ./target/release/native-launcher${{ app-ext }} ./${{ env.RELEASE_NAME }}
       - name: Zip release
         uses: vimtor/action-zip@v1
         with:
-          files: assets/ ./${{ env.RELEASE_NAME }}${{ $app-ext }}
+          files: assets/ ./${{ env.RELEASE_NAME }}${{ app-ext }}
           recursive: false
           dest: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
       - name: Upload

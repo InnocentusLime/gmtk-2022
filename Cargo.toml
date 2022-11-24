@@ -1,6 +1,6 @@
 [package]
 name = "project-dice-escape"
-version = "0.9.9"
+version = "0.9.10"
 edition = "2021"
 
 [workspace]
