@@ -5,103 +5,51 @@ on:
     tags:
       - "v*.*.*"
 
-env:
-  RELEASE_NAME: my_game
-  PUBLIC_URL: /bevy-shell-template/
-
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version-tag.outputs.VERSION }}
-    steps:
-      - name: Get tagged version
-        id: version-tag
-        run: echo "::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}"
-
-  release-windows:
-    needs: setup
-    runs-on: windows-latest
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - app-ext: 
+          - os: windows-latest
+            app-ext: .exe
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
+      - name: Install alsa and udev
+        run: sudo apt-get update --fix-missing; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        if: runner.os == 'linux'
       - name: Build
         run: |
           cd ./launchers/native
           cargo build --release
       - name: Rename
         run: |
-          mv ./target/release/native-launcher.exe ./${{ env.RELEASE_NAME }}.exe
+          mv ./target/release/native-launcher${{ $app-ext }} ./${{ env.RELEASE_NAME }}
       - name: Zip release
         uses: vimtor/action-zip@v1
         with:
-          files: assets/ ./${{ env.RELEASE_NAME }}.exe
+          files: assets/ ./${{ env.RELEASE_NAME }}${{ $app-ext }}
           recursive: false
-          dest: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-windows.zip
+          dest: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
       - name: Upload
         uses: softprops/action-gh-release@v1
         with:
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
-          files: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-windows.zip
-
-  release-mac:
-    needs: setup
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Build
-        run: |
-          cd ./launchers/native
-          cargo build --release
-      - name: Rename
-        run: |
-          mv ./target/release/native-launcher ./${{ env.RELEASE_NAME }}
-      - name: Zip release
-        uses: vimtor/action-zip@v1
-        with:
-          files: assets/ ./${{ env.RELEASE_NAME }}
-          recursive: false
-          dest: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-darwin.zip
-      - name: Upload
-        uses: softprops/action-gh-release@v1
-        with:
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
-          files: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-darwin.zip
-
-  release-ubuntu:
-    needs: setup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Get dependencies
-        run: |
-          sudo apt install libasound2-dev libudev-dev pkg-config
-      - name: Build
-        run: |
-          cd ./launchers/native
-          cargo build --release
-      - name: Rename
-        run: |
-          mv ./target/release/native-launcher ./${{ env.RELEASE_NAME }}
-      - name: Zip release
-        uses: vimtor/action-zip@v1
-        with:
-          files: assets/ ./${{ env.RELEASE_NAME }}
-          recursive: false
-          dest: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-ubuntu.zip
-      - name: Upload
-        uses: softprops/action-gh-release@v1
-        with:
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: true
-          files: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-ubuntu.zip
+          files: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
 #  release-wasm:
 #    needs: setup
 #    runs-on: ubuntu-latest
