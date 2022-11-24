@@ -65,7 +65,7 @@ pub fn player_controls(
             Some(x) => if x <= 0.1f32 {
                 return None;
             } else {
-                return Some(dir)
+                return Some(dir);
             }, 
             _ => (),
         }
