@@ -5,6 +5,9 @@ on:
     tags:
       - "v*.*.*"
 
+env:
+  EXECUTABLE_NAME: my_game
+
 jobs:
   build:
     strategy:
@@ -36,20 +39,20 @@ jobs:
           cargo build --release
       - name: Rename
         run: |
-          mv ./target/release/native-launcher${{ matrix.app-ext }} ./${{ env.RELEASE_NAME }}
+          mv ./target/release/native-launcher${{ matrix.app-ext }} ./${{ env.EXECUTABLE_NAME }}${{ matrix.app-ext }}
       - name: Zip release
         uses: vimtor/action-zip@v1
         with:
-          files: assets/ ./${{ env.RELEASE_NAME }}${{ matrix.app-ext }}
+          files: assets/ ./${{ env.EXECUTABLE_NAME }}${{ matrix.app-ext }}
           recursive: false
-          dest: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
+          dest: ./${{ env.EXECUTABLE_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
       - name: Upload
         uses: softprops/action-gh-release@v1
         with:
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
-          files: ./${{ env.RELEASE_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
+          files: ./${{ env.EXECUTABLE_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
 #  release-wasm:
 #    needs: setup
 #    runs-on: ubuntu-latest
