@@ -5,7 +5,7 @@ edition = "2021"
 workspace = "../.."
 
 [dependencies]
-project-dice-escape = { package = "project-dice-escape", path = "../.." }
+game-lib = { package = "game-lib", path = "../.." }
 bevy = { workspace = true }
 image = "0.24.4"
 winit = { version = "0.26.1", default-features = false }

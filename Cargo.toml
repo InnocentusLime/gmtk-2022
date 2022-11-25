@@ -1,5 +1,5 @@
 [package]
-name = "project-dice-escape"
+name = "game-lib"
 version = "0.9.12"
 edition = "2021"
 

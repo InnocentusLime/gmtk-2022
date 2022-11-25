@@ -2,7 +2,7 @@
 
 use std::io::Cursor;
 use bevy::{prelude::*, window::WindowId, winit::WinitWindows};
-use project_dice_escape::LaunchParams;
+use game_lib::LaunchParams;
 use winit::window::Icon;
 use clap::{ Parser, Subcommand };
 
@@ -26,8 +26,8 @@ fn set_window_icon(windows: NonSend<WinitWindows>) {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = project_dice_escape::GAME_NAME)]
-#[command(version = project_dice_escape::VERSION)]
+#[command(name = game_lib::GAME_NAME)]
+#[command(version = game_lib::VERSION)]
 #[command(propagate_version = true)]
 struct Cli {
     #[command(subcommand)]
@@ -67,7 +67,7 @@ fn main() {
     let args = Cli::parse();
 
     match args.commands {
-        None => project_dice_escape::app(default())
+        None => game_lib::app(default())
             .add_startup_system(set_window_icon)
             .run(),
         Some(Commands::Run { 
@@ -81,12 +81,12 @@ fn main() {
                 inspector: inspector || debugging,
                 level_file: level_file.as_deref(),
             };
-            project_dice_escape::app(params)
+            game_lib::app(params)
                 .add_startup_system(set_window_icon)
                 .run();
         },
         Some(Commands::Schedule) => bevy_mod_debugdump::print_schedule(
-            &mut project_dice_escape::app(LaunchParams { 
+            &mut game_lib::app(LaunchParams { 
                 logging: false, 
                 inspector: false, 
                 level_file: None, 

@@ -9,6 +9,15 @@ env:
   EXECUTABLE_NAME: my_game
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version-tag.outputs.VERSION }}
+    steps:
+      - name: Get tagged version
+        id: version-tag
+        run: echo "::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}"
+      
   build:
     strategy:
       matrix:
@@ -17,6 +26,7 @@ jobs:
           - app-ext: 
           - os: windows-latest
             app-ext: .exe
+    needs: setup
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
