@@ -6,7 +6,7 @@ on:
       - "v*.*.*"
 
 env:
-  EXECUTABLE_NAME: game
+  APP_NAME: project dice escape
 
 jobs:
   setup:
@@ -49,20 +49,20 @@ jobs:
           cargo build --release
       - name: Rename
         run: |
-          mv ./target/release/native-launcher${{ matrix.app-ext }} ./${{ env.EXECUTABLE_NAME }}${{ matrix.app-ext }}
+          mv ./target/release/native-launcher${{ matrix.app-ext }} ./game${{ matrix.app-ext }}
       - name: Zip release
         uses: vimtor/action-zip@v1
         with:
-          files: assets/ ./${{ env.EXECUTABLE_NAME }}${{ matrix.app-ext }}
+          files: assets/ ./game${{ matrix.app-ext }}
           recursive: false
-          dest: ./build-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
+          dest: ./${{ env.APP_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
       - name: Upload
         uses: softprops/action-gh-release@v1
         with:
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
-          files: ./build-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
+          files: ./${{ env.APP_NAME }}-${{ needs.setup.outputs.version }}-${{ runner.os }}.zip
 #  release-wasm:
 #    needs: setup
 #    runs-on: ubuntu-latest
