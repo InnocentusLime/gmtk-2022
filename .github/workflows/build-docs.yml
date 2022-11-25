@@ -33,7 +33,7 @@ jobs:
         run: cargo doc --workspace --no-deps --document-private-items
       # NOTE this should be made into something facnier
       - name: Add index.html
-        run: echo "<meta http-equiv=\"refresh\" content=\"0; URL=new_url\" />" > target/doc/index.html
+        run: echo "<meta http-equiv=\"refresh\" content=\"0; URL=game_lib\" />" > target/doc/index.html
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
