@@ -146,7 +146,7 @@ impl DynamicAsset for TilesetsFromTiled {
                             images.get(&handle).expect("Image should be loaded")
                         ));
             
-                    let result = builder.finish(&mut *images)?;
+                    let result = builder.finish(&mut images)?;
                     
                     Ok(atlases.add(result).clone_untyped())
                 },
