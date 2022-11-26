@@ -174,9 +174,16 @@ impl<'a> MoveableQueryItem<'a> {
 
     /// Sets the state to `new_state` as long as `self.state` is `Idle`.
     fn try_set_state(&mut self, state: MoveableState) -> bool {
-        if !matches!(&*self.state, MoveableState::Idle) { return false; }
+        if self.is_moving() { return false; }
         *self.state = state;
 
         true
+    }
+
+    /// Returns `true` if the player is moving, returning `false`
+    /// otherwise.
+    #[inline]
+    pub fn is_moving(&self) -> bool {
+        !matches!(&*self.state, MoveableState::Idle)
     }
 }

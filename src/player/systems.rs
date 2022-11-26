@@ -47,47 +47,68 @@ pub fn player_camera(
 #[derive(Default)]
 pub struct InputQueue(Option<MoveDirection>);
 
+fn check_input(key_input: &Res<Input<KeyCode>>) -> Option<MoveDirection> {
+    if key_input.pressed(KeyCode::W) { 
+        return Some(MoveDirection::Up); 
+    }
+
+    if key_input.pressed(KeyCode::A) { 
+        return Some(MoveDirection::Left); 
+    }
+
+    if key_input.pressed(KeyCode::S) { 
+        return Some(MoveDirection::Down); 
+    }
+    
+    if key_input.pressed(KeyCode::D) { 
+        return Some(MoveDirection::Right); 
+    }
+
+    None
+}
+
+fn player_flip(m: &mut MoveableQueryItem, dir: MoveDirection) -> bool {
+    m.flip(dir, Duration::from_secs_f32(0.52f32))
+}
+
+/// The system for controlling the player. The system implements input
+/// queueing. 
+/// 
+/// # The queueing
+/// The queueing works the following way:
+/// 
+/// 1. When the user presses a key when the cube is rolling -- the input 
+/// gets queued up.
+/// 2. As the cube rolls, the user can change the queued up input by
+/// pressing different keys. 
+/// 3. After the animation is over, the queued up input gets dequeued.
+/// 
+/// If the cube isn't rolling -- the input isn't queued up and gets applied
+/// right away.
 pub fn player_controls(
     mut queue: Local<InputQueue>,
     key_input: Res<Input<KeyCode>>,
     mut query: Query<MoveableQuery, With<PlayerTag>>,
 ) {
-    use crate::moveable::MoveDirection::*;
-
-    let player_flip = |mut m: MoveableQueryItem, dir| m.flip(dir, Duration::from_secs_f32(0.52f32));
-    let mut move_player = |dir| {
-        let player = match query.get_single_mut() {
-            Ok(x) => x,
-            Err(_) => return None,
-        };
-        
-        match player.movement_progress() {
-            Some(x) => if x <= 0.1f32 {
-                return None;
-            } else {
-                return Some(dir);
-            }, 
-            _ => (),
-        }
-
-        if !player_flip(player, dir) {
-            Some(dir)
-        } else {
-            None
-        }
+    // Try to get at least some input. It's okay that we duqeue the input
+    // we will put it back into the queue if we fail to apply it.
+    let input = match check_input(&key_input).or(queue.0.take()) {
+        Some(x) => x,
+        None => return,
     };
 
-    // TODO pretify?
-    let mut movement = None;
-    if key_input.pressed(KeyCode::W) { movement = movement.or(Some(Up)); } 
-    if key_input.pressed(KeyCode::A) { movement = movement.or(Some(Left)); }
-    if key_input.pressed(KeyCode::S) { movement = movement.or(Some(Down)); }
-    if key_input.pressed(KeyCode::D) { movement = movement.or(Some(Right)); }
+    let mut player = match query.get_single_mut() {
+        Ok(x) => x,
+        Err(_) => return,
+    };
 
-    match movement {
-        Some(dir) => queue.0 = move_player(dir),
-        None => if let Some(dir) = queue.0 {
-            queue.0 = move_player(dir)
-        },
+    // We fail -- let's try
+    if !player_flip(&mut player, input) {
+        match player.movement_progress() {
+            Some(x) if x >= 0.2f32 => {
+                queue.0  = Some(input);
+            },
+            _ => (),
+        }
     }
 }

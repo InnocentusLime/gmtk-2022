@@ -12,8 +12,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: sudo apt install libasound2-dev libudev-dev pkg-config
+      - name: Install alsa and udev
+        run: sudo apt-get update --fix-missing; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        if: runner.os == 'linux'
 
       # Run clippy
       - name: Test
