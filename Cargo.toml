@@ -55,4 +55,4 @@ bevy = "0.8"
 bevy_ecs_tilemap = "0.8"
 bevy-inspector-egui = "0.13"
 tiled = { version = "0.10", default-features = false }
-bevy_asset_loader = { version = "0.12" }
+bevy_asset_loader = { version = "0.14" }
