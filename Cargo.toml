@@ -51,7 +51,7 @@ image = "0.24.5"
 [workspace.dependencies]
 serde = "1"
 anyhow = "1"
-bevy = "0.8"
+bevy = "0.9"
 bevy_ecs_tilemap = "0.8"
 bevy-inspector-egui = "0.13"
 tiled = { version = "0.10", default-features = false }
