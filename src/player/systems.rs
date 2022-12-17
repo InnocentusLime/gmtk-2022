@@ -48,20 +48,20 @@ pub fn player_camera(
 pub struct InputQueue(Option<MoveDirection>);
 
 fn check_input(key_input: &Res<Input<KeyCode>>) -> Option<MoveDirection> {
-    if key_input.pressed(KeyCode::W) { 
-        return Some(MoveDirection::Up); 
+    if key_input.pressed(KeyCode::W) {
+        return Some(MoveDirection::Up);
     }
 
-    if key_input.pressed(KeyCode::A) { 
-        return Some(MoveDirection::Left); 
+    if key_input.pressed(KeyCode::A) {
+        return Some(MoveDirection::Left);
     }
 
-    if key_input.pressed(KeyCode::S) { 
-        return Some(MoveDirection::Down); 
+    if key_input.pressed(KeyCode::S) {
+        return Some(MoveDirection::Down);
     }
-    
-    if key_input.pressed(KeyCode::D) { 
-        return Some(MoveDirection::Right); 
+
+    if key_input.pressed(KeyCode::D) {
+        return Some(MoveDirection::Right);
     }
 
     None
@@ -72,17 +72,17 @@ fn player_flip(m: &mut MoveableQueryItem, dir: MoveDirection) -> bool {
 }
 
 /// The system for controlling the player. The system implements input
-/// queueing. 
-/// 
+/// queueing.
+///
 /// # The queueing
 /// The queueing works the following way:
-/// 
-/// 1. When the user presses a key when the cube is rolling -- the input 
+///
+/// 1. When the user presses a key when the cube is rolling -- the input
 /// gets queued up.
 /// 2. As the cube rolls, the user can change the queued up input by
-/// pressing different keys. 
+/// pressing different keys.
 /// 3. After the animation is over, the queued up input gets dequeued.
-/// 
+///
 /// If the cube isn't rolling -- the input isn't queued up and gets applied
 /// right away.
 pub fn player_controls(
@@ -105,7 +105,7 @@ pub fn player_controls(
     // We fail -- let's try
     if !player_flip(&mut player, input) {
         match player.movement_progress() {
-            Some(x) if x >= 0.2f32 => {
+            Some(x) if x >= 0.65f32 => {
                 queue.0  = Some(input);
             },
             _ => (),
