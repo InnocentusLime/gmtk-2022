@@ -7,10 +7,10 @@ pub struct LaunchParams<'a> {
 #[allow(clippy::derivable_impls)]
 impl Default for LaunchParams<'static> {
     fn default() -> Self {
-        LaunchParams { 
-            logging: false, 
-            inspector: false, 
-            level_file: None, 
+        LaunchParams {
+            logging: cfg!(debug_assertions),
+            inspector: cfg!(debug_assertions),
+            level_file: None,
         }
     }
 }
