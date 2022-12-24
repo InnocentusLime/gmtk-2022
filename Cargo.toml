@@ -7,13 +7,13 @@ edition = "2021"
 members = [
     "launchers/wasm",
     "launchers/native",
-    "bevy_ecs_tilemap_cpu_anim", 
-    "bevy_tiled", 
+    "bevy_ecs_tilemap_cpu_anim",
+    "bevy_tiled",
     "cube_rot",
 ]
 
 [[bin]]
-name="native-launcher-test"
+name="native-launcher"
 path="launchers/native/src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

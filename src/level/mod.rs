@@ -4,7 +4,6 @@ use std::{time::Duration, path::Path};
 use std::collections::HashMap;
 
 use bevy::asset::AssetPath;
-use bevy_asset_loader::dynamic_asset::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy::{prelude::*};
 
@@ -33,31 +32,18 @@ pub fn tile_pos_to_world_pos(
     map_transform: &Transform,
     map_grid: &TilemapGridSize,
 ) -> Vec2 {
-    map_transform.mul_vec3(Vec3::new(
-        tile_pos.x as f32 * map_grid.x, 
-        tile_pos.y as f32 * map_grid.y, 
-        0.0f32
-    )).truncate()
-}
-
-pub fn queue_level_tileset_images(
-    base_level_assets: Res<BaseLevelAssets>,
-    maps: Res<Assets<TiledMap>>,
-    mut asset_keys: ResMut<DynamicAssets>,
-) {
-    info!("Queueing images");
-    let map = maps.get(&base_level_assets.map).unwrap();
-    asset_keys.register_asset("tileset_images", Box::new(map.get_tileset_dynamic_asset()));
+    map_transform.mul_vec3(
+        tile_pos.center_in_world(
+            map_grid,
+            &TilemapType::Square { diagonal_neighbors: false },
+        ).extend(0.0f32)
+    ).truncate()
 }
 
 pub fn get_level_map(
-    base_level_assets: Res<BaseLevelAssets>,
-    level_tilesets: Res<LevelTilesetImages>, 
-) -> (Handle<TiledMap>, Vec<Handle<TextureAtlas>>) {
-    (
-        base_level_assets.map.clone(),
-        level_tilesets.images.clone()
-    )
+    base_level_assets: Res<BaseLevelAssets>
+) -> Handle<TiledMap> {
+    base_level_assets.map.clone()
 }
 
 #[derive(Default, Clone, Copy, Debug, Deserialize)]
@@ -86,7 +72,7 @@ impl ActivatableAnimating<TileAnimation> {
         self,
         tileset: usize,
         tile: u32,
-        assets: &mut Assets<CPUTileAnimation>, 
+        assets: &mut Assets<CPUTileAnimation>,
         map_path: Option<&Path>,
         indexing: &TilesetIndexing,
     ) -> ActivatableAnimating {
@@ -104,19 +90,19 @@ impl ActivatableAnimating<TileAnimation> {
 
         match self {
             ActivatableAnimating::None => ActivatableAnimating::None,
-            ActivatableAnimating::Pause { on_anim } => ActivatableAnimating::Pause { 
+            ActivatableAnimating::Pause { on_anim } => ActivatableAnimating::Pause {
                 on_anim: acquire_asset(on_anim, "on_anim"),
             },
-            ActivatableAnimating::Switch { 
-                on_transition, 
-                off_transition, 
-                on_anim, 
+            ActivatableAnimating::Switch {
+                on_transition,
+                off_transition,
+                on_anim,
                 off_anim,
-            } => ActivatableAnimating::Switch { 
-                on_transition: acquire_asset(on_transition, "on_transition"), 
-                off_transition: acquire_asset(off_transition, "off_transition"), 
-                on_anim: acquire_asset(on_anim, "off_anim"), 
-                off_anim: acquire_asset(off_anim, "on_anim"), 
+            } => ActivatableAnimating::Switch {
+                on_transition: acquire_asset(on_transition, "on_transition"),
+                off_transition: acquire_asset(off_transition, "off_transition"),
+                on_anim: acquire_asset(on_anim, "off_anim"),
+                off_anim: acquire_asset(off_anim, "on_anim"),
             }
         }
     }
@@ -130,9 +116,9 @@ struct GraphicsTileBuilder<'a> {
 
 impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
     fn process_tileset(
-        &mut self, 
-        set_id: usize, 
-        tileset: &tiled::Tileset, 
+        &mut self,
+        set_id: usize,
+        tileset: &tiled::Tileset,
         indexing: &TilesetIndexing,
     ) -> anyhow::Result<()> {
         self.deserialized_props.reserve(tileset.tilecount as usize);
@@ -140,15 +126,15 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
         for (id, tile) in tileset.tiles() {
             let props: GraphicsTileBundle<TileAnimation> = tile.properties()?;
             self.deserialized_props.insert(
-                (set_id, id), 
-                GraphicsTileBundle { 
+                (set_id, id),
+                GraphicsTileBundle {
                     animating: props.animating.decode(
-                        set_id, 
-                        id, 
-                        self.anims, 
-                        self.map_path, 
+                        set_id,
+                        id,
+                        self.anims,
+                        self.map_path,
                         indexing
-                    ), 
+                    ),
                 }
             );
         }
@@ -156,10 +142,10 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
         Ok(())
     }
 
-    fn run_builder(
-        &mut self, 
-        set_id: usize, 
-        id: u32, 
+    fn build(
+        &mut self,
+        set_id: usize,
+        id: u32,
         cmds: &mut bevy::ecs::system::EntityCommands,
     ) -> anyhow::Result<()> {
         cmds.insert_bundle(self.deserialized_props[&(set_id, id)].clone());
@@ -167,9 +153,9 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
         Ok(())
     }
 
-    fn tilemap_post_build(
-        &mut self, 
-        _set_id: usize, 
+    fn finish_layer(
+        &mut self,
+        _set_id: usize,
         cmds: &mut bevy::ecs::system::EntityCommands,
     ) -> anyhow::Result<()> {
         cmds
@@ -186,12 +172,10 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
 // Maybe some further investigation will prove me wrong.
 #[allow(clippy::too_many_arguments)]
 pub fn spawn_level(
-    In(tileset_indexing): In<Vec<TilesetIndexing>>,
+    In(tilemap_texture_data): In<Vec<(TilesetIndexing, TilemapTexture)>>,
     asset_server: Res<AssetServer>,
-    mut commands: Commands, 
+    mut commands: Commands,
     base_level_assets: Res<BaseLevelAssets>,
-    tilesets: Res<LevelTilesetImages>,
-    atlases: Res<Assets<TextureAtlas>>,
     maps: Res<Assets<TiledMap>>,
     mut animations: ResMut<Assets<CPUTileAnimation>>,
 ) {
@@ -199,7 +183,7 @@ pub fn spawn_level(
 
     let map_asset_path = asset_server.get_handle_path(base_level_assets.map.clone());
 
-    let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| { 
+    let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| {
         cmds
             .insert(LogicTilemapTag)
             .insert(MoveableTilemapTag)
@@ -208,7 +192,7 @@ pub fn spawn_level(
             ))))
             .insert(Visibility { is_visible: false });
     });
-    let mut trigger_tile_builder = BasicDeserBuilder::<TriggerTileBundle, _>::new(|cmds| { 
+    let mut trigger_tile_builder = BasicDeserBuilder::<TriggerTileBundle, _>::new(|cmds| {
         cmds
             .insert(TriggerTilemapTag)
             .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
@@ -223,19 +207,14 @@ pub fn spawn_level(
     };
 
     let map = maps.get(&base_level_assets.map).unwrap();
-    let atlases = tilesets.images.iter()
-        .map(|x| atlases.get(x).unwrap().texture.clone())
-        .collect::<Vec<_>>(); 
-
     let res = parse_map(
-        &mut commands, 
-        &tileset_indexing, 
-        &atlases, 
-        &map.map, 
+        &mut commands,
+        &tilemap_texture_data,
+        &map.map,
         &mut SimpleCallbackSelector {
             pool: [
-                &mut logic_tile_builder, 
-                &mut trigger_tile_builder, 
+                &mut logic_tile_builder,
+                &mut trigger_tile_builder,
                 &mut graphics_tile_builder
             ],
             picker: |name| match name {
