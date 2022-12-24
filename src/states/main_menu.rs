@@ -85,7 +85,7 @@ fn spawn_text(
                                 ..default()
                             },
                             text: Text::from_section(
-                                "Main menu", 
+                                "Main menu",
                                 TextStyle {
                                     font: font.clone(),
                                     font_size: 60.0f32,
@@ -144,7 +144,7 @@ fn spawn_text(
                                                     ..default()
                                                 },
                                                 text: Text::from_section(
-                                                    title, 
+                                                    title,
                                                     TextStyle {
                                                         font: font.clone(),
                                                         font_size: 35.0f32,
@@ -167,14 +167,14 @@ fn spawn_text(
 
 
 fn enter(
-    mut commands: Commands, 
+    mut commands: Commands,
     menu_assets: Res<MenuAssets>,
     pkv: Res<PkvStore>,
 ) {
     info!("Entered main menu state");
     let save = pkv.get::<Save>("save").unwrap_or_else(|_| Save::new());
-    spawn_text(&mut commands, &save, &*menu_assets);
-    
+    spawn_text(&mut commands, &save, &menu_assets);
+
     commands.insert_resource(save);
 }
 
@@ -190,7 +190,7 @@ fn tick(
             MainMenuButton::PickLevel => {
                 if let Some(save) = save.as_ref() {
                     let (world, level) = save.world_level();
-                    enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut *asset_keys);
+                    enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut asset_keys);
                 }
             },
             MainMenuButton::Achievements => (),

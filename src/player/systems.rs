@@ -90,9 +90,12 @@ pub fn player_controls(
     key_input: Res<Input<KeyCode>>,
     mut query: Query<MoveableQuery, With<PlayerTag>>,
 ) {
-    // Try to get at least some input. It's okay that we duqeue the input
-    // we will put it back into the queue if we fail to apply it.
-    let input = match check_input(&key_input).or(queue.0.take()) {
+    /*
+        Deque the input, but take it into account only if the player hasn't pressed
+        any keys.
+    */
+    let queue_input = queue.0.take();
+    let input = match check_input(&key_input).or(queue_input) {
         Some(x) => x,
         None => return,
     };
@@ -102,7 +105,11 @@ pub fn player_controls(
         Err(_) => return,
     };
 
-    // We fail -- let's try
+    /*
+        If we fail to apply the input -- it gets queued up.
+
+        Note, that it allows the input to come back into the queue.
+    */
     if !player_flip(&mut player, input) {
         match player.movement_progress() {
             Some(x) if x >= 0.65f32 => {

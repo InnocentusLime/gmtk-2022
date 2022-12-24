@@ -202,7 +202,7 @@ pub fn spawn_level(
     });
     let mut graphics_tile_builder = GraphicsTileBuilder {
         map_path: map_asset_path.as_ref().map(|x| x.path()),
-        anims: &mut *animations,
+        anims: &mut animations,
         deserialized_props: HashMap::new(),
     };
 
