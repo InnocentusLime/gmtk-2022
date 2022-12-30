@@ -52,17 +52,17 @@ impl CPUTileAnimation {
 }
 
 /// The component, that you should attach to the tiles for
-/// them to animate. 
-/// 
+/// them to animate.
+///
 /// # About the animation handle
-/// 
+///
 /// Currently this plugin mimics bevy's default behaviour for
 /// unloaded assets, as in animations that haven't been loaded yet
 /// are simply not played and their state is not updated.
-/// 
+///
 /// # About the default value
-/// 
-/// The default value of this component is carefully crafted to 
+///
+/// The default value of this component is carefully crafted to
 /// not update the texture of the tile it's attached to, while also
 /// not referencing any valid assets.
 #[derive(Clone, Component, Debug)]
@@ -81,8 +81,8 @@ impl CPUAnimated {
         paused: bool,
     ) -> CPUAnimated {
         CPUAnimated {
-            paused, 
-            looping, 
+            paused,
+            looping,
             animation,
             passed_time: Duration::new(0, 0),
             current_frame: 0,
@@ -106,11 +106,11 @@ impl CPUAnimated {
         old_frame == self.current_frame
     }
 
-    /// Changes the current animation 
+    /// Changes the current animation
     pub fn set_animation(
-        &mut self, 
-        animation: Handle<CPUTileAnimation>, 
-        paused: bool, 
+        &mut self,
+        animation: Handle<CPUTileAnimation>,
+        paused: bool,
         looping: bool,
     ) {
         self.paused = paused;
@@ -136,7 +136,7 @@ impl Default for CPUAnimated {
 pub fn update_animation_frames(
     time: Res<Time>,
     animations: Res<Assets<CPUTileAnimation>>,
-    mut animated_tile_q: Query<(&mut CPUAnimated, &mut TileTexture)>,
+    mut animated_tile_q: Query<(&mut CPUAnimated, &mut TileTextureIndex)>,
 ) {
     let dt = time.delta();
 

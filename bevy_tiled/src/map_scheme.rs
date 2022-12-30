@@ -1,5 +1,5 @@
 use anyhow::{anyhow, bail, ensure, Context};
-use bevy_ecs_tilemap::{tiles::{TileBundle, TilePos, TileTexture, TileStorage}, prelude::{TilemapId, TilemapSize, TilemapTexture, TilemapType, TilemapTileSize, TilemapGridSize}, TilemapBundle};
+use bevy_ecs_tilemap::{tiles::{TileBundle, TilePos, TileTextureIndex, TileStorage}, prelude::{TilemapId, TilemapSize, TilemapTexture, TilemapType, TilemapTileSize, TilemapGridSize}, TilemapBundle};
 use std::collections::HashMap;
 
 use bevy::{ecs::system::EntityCommands, prelude::*};
@@ -323,7 +323,7 @@ fn spawn_tile(
     let mut tile_commands = builder.spawn_bundle(TileBundle {
         position,
         tilemap_id: TilemapId(parent_id),
-        texture: TileTexture(tilemap_texture_data[tileset_index].0.dispatch(tile.id())),
+        texture: TileTextureIndex(tilemap_texture_data[tileset_index].0.dispatch(tile.id())),
         flip: tile.bevy_flip_flags(),
         ..default()
     });
