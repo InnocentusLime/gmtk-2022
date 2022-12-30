@@ -62,7 +62,7 @@ fn spawn_text(
                 .spawn(NodeBundle {
                     style: Style {
                         size: Size::new(Val::Percent(40.0), Val::Percent(100.0)),
-                        flex_direction: FlexDirection::ColumnReverse,
+                        flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
                         margin: UiRect {
                             top: Val::Px(5.0),
@@ -100,7 +100,7 @@ fn spawn_text(
                         .spawn(NodeBundle {
                             style: Style {
                                 size: Size::new(Val::Percent(90.0), Val::Percent(80.0)),
-                                flex_direction: FlexDirection::ColumnReverse,
+                                flex_direction: FlexDirection::Column,
                                 position: UiRect {
                                     left: Val::Percent(5.0),
                                     ..default()
