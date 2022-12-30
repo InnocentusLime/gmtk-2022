@@ -270,7 +270,7 @@ fn parse_finite_tile_layer<C: CallbackSelector>(
         .insert(TilemapBundle {
             storage,
             texture: tilemap_texture_data[tileset_index].1.clone(),
-            map_type: TilemapType::Square { diagonal_neighbors: false },
+            map_type: TilemapType::Square,
             tile_size: TilemapTileSize {
                 x: tileset.tile_width as f32,
                 y: tileset.tile_height as f32,
@@ -323,7 +323,7 @@ fn spawn_tile(
     let mut tile_commands = builder.spawn(TileBundle {
         position,
         tilemap_id: TilemapId(parent_id),
-        texture: TileTextureIndex(tilemap_texture_data[tileset_index].0.dispatch(tile.id())),
+        texture_index: TileTextureIndex(tilemap_texture_data[tileset_index].0.dispatch(tile.id())),
         flip: tile.bevy_flip_flags(),
         ..default()
     });
