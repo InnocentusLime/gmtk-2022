@@ -8,7 +8,7 @@ mod level_info;
 mod config;
 
 use states::setup_states;
-use bevy::prelude::*;
+use bevy::{prelude::*, app::PluginGroupBuilder};
 use bevy::window::WindowDescriptor;
 use bevy_pkv::PkvStore;
 use bevy_inspector_egui::WorldInspectorPlugin;
@@ -44,21 +44,19 @@ pub fn app(params: LaunchParams) -> App {
     // Insert base resources
     app
         .insert_resource(PkvStore::new(DEV_NAME, GAME_NAME))
-        .insert_resource(ClearColor(Color::hex("263238").unwrap()))
-        .insert_resource(window_descriptor());
+        .insert_resource(ClearColor(Color::hex("263238").unwrap()));
 
     // Load bevy's core
-    app
-        .add_plugins_with(
-            DefaultPlugins, 
-            |plugins| {
-                if !params.logging { 
-                    plugins.disable::<bevy::log::LogPlugin>() 
-                } else {
-                    plugins
-                }
-            }
-        );
+    let mut bevy_plugins =
+        PluginGroupBuilder::start::<DefaultPlugins>()
+        .set(WindowPlugin {
+            window: window_descriptor(),
+            ..default()
+        });
+    if !params.logging {
+        bevy_plugins = bevy_plugins.disable::<bevy::log::LogPlugin>();
+    }
+    bevy_plugins.finish(&mut app);
 
     // Load framepace
     #[cfg(not(target_arch = "wasm32"))]
@@ -67,10 +65,10 @@ pub fn app(params: LaunchParams) -> App {
         .add_plugin(FramepacePlugin);
 
     // Init or not init inspector (DO IT BEFORE THE GAME PLUGINS)
-    if params.inspector { 
-        app.add_plugin(WorldInspectorPlugin::new()); 
+    if params.inspector {
+        app.add_plugin(WorldInspectorPlugin::new());
     }
-    
+
     // Game plugins
     app
         .add_plugin(JsonAssetPlugin::<LevelInfo>::new(&["level-info"]))
@@ -78,10 +76,12 @@ pub fn app(params: LaunchParams) -> App {
         .add_plugin(LevelPlugin)
         .add_plugin(PlayerPlugin);
 
-   
-    app.world.spawn()
-        .insert_bundle(Camera2dBundle::default())
-        .insert(Name::new("GameplayCamera")).insert(GameplayCamera);
+
+    app.world.spawn((
+        Camera2dBundle::default(),
+        Name::new("GameplayCamera"),
+        GameplayCamera,
+    ));
 
     setup_states(&mut app, &params);
 

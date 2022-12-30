@@ -11,7 +11,7 @@ pub struct PlayerWinnerTag {
 impl PlayerWinnerTag {
     pub fn new() -> Self {
         PlayerWinnerTag {
-            timer: Timer::from_seconds(0.31f32, false),
+            timer: Timer::from_seconds(0.31f32, TimerMode::Once),
         }
     }
 }

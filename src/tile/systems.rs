@@ -167,7 +167,7 @@ pub fn special_tile_handler(
                 TileKind::Exit if is_player => {
                     commands
                         .entity(moveable_id)
-                        .remove_bundle::<MoveableBundle>()
+                        .remove::<MoveableBundle>()
                         .insert(PlayerWinnerTag::new());
                     escape_event.send(PlayerEscapedEvent);
                 }
@@ -187,7 +187,7 @@ fn apply_on_logic<'a, F, I>(
     mut logic_q: Query<&mut TileState>,
     mut it: I,
     f: F,
-) -> anyhow::Result<()> 
+) -> anyhow::Result<()>
 where
     I: Iterator<Item = (&'a ActivationCondition, &'a TilePos)>,
     F: Fn(&ActivationCondition, Mut<TileState>),

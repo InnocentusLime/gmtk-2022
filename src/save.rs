@@ -1,8 +1,9 @@
+use bevy::prelude::Resource;
 use std::collections::HashSet;
 
 use crate::level_info::LevelInfo;
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Resource, Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Save {
     achievements: HashSet<String>,
     world: u8, // The world player has yet to beat
@@ -29,7 +30,7 @@ impl Save {
     pub fn register_level_complete(&mut self, info: &LevelInfo) {
         if let Some((world, level)) = self.next_level(info) {
             self.world = world;
-            self.level = level; 
+            self.level = level;
         }
     }
 

@@ -97,19 +97,20 @@ pub fn spawn_player(
     let start_world_pos = tile_pos_to_world_pos(start_pos, map_tf, map_grid);
 
     commands
-        .spawn()
-        .insert(PlayerTag)
-        .insert(Name::new("Player"))
-        .insert_bundle(MoveableBundle::new(start_pos))
-        .insert_bundle(MaterialMesh2dBundle {
-            mesh: generated_assets.model.clone(),
-            material: generated_assets.material.clone(),
-            // TODO hardcoded player size
-            // FIXME feels weird to double-set player's pos
-            transform: Transform::from_translation(
-                start_world_pos.extend(1.0f32),
-            )
-            .with_scale(Vec3::new(25.0f32, 25.0f32, 25.0f32)),
-            ..default()
-        });
+        .spawn((
+            PlayerTag,
+            Name::new("Player"),
+            MoveableBundle::new(start_pos),
+            MaterialMesh2dBundle {
+                mesh: generated_assets.model.clone(),
+                material: generated_assets.material.clone(),
+                // TODO hardcoded player size
+                // FIXME feels weird to double-set player's pos
+                transform: Transform::from_translation(
+                    start_world_pos.extend(1.0f32),
+                )
+                .with_scale(Vec3::new(25.0f32, 25.0f32, 25.0f32)),
+                ..default()
+            }
+        ));
 }

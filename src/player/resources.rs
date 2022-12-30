@@ -2,7 +2,7 @@ use bevy_asset_loader::asset_collection::*;
 use bevy::sprite::Mesh2dHandle;
 use bevy::prelude::*;
 
-#[derive(AssetCollection)]
+#[derive(Resource, AssetCollection)]
 pub struct BasePlayerAssets {
     #[asset(path = "models/Dice.glb")]
     pub player_gltf: Handle<bevy::gltf::Gltf>,
@@ -10,6 +10,7 @@ pub struct BasePlayerAssets {
     pub complete_sound: Handle<AudioSource>,
 }
 
+#[derive(Resource)]
 pub struct GeneratedPlayerAssets {
     pub model: Mesh2dHandle,
     pub material: Handle<ColorMaterial>,

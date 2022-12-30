@@ -6,7 +6,7 @@ use crate::LaunchParams;
 
 use super::GameState;
 
-#[derive(AssetCollection)]
+#[derive(Resource, AssetCollection)]
 pub struct ScreenAssets {
     #[asset(path = "splash/team.png")]
     team_card: Handle<Image>,
@@ -15,6 +15,7 @@ pub struct ScreenAssets {
 #[derive(Clone, Copy, Component)]
 struct LogoTag;
 
+#[derive(Resource)]
 struct SplashScreenState {
     team_card_anim_timer: Timer,
 }
@@ -24,8 +25,8 @@ fn enter(mut commands: Commands, assets: Res<ScreenAssets>) {
     const TEAM_CARD_DURATION: f32 = 2.0f32;
 
     // Create the logo
-    commands.spawn()
-        .insert_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             sprite: Sprite {
                 color: Color::WHITE,
                 ..default()
@@ -33,11 +34,13 @@ fn enter(mut commands: Commands, assets: Res<ScreenAssets>) {
             transform: Transform::from_scale(Vec3::new(0.5f32, 0.5f32, 1.0f32)),
             texture: assets.team_card.clone(),
             ..default()
-        }).insert(LogoTag);
+        },
+        LogoTag
+    ));
 
     // Initialize the splash screen state
     commands.insert_resource(SplashScreenState {
-        team_card_anim_timer: Timer::from_seconds(TEAM_CARD_DURATION, false),
+        team_card_anim_timer: Timer::from_seconds(TEAM_CARD_DURATION, TimerMode::Once),
     });
 }
 
@@ -69,7 +72,7 @@ fn exit(
     commands.entity(logo_query.single()).despawn_recursive();
 }
 
-pub fn setup_states(app: &mut App, _params: &LaunchParams) { 
+pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     app
         .add_enter_system(GameState::SplashScreen, enter)
         .add_system(tick.run_in_state(GameState::SplashScreen))
