@@ -59,7 +59,6 @@ pub fn app(params: LaunchParams) -> App {
     bevy_plugins.finish(&mut app);
 
     // Load framepace
-    #[cfg(not(target_arch = "wasm32"))]
     app
         .insert_resource(FramepaceSettings::default().with_limiter(Limiter::from_framerate(60.0)))
         .add_plugin(FramepacePlugin);

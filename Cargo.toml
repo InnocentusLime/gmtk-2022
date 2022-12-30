@@ -29,6 +29,7 @@ iyes_loopless = "0.9"
 tiled = { workspace = true }
 bevy-inspector-egui = { workspace = true }
 bevy_pkv = "0.6"
+bevy_framepace = "0.9"
 # Other deps
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -43,7 +44,6 @@ cube_rot = { path = "cube_rot" }
 # All those crates aren't included in wasm builds, because they are
 # either not needed will blow up the size too much
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-bevy_framepace = "0.9"
 clap = { version = "4", features = ["cargo", "derive"] }
 bevy_mod_debugdump = "0.6"
 winit = { version = "0.27", default-features = false }
