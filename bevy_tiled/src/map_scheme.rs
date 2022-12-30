@@ -63,7 +63,7 @@ where
     T: DeserializeOwned + Bundle,
 {
     pub fn new_default<B: Bundle + Default>() -> Self {
-        BasicDeserBuilder::new(|cmds| { cmds.insert_bundle(B::default()); })
+        BasicDeserBuilder::new(|cmds| { cmds.insert(B::default()); })
     }
 }
 
@@ -97,7 +97,7 @@ where
         let props = self.deserialized_props.get(&(set_id, id))
             .ok_or_else(|| anyhow!("Tile {} didn't have any deserialized properties", id))?;
 
-        cmds.insert_bundle(props.clone());
+        cmds.insert(props.clone());
 
         Ok(())
     }
@@ -143,19 +143,19 @@ pub fn parse_map<C: CallbackSelector>(
         )?;
     }
 
-    let mut map_commands = commands.spawn();
-    map_commands
-        .insert_bundle(TransformBundle::default())
-        .insert_bundle(VisibilityBundle::default())
-        .insert(Name::new("Map"));
+    let mut map_commands = commands.spawn((
+        TransformBundle::default(),
+        VisibilityBundle::default(),
+        Name::new("Map"),
+    ));
     let mut result = Ok(());
     map_commands.with_children(|builder| {
         for layer in map.layers() {
-            let mut layer_cmds = builder.spawn();
-            layer_cmds
-                .insert_bundle(TransformBundle::default())
-                .insert_bundle(VisibilityBundle::default())
-                .insert(Name::new(layer.name.clone()));
+            let mut layer_cmds = builder.spawn((
+                TransformBundle::default(),
+                VisibilityBundle::default(),
+                Name::new(layer.name.clone()),
+            ));
             let local_res = parse_layer(
                 &mut layer_cmds,
                 tilemap_texture_data,
@@ -188,11 +188,11 @@ fn parse_layer<C: CallbackSelector>(
 
                 for layer in group.layers() {
                     // Setup the parent components (transform and name)
-                    let mut layer_cmds = child_builder.spawn();
-                    layer_cmds
-                        .insert_bundle(TransformBundle::default())
-                        .insert_bundle(VisibilityBundle::default())
-                        .insert(Name::new(layer.name.clone()));
+                    let mut layer_cmds = child_builder.spawn((
+                        TransformBundle::default(),
+                        VisibilityBundle::default(),
+                        Name::new(layer.name.clone()),
+                    ));
 
                     let local_res = parse_layer(
                         &mut layer_cmds,
@@ -267,7 +267,7 @@ fn parse_finite_tile_layer<C: CallbackSelector>(
     });
 
     layer_cmds
-        .insert_bundle(TilemapBundle {
+        .insert(TilemapBundle {
             storage,
             texture: tilemap_texture_data[tileset_index].1.clone(),
             map_type: TilemapType::Square { diagonal_neighbors: false },
@@ -320,7 +320,7 @@ fn spawn_tile(
     tile_builder: &mut dyn TileBuilder,
 ) -> anyhow::Result<(TilePos, Entity)> {
     let position = TilePos { x, y };
-    let mut tile_commands = builder.spawn_bundle(TileBundle {
+    let mut tile_commands = builder.spawn(TileBundle {
         position,
         tilemap_id: TilemapId(parent_id),
         texture: TileTextureIndex(tilemap_texture_data[tileset_index].0.dispatch(tile.id())),
