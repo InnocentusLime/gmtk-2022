@@ -8,7 +8,7 @@ mod level_info;
 mod config;
 
 use states::setup_states;
-use bevy::{prelude::*, app::PluginGroupBuilder};
+use bevy::{prelude::*};
 use bevy::window::WindowDescriptor;
 use bevy_pkv::PkvStore;
 use bevy_inspector_egui::WorldInspectorPlugin;
@@ -47,15 +47,12 @@ pub fn app(params: LaunchParams) -> App {
         .insert_resource(ClearColor(Color::hex("263238").unwrap()));
 
     // Load bevy's core
-    let bevy_plugins =
-        DefaultPlugins.set(WindowPlugin {
+    DefaultPlugins
+        .set(WindowPlugin {
             window: window_descriptor(),
             ..default()
-        });
-    // if !params.logging {
-    //     bevy_plugins = bevy_plugins.disable::<bevy::log::LogPlugin>();
-    // }
-    bevy_plugins.finish(&mut app);
+        })
+        .finish(&mut app);
 
     // Load framepace
     app
