@@ -32,10 +32,10 @@ pub fn tile_pos_to_world_pos(
     map_transform: &Transform,
     map_grid: &TilemapGridSize,
 ) -> Vec2 {
-    map_transform.mul_vec3(
+    map_transform.transform_point(
         tile_pos.center_in_world(
             map_grid,
-            &TilemapType::Square { diagonal_neighbors: false },
+            &TilemapType::Square,
         ).extend(0.0f32)
     ).truncate()
 }
@@ -148,7 +148,7 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
         id: u32,
         cmds: &mut bevy::ecs::system::EntityCommands,
     ) -> anyhow::Result<()> {
-        cmds.insert_bundle(self.deserialized_props[&(set_id, id)].clone());
+        cmds.insert(self.deserialized_props[&(set_id, id)].clone());
 
         Ok(())
     }
@@ -159,10 +159,12 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
         cmds: &mut bevy::ecs::system::EntityCommands,
     ) -> anyhow::Result<()> {
         cmds
-            .insert(GraphicsTilemapTag)
-            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                1.6f32, 1.6f32, 1.6f32
-            ))));
+            .insert((
+                GraphicsTilemapTag,
+                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                    1.6f32, 1.6f32, 1.6f32
+                ))),
+            ));
 
         Ok(())
     }
@@ -185,20 +187,24 @@ pub fn spawn_level(
 
     let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| {
         cmds
-            .insert(LogicTilemapTag)
-            .insert(MoveableTilemapTag)
-            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                1.6f32, 1.6f32, 1.6f32
-            ))))
-            .insert(Visibility { is_visible: false });
+            .insert((
+                LogicTilemapTag,
+                MoveableTilemapTag,
+                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                    1.6f32, 1.6f32, 1.6f32
+                ))),
+                Visibility { is_visible: false },
+            ));
     });
     let mut trigger_tile_builder = BasicDeserBuilder::<TriggerTileBundle, _>::new(|cmds| {
         cmds
-            .insert(TriggerTilemapTag)
-            .insert_bundle(TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                1.6f32, 1.6f32, 1.6f32
-            ))))
-            .insert(Visibility { is_visible: false });
+            .insert((
+                TriggerTilemapTag,
+                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
+                    1.6f32, 1.6f32, 1.6f32
+                ))),
+                Visibility { is_visible: false },
+            ));
     });
     let mut graphics_tile_builder = GraphicsTileBuilder {
         map_path: map_asset_path.as_ref().map(|x| x.path()),

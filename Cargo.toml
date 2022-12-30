@@ -23,12 +23,13 @@ path="launchers/native/src/main.rs"
 # bevy deps
 bevy = { workspace = true }
 bevy_ecs_tilemap = { workspace = true }
-bevy_common_assets = { version = "0.3", features = ["json"] }
-bevy_asset_loader = { workspace = true, features = ["stageless", "dynamic_assets"] }
-iyes_loopless = "0.7"
+bevy_common_assets = { version = "0.4", features = ["json"] }
+bevy_asset_loader = { workspace = true }
+iyes_loopless = "0.9"
 tiled = { workspace = true }
 bevy-inspector-egui = { workspace = true }
 bevy_pkv = "0.6"
+bevy_framepace = "0.9"
 # Other deps
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -43,17 +44,16 @@ cube_rot = { path = "cube_rot" }
 # All those crates aren't included in wasm builds, because they are
 # either not needed will blow up the size too much
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-bevy_framepace = "0.7.0"
 clap = { version = "4", features = ["cargo", "derive"] }
-bevy_mod_debugdump = "0.5"
-winit = { version = "0.26.1", default-features = false }
+bevy_mod_debugdump = "0.6"
+winit = { version = "0.27", default-features = false }
 image = "0.24.5"
 
 [workspace.dependencies]
 serde = "1"
 anyhow = "1"
-bevy = "0.8"
-bevy_ecs_tilemap = "0.8"
-bevy-inspector-egui = "0.13"
+bevy = "0.9"
+bevy_ecs_tilemap = "0.9"
+bevy-inspector-egui = "0.15"
 tiled = { version = "0.10", default-features = false }
-bevy_asset_loader = { version = "0.12" }
+bevy_asset_loader = { version = "0.14", features = ["standard_dynamic_assets", "stageless"] }

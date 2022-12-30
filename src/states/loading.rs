@@ -32,7 +32,7 @@ pub fn setup_states(app: &mut App, _params: &LaunchParams) {
         LoadingLevel::LevelEntity,
         SystemSet::new()
             .with_system(
-                get_level_map.chain(tileset_indexing).chain(spawn_level)
+                get_level_map.pipe(tileset_indexing).pipe(spawn_level)
             )
             .with_system(jump_to_state(LoadingLevel::PlayerEntity))
     );

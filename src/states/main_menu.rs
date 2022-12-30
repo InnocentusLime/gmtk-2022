@@ -8,7 +8,7 @@ use crate::save::Save;
 use crate::level_info::LevelInfo;
 use crate::{GameplayCamera, LaunchParams};
 
-#[derive(AssetCollection)]
+#[derive(Resource, AssetCollection)]
 pub struct MenuAssets {
     #[asset(path = "fonts/plain.ttf")]
     pub main_font: Handle<Font>,
@@ -35,34 +35,34 @@ fn spawn_text(
 
     // Root node
     commands
-        .spawn_bundle(NodeBundle {
+        .spawn(NodeBundle {
             style: Style {
                 size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
                 justify_content: JustifyContent::SpaceBetween,
                 ..default()
 
             },
-            color: Color::NONE.into(),
+            background_color: Color::NONE.into(),
             ..default()
         })
         .with_children(|parent| {
             // Left fill
             parent
-                .spawn_bundle(NodeBundle {
+                .spawn(NodeBundle {
                     style: Style {
                         size: Size::new(Val::Percent(60.0), Val::Percent(100.0)),
                         ..default()
                     },
-                    color: Color::NONE.into(),
+                    background_color: Color::NONE.into(),
                     ..default()
                 });
 
             // Right fill
             parent
-                .spawn_bundle(NodeBundle {
+                .spawn(NodeBundle {
                     style: Style {
                         size: Size::new(Val::Percent(40.0), Val::Percent(100.0)),
-                        flex_direction: FlexDirection::ColumnReverse,
+                        flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
                         margin: UiRect {
                             top: Val::Px(5.0),
@@ -70,13 +70,13 @@ fn spawn_text(
                         },
                         ..default()
                     },
-                    color: Color::rgba(0.0, 0.15, 0.15, 0.1).into(),
+                    background_color: Color::rgba(0.0, 0.15, 0.15, 0.1).into(),
                     ..default()
                 })
                 .with_children(|parent| {
                     // Header
                     parent
-                        .spawn_bundle(TextBundle {
+                        .spawn(TextBundle {
                             style: Style {
                                 margin: UiRect{
                                     top: Val::Px(50.0),
@@ -97,10 +97,10 @@ fn spawn_text(
 
                     // Container for the controls
                     parent
-                        .spawn_bundle(NodeBundle {
+                        .spawn(NodeBundle {
                             style: Style {
                                 size: Size::new(Val::Percent(90.0), Val::Percent(80.0)),
-                                flex_direction: FlexDirection::ColumnReverse,
+                                flex_direction: FlexDirection::Column,
                                 position: UiRect {
                                     left: Val::Percent(5.0),
                                     ..default()
@@ -111,13 +111,13 @@ fn spawn_text(
                                 },
                                 ..default()
                             },
-                            color: Color::NONE.into(),
+                            background_color: Color::NONE.into(),
                             ..default()
                         })
                         .with_children(|parent| {
                             let mut spawn_button = |title, tag| {
                                 parent
-                                    .spawn_bundle(ButtonBundle {
+                                    .spawn(ButtonBundle {
                                         style: Style {
                                             align_items: AlignItems::Center,
                                             size: Size::new(Val::Percent(100.0), Val::Auto),
@@ -133,13 +133,13 @@ fn spawn_text(
                                             },
                                             ..default()
                                         },
-                                        color: Color::rgb(0.0, 0.15, 0.15).into(),
+                                        background_color: Color::rgb(0.0, 0.15, 0.15).into(),
                                         ..default()
                                     })
                                     .insert(tag)
                                     .with_children(|parent| {
                                         parent
-                                            .spawn_bundle(TextBundle {
+                                            .spawn(TextBundle {
                                                 style: Style {
                                                     ..default()
                                                 },

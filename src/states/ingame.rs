@@ -10,6 +10,7 @@ use crate::level_info::LevelInfo;
 use crate::player::{ PlayerTag, PlayerEscapedEvent };
 use crate::{GameplayCamera, LaunchParams};
 
+#[derive(Resource)]
 struct LevelCompleteCountdown(Timer);
 
 fn enter() {
@@ -36,7 +37,7 @@ fn beat_system(
 ) {
     for _ in escape_event.iter() {
         info!("You win");
-        commands.insert_resource(LevelCompleteCountdown(Timer::from_seconds(2.0f32, false)));
+        commands.insert_resource(LevelCompleteCountdown(Timer::from_seconds(2.0f32, TimerMode::Once)));
     }
 }
 
@@ -53,9 +54,9 @@ fn level_complete_system_normal(
         timer.0.tick(time.delta());
         if timer.0.finished() {
             let level_info = level_infos.get(&menu_assets.level_info).unwrap();
-         
+
             save.register_level_complete(level_info);
-            
+
             // TODO retry?
             match pkv.set("save", &*save) {
                 Ok(()) => (),
