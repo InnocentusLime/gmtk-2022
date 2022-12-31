@@ -1,16 +1,18 @@
 use bevy::prelude::*;
 
+pub struct SimpleEntry {
+    role: String,
+    name: String,
+}
+
 pub enum SectionEntry {
-    Subsection(CreditSection),
-    SimpleEntry {
-        role: String,
-        name: String,
-    }
+    Subsection(Vec<CreditSection>),
+    SimpleEntry(Vec<SimpleEntry>),
 }
 
 pub struct CreditSection {
     name: String,
-    entries: Vec<SectionEntry>,
+    entries: SectionEntry,
 }
 
 pub struct CreditsAsset {
@@ -18,6 +20,83 @@ pub struct CreditsAsset {
 }
 
 impl CreditsAsset {
+    pub fn test_values() -> Self {
+        CreditsAsset {
+            sections: vec![
+                CreditSection {
+                    name: "Test 1".to_owned(),
+                    entries: SectionEntry::SimpleEntry(vec![
+                        SimpleEntry {
+                            role: "Impostor1".to_owned(),
+                            name: "Someone's brother".to_owned(),
+                        },
+                        SimpleEntry {
+                            role: "Impostor2".to_owned(),
+                            name: "Someone's sister".to_owned(),
+                        },
+                    ]),
+                },
+                CreditSection {
+                    name: "Test 2".to_owned(),
+                    entries: SectionEntry::SimpleEntry(vec![
+                        SimpleEntry {
+                            role: "Impostor1".to_owned(),
+                            name: "Someone's brother".to_owned(),
+                        },
+                        SimpleEntry {
+                            role: "Impostor2".to_owned(),
+                            name: "Someone's sister".to_owned(),
+                        },
+                    ]),
+                },
+                CreditSection {
+                    name: "Test Co".to_owned(),
+                    entries: SectionEntry::Subsection(vec![
+                        CreditSection {
+                            name: "Amazing department".to_owned(),
+                            entries: SectionEntry::SimpleEntry(vec![
+                                SimpleEntry {
+                                    role: "Impostor1".to_owned(),
+                                    name: "Someone's brother".to_owned(),
+                                },
+                                SimpleEntry {
+                                    role: "Impostor2".to_owned(),
+                                    name: "Someone's sister".to_owned(),
+                                },
+                            ]),
+                        },
+                        CreditSection {
+                            name: "Cute department".to_owned(),
+                            entries: SectionEntry::SimpleEntry(vec![
+                                SimpleEntry {
+                                    role: "Impostor1".to_owned(),
+                                    name: "Someone's brother".to_owned(),
+                                },
+                                SimpleEntry {
+                                    role: "Impostor2".to_owned(),
+                                    name: "Someone's sister".to_owned(),
+                                },
+                            ]),
+                        },
+                        CreditSection {
+                            name: "Cool department".to_owned(),
+                            entries: SectionEntry::SimpleEntry(vec![
+                                SimpleEntry {
+                                    role: "Impostor1".to_owned(),
+                                    name: "Someone's brother".to_owned(),
+                                },
+                                SimpleEntry {
+                                    role: "Impostor2".to_owned(),
+                                    name: "Someone's sister".to_owned(),
+                                },
+                            ]),
+                        },
+                    ]),
+                },
+            ],
+        }
+    }
+
     pub fn build(commands: &mut Commands) {
         // Root node
         commands.spawn(NodeBundle {
