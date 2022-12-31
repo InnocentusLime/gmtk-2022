@@ -38,6 +38,7 @@ serde = { workspace = true, features = ["derive"] }
 bevy_tiled = { path = "bevy_tiled" }
 bevy_ecs_tilemap_cpu_anim = { path = "bevy_ecs_tilemap_cpu_anim" }
 cube_rot = { path = "cube_rot" }
+bevy_credits = { path = "bevy_credits" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 # Nothing
