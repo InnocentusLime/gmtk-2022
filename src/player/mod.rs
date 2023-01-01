@@ -109,7 +109,7 @@ pub fn spawn_player(
                 transform: Transform::from_translation(
                     start_world_pos.extend(1.0f32),
                 )
-                .with_scale(Vec3::new(25.0f32, 25.0f32, 25.0f32)),
+                .with_scale(Vec3::new(16.0f32, 16.0f32, 16.0f32)),
                 ..default()
             }
         ));

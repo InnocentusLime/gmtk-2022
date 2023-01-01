@@ -158,13 +158,7 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
         _set_id: usize,
         cmds: &mut bevy::ecs::system::EntityCommands,
     ) -> anyhow::Result<()> {
-        cmds
-            .insert((
-                GraphicsTilemapTag,
-                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                    1.6f32, 1.6f32, 1.6f32
-                ))),
-            ));
+        cmds.insert(GraphicsTilemapTag);
 
         Ok(())
     }
@@ -188,9 +182,6 @@ pub fn spawn_level(
             .insert((
                 LogicTilemapTag,
                 MoveableTilemapTag,
-                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                    1.6f32, 1.6f32, 1.6f32
-                ))),
                 Visibility { is_visible: false },
             ));
     });
@@ -198,9 +189,6 @@ pub fn spawn_level(
         cmds
             .insert((
                 TriggerTilemapTag,
-                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                    1.6f32, 1.6f32, 1.6f32
-                ))),
                 Visibility { is_visible: false },
             ));
     });
