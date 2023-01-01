@@ -218,7 +218,7 @@ pub fn spawn_level(
                 &mut trigger_tile_builder,
                 &mut graphics_tile_builder,
             ],
-            picker: |name| match dbg!(name) {
+            picker: |name| match name {
                 "logic_tiles" => 0,
                 "activator_tiles" => 1,
                 _ => 2,
