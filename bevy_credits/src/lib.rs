@@ -26,28 +26,28 @@ impl CreditsAsset {
         CreditsAsset {
             sections: vec![
                 CreditSection {
-                    name: "Test 1".to_owned(),
+                    name: "Game writing".to_owned(),
                     entries: SectionEntry::SimpleEntry(vec![
                         SimpleEntry {
-                            role: "Impostor1".to_owned(),
-                            name: "Someone's brother".to_owned(),
+                            role: "Making puter beep".to_owned(),
+                            name: "Meeeeee".to_owned(),
                         },
                         SimpleEntry {
-                            role: "Impostor2".to_owned(),
-                            name: "Someone's sister".to_owned(),
+                            role: "Magic".to_owned(),
+                            name: "Susie the witch".to_owned(),
                         },
                     ]),
                 },
                 CreditSection {
-                    name: "Test 2".to_owned(),
+                    name: "Some business".to_owned(),
                     entries: SectionEntry::SimpleEntry(vec![
                         SimpleEntry {
-                            role: "Impostor1".to_owned(),
-                            name: "Someone's brother".to_owned(),
+                            role: "Dollar managing".to_owned(),
+                            name: "Fred Fuqqs".to_owned(),
                         },
                         SimpleEntry {
-                            role: "Impostor2".to_owned(),
-                            name: "Someone's sister".to_owned(),
+                            role: "Merketting of the product".to_owned(),
+                            name: "Classical Frodo".to_owned(),
                         },
                     ]),
                 },
@@ -187,7 +187,7 @@ impl CreditsAsset {
                 style: Style {
                     size: Size {
                         height: Val::Px(25.0f32 * simple.len() as f32),
-                        width: Val::Px(300f32),
+                        width: Val::Px(50f32),
                     },
                     ..default()
                 },
