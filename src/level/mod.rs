@@ -12,7 +12,7 @@ pub use resources::*;
 
 use crate::tile::*;
 use serde::Deserialize;
-use bevy_tiled::{ TiledPlugin, TiledMap, TilesetIndexing, TileBuilder, TileExt, parse_map, SimpleCallbackSelector };
+use bevy_tiled::*;
 use crate::moveable::MoveableTilemapTag;
 
 #[derive(Default)]
@@ -181,8 +181,6 @@ pub fn spawn_level(
     maps: Res<Assets<TiledMap>>,
     mut animations: ResMut<Assets<CPUTileAnimation>>,
 ) {
-    use bevy_tiled::BasicDeserBuilder;
-
     let map_asset_path = asset_server.get_handle_path(base_level_assets.map.clone());
 
     let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| {
@@ -212,24 +210,24 @@ pub fn spawn_level(
         deserialized_props: HashMap::new(),
     };
 
-    let map = maps.get(&base_level_assets.map).unwrap();
-    let res = parse_map(
+    let res = MapParser::new(
         &mut commands,
-        &tilemap_texture_data,
-        &map.map,
-        &mut SimpleCallbackSelector {
+        SimpleCallbackSelector {
             pool: [
                 &mut logic_tile_builder,
                 &mut trigger_tile_builder,
-                &mut graphics_tile_builder
+                &mut graphics_tile_builder,
             ],
-            picker: |name| match name {
+            picker: |name| match dbg!(name) {
                 "logic_tiles" => 0,
                 "activator_tiles" => 1,
                 _ => 2,
             },
-        }
-    );
+        },
+        &tilemap_texture_data,
+    )
+    .parse_map(&maps.get(&base_level_assets.map).unwrap().map);
+
     if let Err(e) = res {
         error!("Error parsing map: {e}");
 

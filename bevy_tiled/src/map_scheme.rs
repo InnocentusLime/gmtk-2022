@@ -128,164 +128,208 @@ impl<'a, const N: usize> CallbackSelector for SimpleCallbackSelector<'a, N> {
     }
 }
 
-pub fn parse_map<C: CallbackSelector>(
-    commands: &mut Commands,
-    tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
-    map: &Map,
-    callback_selector: &mut C,
-) -> anyhow::Result<()> {
-    // Visit all tilesets
-    for (id, set) in map.tilesets().iter().enumerate() {
-        callback_selector.select(set).process_tileset(
-            id,
-            set,
-            &tilemap_texture_data[id].0
-        )?;
-    }
-
-    let mut map_commands = commands.spawn((
-        TransformBundle::default(),
-        VisibilityBundle::default(),
-        Name::new("Map"),
-    ));
-    let mut result = Ok(());
-    map_commands.with_children(|builder| {
-        for layer in map.layers() {
-            let mut layer_cmds = builder.spawn((
-                TransformBundle::default(),
-                VisibilityBundle::default(),
-                Name::new(layer.name.clone()),
-            ));
-            let local_res = parse_layer(
-                &mut layer_cmds,
-                tilemap_texture_data,
-                layer,
-                callback_selector
-            );
-            if local_res.is_err() {
-                result = local_res.context(format!("While parsing layer {:?}", layer.name));
-                return;
-            }
-        }
-    });
-
-    result
+pub struct MapParser<'w, 's, 'a, C> {
+    commands: &'a mut Commands<'w, 's>,
+    callback_selector: C,
+    tilemap_texture_data: &'a [(TilesetIndexing, TilemapTexture)],
 }
 
-fn parse_layer<C: CallbackSelector>(
-    layer_cmds: &mut EntityCommands,
-    tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
-    layer: Layer,
-    callback_selector: &mut C,
-) -> anyhow::Result<()> {
-    // Start visitting layers
-    match layer.layer_type() {
-        LayerType::GroupLayer(group) => {
-            let mut result = Ok(());
+impl<'w, 's, 'a, C: CallbackSelector> MapParser<'w, 's, 'a, C>
+where
+    'w: 'a,
+    's: 'a,
+{
+    pub fn new(
+        commands: &'a mut Commands<'w, 's>,
+        callback_selector: C,
+        tilemap_texture_data: &'a [(TilesetIndexing, TilemapTexture)],
+    ) -> Self {
+        Self {
+            commands,
+            callback_selector,
+            tilemap_texture_data,
+        }
+    }
 
-            // Spawn the children layers
-            layer_cmds.with_children(|child_builder| {
+    pub fn parse_map(&mut self, map: &Map) -> anyhow::Result<()> {
+        for (id, set) in map.tilesets().iter().enumerate() {
+            self.callback_selector.select(set).process_tileset(
+                id,
+                set,
+                &self.tilemap_texture_data[id].0
+            )?;
+        }
 
-                for layer in group.layers() {
-                    // Setup the parent components (transform and name)
-                    let mut layer_cmds = child_builder.spawn((
-                        TransformBundle::default(),
-                        VisibilityBundle::default(),
-                        Name::new(layer.name.clone()),
-                    ));
+        let callback_selector = &mut self.callback_selector;
+        let tilemap_texture_data = &self.tilemap_texture_data;
 
-                    let local_res = parse_layer(
-                        &mut layer_cmds,
-                        tilemap_texture_data,
-                        layer,
-                        callback_selector
-                    );
+        let mut result = Ok(());
+        self.commands.spawn((
+            TransformBundle::default(),
+            VisibilityBundle::default(),
+            Name::new("Map"),
+        ))
+        .with_children(|builder| {
+            for layer in map.layers() {
+                let mut layer_cmds = builder.spawn((
+                    TransformBundle::default(),
+                    VisibilityBundle::default(),
+                    Name::new(layer.name.clone()),
+                ));
+                let local_res = Self::parse_layer(
+                    &mut layer_cmds,
+                    callback_selector,
+                    tilemap_texture_data,
+                    layer,
+                );
+                if local_res.is_err() {
+                    result = local_res.context(format!("While parsing layer {:?}", layer.name));
+                    return;
+                }
+            }
+        });
+
+        result
+    }
+
+    fn parse_layer(
+        layer_cmds: &mut EntityCommands,
+        callback_selector: &mut C,
+        tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
+        layer: Layer
+    ) -> anyhow::Result<()> {
+        // Start visitting layers
+        match layer.layer_type() {
+            LayerType::GroupLayer(group) => {
+                let mut result = Ok(());
+
+                // Spawn the children layers
+                layer_cmds.with_children(|child_builder| {
+
+                    let local_res = group.layers()
+                    .map(|layer| {
+                        let mut layer_cmds = child_builder.spawn((
+                            TransformBundle::default(),
+                            VisibilityBundle::default(),
+                            Name::new(layer.name.clone()),
+                        ));
+
+                        Self::parse_layer(
+                            &mut layer_cmds,
+                            callback_selector,
+                            tilemap_texture_data,
+                            layer,
+                        )
+                    })
+                    .collect::<Result<(), _>>();
 
                     if local_res.is_err() {
-                        result = local_res.context(format!("While parsing layer {:?}", layer.name));
+                        result = local_res;
                         return;
                     }
-                }
-            });
+                });
 
-            result
-        },
-        LayerType::ImageLayer(_) => bail!("Image layers are not supported"),
-        LayerType::ObjectLayer(_) => bail!("Objetc layers are not supported"),
-        LayerType::TileLayer(tile_layer) => match tile_layer {
-            TileLayer::Finite(tiles) => parse_finite_tile_layer(
-                layer_cmds,
-                tilemap_texture_data,
-                tiles,
-                callback_selector,
-            ),
-            TileLayer::Infinite(_) => bail!("Infinite tile layers are not supported")
+                result
+            },
+            LayerType::ImageLayer(_) => bail!("Image layers are not supported"),
+            LayerType::ObjectLayer(_) => bail!("Objetc layers are not supported"),
+            LayerType::TileLayer(tile_layer) => match tile_layer {
+                TileLayer::Finite(tiles) => Self::parse_finite_tile_layer(
+                    layer_cmds,
+                    callback_selector,
+                    tilemap_texture_data,
+                    tiles,
+                ),
+                TileLayer::Infinite(_) => bail!("Infinite tile layers are not supported")
+            }
         }
     }
-}
 
-fn parse_finite_tile_layer<C: CallbackSelector>(
-    layer_cmds: &mut EntityCommands,
-    tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
-    tiles: FiniteTileLayer,
-    callback_selector: &mut C,
-) -> anyhow::Result<()>
-{
-    let (tileset_index, tileset) = ensure_unique_tileset(&tiles)?;
-    let provider = callback_selector.select(tileset);
-    let mut result = Ok(());
-    let tilemap_size = TilemapSize { x: tiles.map().width, y: tiles.map().height };
-    let mut storage = TileStorage::empty(tilemap_size);
-    let parent_id = layer_cmds.id();
+    fn parse_finite_tile_layer(
+        layer_cmds: &mut EntityCommands,
+        callback_selector: &mut C,
+        tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
+        tiles: FiniteTileLayer,
+    ) -> anyhow::Result<()> {
+        use itertools::iproduct;
 
-    // Spawn the tile
-    layer_cmds.with_children(|builder| {
-        for x in 0..tiles.map().width {
-            for y in 0..tiles.map().height {
-                let tile = match tiles.get_tile_data(x as i32, y as i32) {
-                    Some(x) => x,
-                    None => continue,
-                };
+        let (tileset_index, tileset) = ensure_unique_tileset(&tiles)?;
+        let provider = callback_selector.select(tileset);
+        let tilemap_size = TilemapSize { x: tiles.map().width, y: tiles.map().height };
+        let mut storage = TileStorage::empty(tilemap_size);
+        let parent_id = layer_cmds.id();
 
-                match spawn_tile(
+        let mut result = Ok(());
+        // Spawn the tiles
+        layer_cmds.with_children(|builder| {
+            let local_res = iproduct!(0..tiles.map().width, 0..tiles.map().height)
+            .filter_map(|(x, y)|
+                tiles.get_tile_data(x as i32, y as i32)
+                .map(|data| (x, y, data))
+            )
+            .map(|(x, y, tile)|
+                Self::spawn_tile(
                     (x, tiles.map().height - 1 - y),
                     parent_id,
                     tileset_index,
-                    tile,
                     tilemap_texture_data,
+                    tile,
                     builder,
                     provider
-                ) {
-                    Ok((pos, id)) => storage.set(&pos, id),
-                    Err(e) => {
-                        result = Err(e).context(format!("Error while spawning tile ({}, {})", x, y));
-                        return;
-                    }
-                }
-            }
-        }
-    });
+                )
+                .context(format!("Error while spawning tile ({x}, {y})"))
+                .map(|(pos, e)| storage.set(&pos, e))
+            )
+            .collect::<Result<(), _>>();
 
-    layer_cmds
+            if local_res.is_err() {
+                result = local_res;
+                return;
+            }
+        })
         .insert(TilemapBundle {
             storage,
             texture: tilemap_texture_data[tileset_index].1.clone(),
             map_type: TilemapType::Square,
-            tile_size: TilemapTileSize {
-                x: tileset.tile_width as f32,
-                y: tileset.tile_height as f32,
-            },
-            grid_size: TilemapGridSize {
-                x: tileset.tile_width as f32,
-                y: tileset.tile_height as f32,
-            },
+            tile_size: TilemapTileSize { x: tileset.tile_width as f32, y: tileset.tile_height as f32 },
+            grid_size: TilemapGridSize { x: tileset.tile_width as f32, y: tileset.tile_height as f32 },
             size: tilemap_size,
             ..default()
         });
 
-    provider.finish_layer(tileset_index, layer_cmds)?;
+        provider.finish_layer(tileset_index, layer_cmds)?;
 
-    result
+        result
+    }
+
+    fn spawn_tile(
+        (x, y): (u32, u32),
+        parent_id: Entity,
+        tileset_index: usize,
+        tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
+        tile: &LayerTileData,
+        builder: &mut ChildBuilder,
+        tile_builder: &mut dyn TileBuilder,
+    ) -> anyhow::Result<(TilePos, Entity)> {
+        let position = TilePos { x, y };
+        let mut tile_commands = builder.spawn((
+            TileBundle {
+                position,
+                tilemap_id: TilemapId(parent_id),
+                texture_index: TileTextureIndex(
+                    tilemap_texture_data[tileset_index].0
+                    .dispatch(tile.id())
+                ),
+                flip: tile.bevy_flip_flags(),
+                ..default()
+            },
+            Name::new("Tile"),
+        ));
+
+        tile_builder.build(tileset_index, tile.id(), &mut tile_commands)?;
+
+        Ok((position, tile_commands.id()))
+    }
 }
 
 fn ensure_unique_tileset<'a>(layer: &'a tiled::FiniteTileLayer) -> Result<(usize, &'a Tileset), anyhow::Error> {
@@ -306,30 +350,4 @@ fn ensure_unique_tileset<'a>(layer: &'a tiled::FiniteTileLayer) -> Result<(usize
     }
 
     result.ok_or_else(|| anyhow!("The layer uses no tileset"))
-}
-
-// TODO reduce the amount of arguments
-#[allow(clippy::too_many_arguments)]
-fn spawn_tile(
-    (x, y): (u32, u32),
-    parent_id: Entity,
-    tileset_index: usize,
-    tile: &LayerTileData,
-    tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
-    builder: &mut ChildBuilder,
-    tile_builder: &mut dyn TileBuilder,
-) -> anyhow::Result<(TilePos, Entity)> {
-    let position = TilePos { x, y };
-    let mut tile_commands = builder.spawn(TileBundle {
-        position,
-        tilemap_id: TilemapId(parent_id),
-        texture_index: TileTextureIndex(tilemap_texture_data[tileset_index].0.dispatch(tile.id())),
-        flip: tile.bevy_flip_flags(),
-        ..default()
-    });
-
-    tile_commands.insert(Name::new("Tile"));
-    tile_builder.build(tileset_index, tile.id(), &mut tile_commands)?;
-
-    Ok((position, tile_commands.id()))
 }
