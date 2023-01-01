@@ -231,6 +231,12 @@ pub fn spawn_level(
         }
     );
     if let Err(e) = res {
-        error!("Error parsing map: {}", e);
+        error!("Error parsing map: {e}");
+
+        let mut e = e.source();
+        while let Some(rec) = e.and_then(std::error::Error::source) {
+            e = rec.source();
+            error!("{rec}");
+        }
     }
 }
