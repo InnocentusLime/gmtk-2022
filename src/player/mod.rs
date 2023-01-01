@@ -9,15 +9,14 @@ use bevy_ecs_tilemap::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::level::tile_pos_to_world_pos;
-use crate::moveable::{MoveableBundle, MoveableTilemapTag};
+use crate::moveable::{MoveableBundle, MoveableTilemapTag, self};
 use crate::states::GameState;
 use crate::tile::{TileKind, TileUpdateStage};
 
 pub use components::*;
 pub use events::*;
 pub use resources::*;
-
-use systems::*;
+pub use systems::*;
 
 #[derive(StageLabel, Debug, PartialEq, Eq, Hash, Clone)]
 struct PlayerInputStage;
@@ -107,7 +106,7 @@ pub fn spawn_player(
                 // TODO hardcoded player size
                 // FIXME feels weird to double-set player's pos
                 transform: Transform::from_translation(
-                    start_world_pos.extend(1.0f32),
+                    start_world_pos.extend(moveable::MOVEABLE_Z_POS),
                 )
                 .with_scale(Vec3::new(16.0f32, 16.0f32, 16.0f32)),
                 ..default()

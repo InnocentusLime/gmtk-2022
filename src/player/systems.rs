@@ -40,7 +40,7 @@ pub fn player_camera(
     mut gameplay_camera: Query<&mut Transform, With<GameplayCamera>>,
 ) {
     player_q.for_each(|player_tf| {
-        gameplay_camera.single_mut().translation = player_tf.translation.truncate().extend(50.0f32);
+        gameplay_camera.single_mut().translation = player_tf.translation.truncate().extend(1000.0f32);
     })
 }
 

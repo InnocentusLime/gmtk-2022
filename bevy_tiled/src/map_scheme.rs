@@ -128,7 +128,20 @@ impl<'a, const N: usize> CallbackSelector for SimpleCallbackSelector<'a, N> {
     }
 }
 
+struct ParserState {
+    layer_idx: u32,
+}
+
+impl ParserState {
+    fn new() -> Self {
+        Self {
+            layer_idx: 0,
+        }
+    }
+}
+
 pub struct MapParser<'w, 's, 'a, C> {
+    state: ParserState,
     commands: &'a mut Commands<'w, 's>,
     callback_selector: C,
     tilemap_texture_data: &'a [(TilesetIndexing, TilemapTexture)],
@@ -145,6 +158,7 @@ where
         tilemap_texture_data: &'a [(TilesetIndexing, TilemapTexture)],
     ) -> Self {
         Self {
+            state: ParserState::new(),
             commands,
             callback_selector,
             tilemap_texture_data,
@@ -177,6 +191,7 @@ where
                     Name::new(layer.name.clone()),
                 ));
                 let local_res = Self::parse_layer(
+                    &mut self.state,
                     &mut layer_cmds,
                     callback_selector,
                     tilemap_texture_data,
@@ -193,6 +208,7 @@ where
     }
 
     fn parse_layer(
+        state: &mut ParserState,
         layer_cmds: &mut EntityCommands,
         callback_selector: &mut C,
         tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
@@ -215,6 +231,7 @@ where
                         ));
 
                         Self::parse_layer(
+                            state,
                             &mut layer_cmds,
                             callback_selector,
                             tilemap_texture_data,
@@ -235,6 +252,7 @@ where
             LayerType::ObjectLayer(_) => bail!("Objetc layers are not supported"),
             LayerType::TileLayer(tile_layer) => match tile_layer {
                 TileLayer::Finite(tiles) => Self::parse_finite_tile_layer(
+                    state,
                     layer_cmds,
                     callback_selector,
                     tilemap_texture_data,
@@ -246,6 +264,7 @@ where
     }
 
     fn parse_finite_tile_layer(
+        state: &mut ParserState,
         layer_cmds: &mut EntityCommands,
         callback_selector: &mut C,
         tilemap_texture_data: &[(TilesetIndexing, TilemapTexture)],
@@ -269,6 +288,7 @@ where
             )
             .map(|(x, y, tile)|
                 Self::spawn_tile(
+                    state,
                     (x, tiles.map().height - 1 - y),
                     parent_id,
                     tileset_index,
@@ -294,15 +314,23 @@ where
             tile_size: TilemapTileSize { x: tileset.tile_width as f32, y: tileset.tile_height as f32 },
             grid_size: TilemapGridSize { x: tileset.tile_width as f32, y: tileset.tile_height as f32 },
             size: tilemap_size,
+            transform: Transform::from_translation(Vec3::new(
+                0.0f32,
+                0.0f32,
+                state.layer_idx as f32,
+            )),
             ..default()
         });
 
         provider.finish_layer(tileset_index, layer_cmds)?;
+        ensure!(state.layer_idx < 100);
+        state.layer_idx += 1;
 
         result
     }
 
     fn spawn_tile(
+        _state: &mut ParserState,
         (x, y): (u32, u32),
         parent_id: Entity,
         tileset_index: usize,
