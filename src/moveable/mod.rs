@@ -11,7 +11,7 @@ use bevy::prelude::*;
 
 #[derive(StageLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-struct MoveableUpdateStage;
+pub struct MoveableUpdateStage;
 
 #[derive(SystemLabel)]
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]

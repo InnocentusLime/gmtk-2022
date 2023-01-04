@@ -19,10 +19,10 @@ pub use resources::*;
 pub use systems::*;
 
 #[derive(StageLabel, Debug, PartialEq, Eq, Hash, Clone)]
-struct PlayerInputStage;
+pub struct PlayerInputStage;
 
 #[derive(StageLabel, Debug, PartialEq, Eq, Hash, Clone)]
-struct PlayerPostStage;
+pub struct PlayerPostStage;
 
 pub struct PlayerPlugin;
 

@@ -9,6 +9,8 @@ pub use components::*;
 
 use systems::*;
 
+use crate::moveable::MoveableUpdateStage;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
 pub struct TileUpdateStage;
 
@@ -33,8 +35,8 @@ impl Plugin for TilePlugin {
         }
 
         app.add_plugin(CPUTileAnimationPlugin)
-            .add_stage_before(
-                CoreStage::Update,
+            .add_stage_after(
+                MoveableUpdateStage,
                 TileUpdateStage,
                 SystemStage::parallel(),
             )
@@ -57,7 +59,7 @@ impl Plugin for TilePlugin {
                     ),
             )
             .add_system_to_stage(
-                CoreStage::PreUpdate, 
+                CoreStage::PreUpdate,
                 tile_animation_setup
             );
     }
