@@ -4,6 +4,8 @@ use super::components::*;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
+pub const MOVEABLE_Z_POS: f32 = 101f32;
+
 /// Updates the internals of a moveable. Returns an iteraction event if one should
 /// be posted.
 fn update_moveable(
@@ -45,10 +47,10 @@ fn update_moveable(
                         item.rotation.0 = item.rotation.0.rotate_in_dir(*dir);
                         *item.side = Side::Ready(to);
                     }
-                    
+
                     item.position.0 = *next_pos;
                     *item.state = MoveableState::Idle;
-    
+
                     Some(TileInteractionEvent { moveable_id, tile_id })
                 } else {
                     None
@@ -81,12 +83,12 @@ pub fn moveable_tick(
     moveable_q.for_each_mut(|(id, mut moveable)| {
         if let Some(e) = update_moveable(id, &mut moveable, tiles, dt) {
             interaction_events.send(e);
-        } 
+        }
     });
 }
 
 // TODO Maybe doing animations this way is bad
-/// Animates all moveables. This state simply alters moveable's transform to 
+/// Animates all moveables. This state simply alters moveable's transform to
 /// create the animations.
 pub fn moveable_animation(
     map_q: Query<(&Transform, &TilemapGridSize), With<MoveableTilemapTag>>,
@@ -105,12 +107,12 @@ pub fn moveable_animation(
                 let t = timer.percent();
 
                 match &ty {
-                    MoveTy::Slide { dir, next_pos } => {      
+                    MoveTy::Slide { dir, next_pos } => {
                         let start_pos = current_pos;
                         let end_pos = tile_pos_to_world_pos(*next_pos, map_tf, map_grid);
-                            
+
                         // Animate the sliding
-                        tf.translation = (start_pos + (end_pos - start_pos) * t).extend(1.0f32);
+                        tf.translation = (start_pos + (end_pos - start_pos) * t).extend(MOVEABLE_Z_POS);
 
                         // Add some rotation if we are changing the side
                         if matches!(&*moveable.side, Side::Changing { .. }) {
@@ -124,10 +126,10 @@ pub fn moveable_animation(
                             Quat::from_rotation_z(t * std::f32::consts::FRAC_PI_2)
                         } * moveable.rotation.0.rot_quat();
                     }
-                } 
+                }
             },
             MoveableState::Idle => {
-                tf.translation = current_pos.extend(1.0f32);
+                tf.translation = current_pos.extend(MOVEABLE_Z_POS);
                 tf.rotation = moveable.rotation.0.rot_quat();
             },
         }

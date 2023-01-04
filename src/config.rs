@@ -15,8 +15,8 @@ impl Default for LaunchParams<'static> {
     }
 }
 
-pub const WINDOW_HEIGHT: f32 = 675.0f32;
-pub const WINDOW_WIDTH: f32 = 1200.0f32;
+pub const WINDOW_HEIGHT: f32 = 600.0f32;
+pub const WINDOW_WIDTH: f32 = 1150.0f32;
 //const ASPECT_RATIO: f32 = WINDOW_WIDTH / WINDOW_HEIGHT;
 
 /// A macro to generate the strings for the game

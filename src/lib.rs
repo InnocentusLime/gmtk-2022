@@ -7,6 +7,7 @@ mod tile;
 mod level_info;
 mod config;
 
+use bevy::render::camera::{WindowOrigin, ScalingMode};
 use states::setup_states;
 use bevy::{prelude::*};
 use bevy::window::WindowDescriptor;
@@ -72,8 +73,20 @@ pub fn app(params: LaunchParams) -> App {
         .add_plugin(PlayerPlugin);
 
 
+    let mut camera_bundle = Camera2dBundle::default();
+    camera_bundle.projection = OrthographicProjection {
+        left: -300f32,
+        right: 300f32,
+        top: 300f32,
+        bottom: -300f32,
+        far: 1000f32,
+        near: 0.0f32,
+        window_origin: WindowOrigin::Center,
+        scaling_mode: ScalingMode::FixedHorizontal(600f32),
+        scale: 1.0f32,
+    };
     app.world.spawn((
-        Camera2dBundle::default(),
+        camera_bundle,
         Name::new("GameplayCamera"),
         GameplayCamera,
     ));

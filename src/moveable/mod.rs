@@ -5,7 +5,7 @@ mod events;
 pub use events::*;
 pub use components::*;
 
-use systems::*;
+pub use systems::*;
 use bevy::prelude::*;
 //use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
 

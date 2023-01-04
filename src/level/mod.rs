@@ -12,7 +12,7 @@ pub use resources::*;
 
 use crate::tile::*;
 use serde::Deserialize;
-use bevy_tiled::{ TiledPlugin, TiledMap, TilesetIndexing, TileBuilder, TileExt, parse_map, SimpleCallbackSelector };
+use bevy_tiled::*;
 use crate::moveable::MoveableTilemapTag;
 
 #[derive(Default)]
@@ -158,13 +158,7 @@ impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
         _set_id: usize,
         cmds: &mut bevy::ecs::system::EntityCommands,
     ) -> anyhow::Result<()> {
-        cmds
-            .insert((
-                GraphicsTilemapTag,
-                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                    1.6f32, 1.6f32, 1.6f32
-                ))),
-            ));
+        cmds.insert(GraphicsTilemapTag);
 
         Ok(())
     }
@@ -181,8 +175,6 @@ pub fn spawn_level(
     maps: Res<Assets<TiledMap>>,
     mut animations: ResMut<Assets<CPUTileAnimation>>,
 ) {
-    use bevy_tiled::BasicDeserBuilder;
-
     let map_asset_path = asset_server.get_handle_path(base_level_assets.map.clone());
 
     let mut logic_tile_builder = BasicDeserBuilder::<LogicTileBundle, _>::new(|cmds| {
@@ -190,9 +182,6 @@ pub fn spawn_level(
             .insert((
                 LogicTilemapTag,
                 MoveableTilemapTag,
-                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                    1.6f32, 1.6f32, 1.6f32
-                ))),
                 Visibility { is_visible: false },
             ));
     });
@@ -200,9 +189,6 @@ pub fn spawn_level(
         cmds
             .insert((
                 TriggerTilemapTag,
-                TransformBundle::from_transform(Transform::from_scale(Vec3::new(
-                    1.6f32, 1.6f32, 1.6f32
-                ))),
                 Visibility { is_visible: false },
             ));
     });
@@ -212,25 +198,31 @@ pub fn spawn_level(
         deserialized_props: HashMap::new(),
     };
 
-    let map = maps.get(&base_level_assets.map).unwrap();
-    let res = parse_map(
+    let res = MapParser::new(
         &mut commands,
-        &tilemap_texture_data,
-        &map.map,
-        &mut SimpleCallbackSelector {
+        SimpleCallbackSelector {
             pool: [
                 &mut logic_tile_builder,
                 &mut trigger_tile_builder,
-                &mut graphics_tile_builder
+                &mut graphics_tile_builder,
             ],
             picker: |name| match name {
                 "logic_tiles" => 0,
                 "activator_tiles" => 1,
                 _ => 2,
             },
-        }
-    );
+        },
+        &tilemap_texture_data,
+    )
+    .parse_map(&maps.get(&base_level_assets.map).unwrap().map);
+
     if let Err(e) = res {
-        error!("Error parsing map: {}", e);
+        error!("Error parsing map: {e}");
+
+        let mut e = e.source();
+        while let Some(rec) = e.and_then(std::error::Error::source) {
+            e = rec.source();
+            error!("{rec}");
+        }
     }
 }

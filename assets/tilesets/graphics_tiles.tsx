@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.8" tiledversion="1.9.2" name="graphics_tiles" tilewidth="32" tileheight="32" tilecount="21" columns="0">
+<tileset version="1.8" tiledversion="1.9.2" name="graphics_tiles" tilewidth="32" tileheight="32" tilecount="28" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="0" type="GraphicsTileBundle">
   <properties>
@@ -163,5 +163,77 @@
    <property name="animating" value="null"/>
   </properties>
   <image width="32" height="32" source="../tiles/spin3.png"/>
+ </tile>
+ <tile id="21" type="GraphicsTileBundle">
+  <properties>
+   <property name="animating" value="null"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/screen_empty.png"/>
+ </tile>
+ <tile id="22" type="GraphicsTileBundle">
+  <properties>
+   <property name="animating">{
+  &quot;on_transition&quot;: [
+    {&quot;id&quot;:21, &quot;dur&quot;:200},
+    {&quot;id&quot;:22, &quot;dur&quot;:50}
+  ],
+  &quot;off_transition&quot;: [
+    {&quot;id&quot;:21, &quot;dur&quot;:200},
+    {&quot;id&quot;:24, &quot;dur&quot;:50}
+  ],
+  &quot;on_anim&quot;: [
+    {&quot;id&quot;:22, &quot;dur&quot;:125}
+  ],
+  &quot;off_anim&quot;: [
+    {&quot;id&quot;:24, &quot;dur&quot;:100}
+  ]
+}</property>
+  </properties>
+  <image width="32" height="32" source="../tiles/screen_even.png"/>
+ </tile>
+ <tile id="23" type="GraphicsTileBundle">
+  <properties>
+   <property name="animating">{
+  &quot;on_transition&quot;: [
+    {&quot;id&quot;:21, &quot;dur&quot;:200},
+    {&quot;id&quot;:23, &quot;dur&quot;:50}
+  ],
+  &quot;off_transition&quot;: [
+    {&quot;id&quot;:21, &quot;dur&quot;:200},
+    {&quot;id&quot;:25, &quot;dur&quot;:50}
+  ],
+  &quot;on_anim&quot;: [
+    {&quot;id&quot;:23, &quot;dur&quot;:125}
+  ],
+  &quot;off_anim&quot;: [
+    {&quot;id&quot;:25, &quot;dur&quot;:100}
+  ]
+}</property>
+  </properties>
+  <image width="32" height="32" source="../tiles/screen_odd.png"/>
+ </tile>
+ <tile id="24" type="GraphicsTileBundle">
+  <properties>
+   <property name="animating" value="null"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/screen_even_off.png"/>
+ </tile>
+ <tile id="25" type="GraphicsTileBundle">
+  <properties>
+   <property name="animating" value="null"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/screen_odd_off.png"/>
+ </tile>
+ <tile id="26" type="GraphicsTileBundle">
+  <properties>
+   <property name="animating" value="null"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/hint1.png"/>
+ </tile>
+ <tile id="27" type="GraphicsTileBundle">
+  <properties>
+   <property name="animating" value="null"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/hint2.png"/>
  </tile>
 </tileset>
