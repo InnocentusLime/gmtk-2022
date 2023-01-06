@@ -187,8 +187,8 @@ pub struct CreditsAsset {
 }
 
 impl CreditsAsset {
-    pub fn new(code: &str) -> anyow::Result<Self> {
-        Self::from_parser(Parser::new(code))?
+    pub fn new(code: &str) -> anyhow::Result<Self> {
+        Self::from_parser(Parser::new(code))
     }
 
     fn from_parser_section(parser: &mut Parser) -> anyhow::Result<Option<CreditSection>> {
@@ -463,7 +463,7 @@ impl AssetLoader for CreditsAssetLoader {
         load_context: &'a mut bevy::asset::LoadContext,
     ) -> bevy::utils::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
         Box::pin(async move {
-            let asset = CreditsAsset::new(std::str::from_utf8(bytes)?);
+            let asset = CreditsAsset::new(std::str::from_utf8(bytes)?)?;
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())
         })
