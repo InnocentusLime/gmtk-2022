@@ -4,6 +4,7 @@ use pulldown_cmark::{Parser, Event, Tag, HeadingLevel};
 
 const REC_LEVEL_LIMIT: u8 = 3;
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct SimpleEntry {
     role: String,
     name: String,
@@ -54,11 +55,13 @@ impl SimpleEntry {
     }
 }
 
+#[derive(Clone, PartialEq, Eq)]
 pub enum SectionEntry {
     Subsection(Vec<CreditSection>),
     SimpleEntry(Vec<SimpleEntry>),
 }
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct CreditSection {
     name: String,
     entries: SectionEntry,
@@ -177,87 +180,15 @@ impl CreditSection {
 }
 
 #[derive(bevy::reflect::TypeUuid)]
+#[derive(Clone, PartialEq, Eq)]
 #[uuid = "08e38c4f-9bc2-4901-98f0-5be11451b17f"]
 pub struct CreditsAsset {
     sections: Vec<CreditSection>,
 }
 
 impl CreditsAsset {
-    pub fn test_values() -> Self {
-        CreditsAsset {
-            sections: vec![
-                CreditSection {
-                    name: "Game writing".to_owned(),
-                    entries: SectionEntry::SimpleEntry(vec![
-                        SimpleEntry {
-                            role: "Making puter beep".to_owned(),
-                            name: "Meeeeee".to_owned(),
-                        },
-                        SimpleEntry {
-                            role: "Magic".to_owned(),
-                            name: "Susie the witch".to_owned(),
-                        },
-                    ]),
-                },
-                CreditSection {
-                    name: "Some business".to_owned(),
-                    entries: SectionEntry::SimpleEntry(vec![
-                        SimpleEntry {
-                            role: "Dollar managing".to_owned(),
-                            name: "Fred Fuqqs".to_owned(),
-                        },
-                        SimpleEntry {
-                            role: "Merketting of the product".to_owned(),
-                            name: "Classical Frodo".to_owned(),
-                        },
-                    ]),
-                },
-                CreditSection {
-                    name: "Test Co".to_owned(),
-                    entries: SectionEntry::Subsection(vec![
-                        CreditSection {
-                            name: "Amazing department".to_owned(),
-                            entries: SectionEntry::SimpleEntry(vec![
-                                SimpleEntry {
-                                    role: "Impostor1".to_owned(),
-                                    name: "Someone's brother".to_owned(),
-                                },
-                                SimpleEntry {
-                                    role: "Impostor2".to_owned(),
-                                    name: "Someone's sister".to_owned(),
-                                },
-                            ]),
-                        },
-                        CreditSection {
-                            name: "Cute department".to_owned(),
-                            entries: SectionEntry::SimpleEntry(vec![
-                                SimpleEntry {
-                                    role: "Impostor1".to_owned(),
-                                    name: "Someone's brother".to_owned(),
-                                },
-                                SimpleEntry {
-                                    role: "Impostor2".to_owned(),
-                                    name: "Someone's sister".to_owned(),
-                                },
-                            ]),
-                        },
-                        CreditSection {
-                            name: "Cool department".to_owned(),
-                            entries: SectionEntry::SimpleEntry(vec![
-                                SimpleEntry {
-                                    role: "Impostor1".to_owned(),
-                                    name: "Someone's brother".to_owned(),
-                                },
-                                SimpleEntry {
-                                    role: "Impostor2".to_owned(),
-                                    name: "Someone's sister".to_owned(),
-                                },
-                            ]),
-                        },
-                    ]),
-                },
-            ],
-        }
+    pub fn new(code: &str) -> anyow::Result<Self> {
+        Self::from_parser(Parser::new(code))?
     }
 
     fn from_parser_section(parser: &mut Parser) -> anyhow::Result<Option<CreditSection>> {
@@ -532,9 +463,7 @@ impl AssetLoader for CreditsAssetLoader {
         load_context: &'a mut bevy::asset::LoadContext,
     ) -> bevy::utils::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
         Box::pin(async move {
-            let asset =  CreditsAsset::from_parser(
-                Parser::new(std::str::from_utf8(bytes)?)
-            )?;
+            let asset = CreditsAsset::new(std::str::from_utf8(bytes)?);
             load_context.set_default_asset(LoadedAsset::new(asset));
             Ok(())
         })
