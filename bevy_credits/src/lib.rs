@@ -13,6 +13,7 @@ pub struct SimpleEntry {
 pub enum SectionEntry {
     Subsections(Vec<CreditSection>),
     RoleList(Vec<SimpleEntry>),
+    Verbatim(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
@@ -266,6 +267,29 @@ impl CreditsAsset {
                             font
                         )
                     }
+                },
+                SectionEntry::Verbatim(x) => {
+                    commands.spawn((
+                        TextBundle {
+                            style: Style {
+                                margin: UiRect{
+                                    top: Val::Px(50.0),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            text: Text::from_section(
+                                x.to_owned(),
+                                TextStyle {
+                                    font: font.clone(),
+                                    font_size: 20.0f32,
+                                    color: Color::WHITE,
+                                },
+                            ).with_alignment(TextAlignment::CENTER),
+                            ..default()
+                        },
+                        Name::new("Verbatim"),
+                    ));
                 },
             }
         });
