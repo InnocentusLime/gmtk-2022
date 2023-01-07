@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_asset_loader::{ dynamic_asset::*, loading_state::* };
 use iyes_loopless::prelude::*;
 
-use crate::LaunchParams;
+use crate::{LaunchParams, states::credits::CreditAssets};
 
 use super::{ GameState, enter_level };
 
@@ -36,9 +36,10 @@ pub fn setup_states(app: &mut App, params: &LaunchParams) {
                 .add_enter_system(GameState::Booting, enter_normal)
                 .add_loading_state(
                     LoadingState::new(GameState::Booting)
-                    .continue_to_state(GameState::SplashScreen)
+                    .continue_to_state(GameState::Credits)
                     .with_collection::<ScreenAssets>()
                     .with_collection::<MenuAssets>()
+                    .with_collection::<CreditAssets>()
                 );
         },
     }

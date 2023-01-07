@@ -8,6 +8,7 @@ mod level_info;
 mod config;
 
 use bevy::render::camera::{WindowOrigin, ScalingMode};
+use bevy_credits::CreditsPlugin;
 use states::setup_states;
 use bevy::{prelude::*};
 use bevy::window::WindowDescriptor;
@@ -67,6 +68,7 @@ pub fn app(params: LaunchParams) -> App {
 
     // Game plugins
     app
+        .add_plugin(CreditsPlugin)
         .add_plugin(JsonAssetPlugin::<LevelInfo>::new(&["level-info"]))
         .add_plugin(MoveablePlugin)
         .add_plugin(LevelPlugin)
