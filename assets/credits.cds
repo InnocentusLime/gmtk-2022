@@ -45,5 +45,5 @@ content:
           name: theotherphil, fintelia, HeroicKatora, image-rs team
     - title: Special thanks
       content: !Verbatim |-
-        Special thanks to all the contributors to the bevy and its thirdparty plugins and
+        Special thanks to my family, all the contributors to the bevy and its thirdparty plugins and
         the bevy and rust communities.
