@@ -7,9 +7,8 @@ content:
         name: InnocentusLime and RiksM
     - title: Game engine
       content: !Subsections
-      - title About the used modules
-        content: !Verbatim
-        - All modules mentioned are Rust crates, which can be found on crates.io, all extra information regarding the modules can be found on their docs.rs page and the linked github.
+      - title: About the used modules
+        content: !Verbatim All modules mentioned are Rust crates, which can be found on crates.io, all extra information regarding the modules can be found on their docs.rs page and the linked github.
       - title: Bevy engine
         content: !RoleList
         - role: engine
@@ -26,7 +25,7 @@ content:
           name: NiklasEi
         - role: Bevy common asserts
           name: NiklasEi
-        - role Bevy inspector egui
+        - role: Bevy inspector egui
           name: jakobhellermann
       - title: Other dependencies
         content: !RoleList
@@ -43,5 +42,4 @@ content:
         - role: image
           name: theotherphil, fintelia, HeroicKatora, image-rs team
     - title: Special thanks
-      content: !Verbatim
-      - Special thanks to all the contributors to the bevy and its thirdparty plugins and the bevy and rust communities.
+      content: !Verbatim Special thanks to all the contributors to the bevy and its thirdparty plugins and the bevy and rust communities.
