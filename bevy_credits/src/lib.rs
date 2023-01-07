@@ -40,6 +40,10 @@ impl CreditsAsset {
         .spawn((
             NodeBundle {
                 style: Style {
+                    position: UiRect {
+                        top: Val::Percent(100f32),
+                        ..default()
+                    },
                     size: Size::new(Val::Percent(100.0), Val::Auto),
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
@@ -54,6 +58,7 @@ impl CreditsAsset {
                 ..default()
             },
             Name::new("Credits"),
+            CreditTag,
         ))
         .with_children(|commands| {
             for cont in self.content.iter() {
@@ -296,10 +301,27 @@ impl CreditsAsset {
     }
 }
 
+#[derive(Clone, Copy, Default, Component)]
+pub struct CreditTag;
+
+pub fn scroll_system(
+    time: Res<Time>,
+    mut credit_query: Query<&mut Style, With<CreditTag>>,
+) {
+    credit_query.for_each_mut(|mut style| {
+        match &mut style.position.top {
+            Val::Percent(x) => *x -= 3.0f32 * time.delta_seconds(),
+            _ => (),
+        }
+    })
+}
+
 pub struct CreditsPlugin;
 
 impl Plugin for CreditsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(YamlAssetPlugin::<CreditsAsset>::new(&["cds"]));
+        app
+            .add_system(scroll_system)
+            .add_plugin(YamlAssetPlugin::<CreditsAsset>::new(&["cds"]));
     }
 }
