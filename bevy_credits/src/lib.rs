@@ -1,215 +1,34 @@
-use anyhow::{bail, ensure, anyhow};
-use bevy::{prelude::*, asset::{AssetLoader, LoadedAsset}};
-use pulldown_cmark::{Parser, Event, Tag, HeadingLevel};
+use bevy::prelude::*;
+use bevy_common_assets::yaml::YamlAssetPlugin;
 
 const REC_LEVEL_LIMIT: u8 = 3;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub struct SimpleEntry {
     role: String,
     name: String,
 }
 
-impl SimpleEntry {
-    fn list_item(parser: &mut Parser) -> anyhow::Result<String> {
-        // Ensure the tag opens
-        ensure!(matches!(parser.next(), Some(Event::Start(Tag::Item))), "Expected the list item to end");
-
-        let res = match parser.next() {
-            Some(Event::Text(x)) => x.to_string(),
-            _ => bail!("Expected a text tag"),
-        };
-
-        // Ensure the tag closes
-        ensure!(matches!(parser.next(), Some(Event::End(Tag::Item))), "Expected the list item to end");
-
-        Ok(res)
-    }
-
-    fn from_parser(parser: &mut Parser) -> anyhow::Result<Option<Self>> {
-        // We need a list item -- otherwise we are expecting the list end
-        match parser.next() {
-            Some(Event::Start(Tag::Item)) => (),
-            Some(Event::End(Tag::List(None))) => return Ok(None),
-            _ => bail!("Expected either an item start or the list end"),
-        }
-
-        // A credit entry is a list
-        ensure!(matches!(parser.next(), Some(Event::Start(Tag::List(None)))), "The item must contain an unenumerated list");
-
-        // Get role and name
-        let role = Self::list_item(parser)?;
-        let name = Self::list_item(parser)?;
-
-        // A credit entry is a list
-        ensure!(matches!(parser.next(), Some(Event::End(Tag::List(None)))), "Expected the list to end");
-
-        // Ensure the tag closes
-        ensure!(matches!(parser.next(), Some(Event::End(Tag::Item))), "Expected the list item to end");
-
-        Ok(Some(Self { role, name }))
-    }
-
-    fn from_parser_vec(parser: &mut Parser) -> anyhow::Result<Vec<Self>> {
-        std::iter::from_fn(|| Self::from_parser(parser).transpose()).collect()
-    }
-}
-
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub enum SectionEntry {
-    Subsection(Vec<CreditSection>),
-    SimpleEntry(Vec<SimpleEntry>),
+    Subsections(Vec<CreditSection>),
+    RoleList(Vec<SimpleEntry>),
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub struct CreditSection {
-    name: String,
-    entries: SectionEntry,
-}
-
-impl CreditSection {
-    fn next_level(level: HeadingLevel) -> Option<HeadingLevel> {
-        match level {
-            HeadingLevel::H1 => Some(HeadingLevel::H2),
-            HeadingLevel::H2 => Some(HeadingLevel::H3),
-            HeadingLevel::H3 => Some(HeadingLevel::H4),
-            HeadingLevel::H4 => Some(HeadingLevel::H5),
-            HeadingLevel::H5 => Some(HeadingLevel::H6),
-            HeadingLevel::H6 => None,
-        }
-    }
-
-    fn level_depth(level: HeadingLevel) -> u8 {
-        match level {
-            HeadingLevel::H1 => 0,
-            HeadingLevel::H2 => 1,
-            HeadingLevel::H3 => 2,
-            HeadingLevel::H4 => 3,
-            HeadingLevel::H5 => 4,
-            HeadingLevel::H6 => 5,
-        }
-    }
-
-    fn err_child_no_title() -> anyhow::Error { anyhow!("Expected the child to have a title") }
-
-    fn from_parser_child(
-        parser: &mut Parser,
-        parent_level: HeadingLevel,
-        parent_title: &str,
-        heading: Option<(HeadingLevel, String)>,
-    ) -> anyhow::Result<Option<Self>> {
-        let (level, name) = match heading {
-            Some(x) => x,
-            None => match parser.next() {
-                None => return Ok(None),
-                Some(Event::Start(Tag::Heading(level, name, _))) => (
-                    level,
-                    name.ok_or_else(Self::err_child_no_title)?.to_owned(),
-                ),
-                Some(ref e @ Event::End(Tag::Heading(level, name, _))) => {
-                    ensure!(parent_level != level && Some(parent_title) != name, "Unexpected end tag {e:?}");
-                    return Ok(None);
-                },
-                _ => bail!("Expected either parent end or start of a section"),
-            }
-        };
-
-        Ok(Some(Self::from_parser_rec(parser, level, name)?))
-    }
-
-    // Since the parser reads the start of the first entry, they need
-    // to be provided to this procedure.
-    fn from_parser_vec(
-        parser: &mut Parser,
-        parent_level: HeadingLevel,
-        parent_title: &str,
-        level: HeadingLevel,
-        name: String,
-    ) -> anyhow::Result<Vec<Self>> {
-        ensure!(Some(level) == Self::next_level(parent_level), "Child level must be parent level + 1 ({parent_level} + 1)");
-        let mut state = Some((level, name));
-
-        std::iter::from_fn(|| Self::from_parser_child(
-            parser,
-            parent_level,
-            parent_title,
-            state.take()
-        ).transpose())
-        .collect()
-    }
-
-    fn from_parser_rec(
-        parser: &mut Parser,
-        level: HeadingLevel,
-        name: String,
-    ) -> anyhow::Result<Self> {
-        // Check the depth level
-        let expected_level = Self::level_depth(level);
-        if Self::level_depth(level) >= REC_LEVEL_LIMIT {
-            bail!("Recursion depth limit reached (level {expected_level}, while max is {REC_LEVEL_LIMIT})");
-        }
-
-        // Read the body of the section
-        let entries = match parser.next() {
-            None => bail!("Expected a list start or the heading start"),
-            Some(Event::Start(Tag::List(None))) => SectionEntry::SimpleEntry(SimpleEntry::from_parser_vec(parser)?),
-            Some(Event::Start(Tag::Heading(child_level, child_name, _))) => SectionEntry::Subsection(
-                CreditSection::from_parser_vec(
-                    parser,
-                    level,
-                    name.as_str(),
-                    child_level,
-                    child_name.ok_or_else(Self::err_child_no_title)?.to_owned(),
-                )?
-            ),
-            Some(e) => bail!("Unexpected event: {e:?}"),
-        };
-
-        // Read the end of the section
-        match parser.next() {
-            Some(Event::End(Tag::Heading(the_level, the_name, _)))
-                if the_level == level && the_name == Some(&name) => (),
-            _ => bail!("Expected closing tag for {name} on level {level}"),
-        }
-
-        Ok(Self {
-            name,
-            entries,
-        })
-    }
+    title: String,
+    content: SectionEntry,
 }
 
 #[derive(bevy::reflect::TypeUuid)]
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[uuid = "08e38c4f-9bc2-4901-98f0-5be11451b17f"]
 pub struct CreditsAsset {
-    sections: Vec<CreditSection>,
+    content: Vec<CreditSection>,
 }
 
 impl CreditsAsset {
-    pub fn new(code: &str) -> anyhow::Result<Self> {
-        Self::from_parser(Parser::new(code))
-    }
-
-    fn from_parser_section(parser: &mut Parser) -> anyhow::Result<Option<CreditSection>> {
-        let (level, name) = match parser.next() {
-            None => return Ok(None),
-            Some(Event::Start(Tag::Heading(level, name, _))) => (level, name),
-            _ => bail!("Expected a start of a heading or end of stream"),
-        };
-        let name = name.ok_or_else(|| anyhow!("Section must have a title"))?.to_owned();
-        ensure!(level == HeadingLevel::H1, "Expected level 1");
-        Ok(Some(CreditSection::from_parser_rec(parser, level, name)?))
-    }
-
-    fn from_parser(mut parser: Parser) -> anyhow::Result<Self> {
-        let sections =
-            std::iter::from_fn(|| Self::from_parser_section(&mut parser).transpose())
-            .collect::<Result<_, _>>()?;
-
-        Ok(CreditsAsset { sections })
-    }
-
     pub fn build(
         &self,
         commands: &mut Commands,
@@ -236,13 +55,13 @@ impl CreditsAsset {
             Name::new("Credits"),
         ))
         .with_children(|commands| {
-            for section in self.sections.iter() {
-                Self::build_credit_section(commands, 0, section, font);
+            for cont in self.content.iter() {
+                Self::build_content_elem(commands, 0, cont, font);
             }
         });
     }
 
-    fn build_simple_credits(
+    fn build_role_list(
         commands: &mut ChildBuilder,
         simple: &[SimpleEntry],
         font: &Handle<Font>,
@@ -354,7 +173,7 @@ impl CreditsAsset {
         });
     }
 
-    fn build_credit_section(
+    fn build_content_elem(
         commands: &mut ChildBuilder,
         rec_level: u8,
         section: &CreditSection,
@@ -400,9 +219,9 @@ impl CreditsAsset {
                     },
                     text: Text::from_section(
                         if rec_level == 0 {
-                            format!("· {} ·", section.name.to_uppercase())
+                            format!("· {} ·", section.title.to_uppercase())
                         } else {
-                            section.name.clone()
+                            section.title.clone()
                         },
                         TextStyle {
                             font: font.clone(),
@@ -415,8 +234,8 @@ impl CreditsAsset {
                 Name::new("Section title"),
             ));
 
-            match &section.entries {
-                SectionEntry::SimpleEntry(x) => {
+            match &section.content {
+                SectionEntry::RoleList(x) => {
                     commands.spawn((
                         NodeBundle {
                             style: Style {
@@ -431,16 +250,16 @@ impl CreditsAsset {
                         },
                         Name::new("Simple credits"),
                     )).with_children(|commands| {
-                        Self::build_simple_credits(
+                        Self::build_role_list(
                             commands,
                             x,
                             font,
                         )
                     });
                 },
-                SectionEntry::Subsection(x) => {
+                SectionEntry::Subsections(x) => {
                     for section in x.iter() {
-                        Self::build_credit_section(
+                        Self::build_content_elem(
                             commands,
                             rec_level + 1,
                             section,
@@ -453,21 +272,10 @@ impl CreditsAsset {
     }
 }
 
-#[derive(Default, Clone, Copy)]
-pub struct CreditsAssetLoader;
+pub struct CreditPlugin;
 
-impl AssetLoader for CreditsAssetLoader {
-    fn load<'a>(
-        &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> bevy::utils::BoxedFuture<'a, anyhow::Result<(), anyhow::Error>> {
-        Box::pin(async move {
-            let asset = CreditsAsset::new(std::str::from_utf8(bytes)?)?;
-            load_context.set_default_asset(LoadedAsset::new(asset));
-            Ok(())
-        })
+impl Plugin for CreditPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(YamlAssetPlugin::<CreditsAsset>::new(&["cds"]));
     }
-
-    fn extensions(&self) -> &[&str] { &["cds"] }
 }

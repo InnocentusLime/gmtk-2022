@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bevy_common_assets = { workspace = true, features = ["yaml"] }
 anyhow = { workspace = true }
 bevy = { workspace = true }
-pulldown-cmark = "0.9"
+serde = { workspace = true }
