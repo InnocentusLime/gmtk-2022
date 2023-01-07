@@ -8,11 +8,13 @@ content:
     - title: Game engine
       content: !Subsections
       - title: About the used modules
-        content: !Verbatim All modules mentioned are Rust crates, which can be found on crates.io, all extra information regarding the modules can be found on their docs.rs page and the linked github.
+        content: !Verbatim |-
+          All modules mentioned are Rust crates, which can be found on crates.io, all extra
+          information regarding the modules can be found on their docs.rs page and the linked github.
       - title: Bevy engine
         content: !RoleList
         - role: engine
-          name: cart, bevyengine
+          name: cart, bevyengine team
       - title: Third party plugins for bevy
         content: !RoleList
         - role: Bevy ecs tilemap
@@ -42,4 +44,6 @@ content:
         - role: image
           name: theotherphil, fintelia, HeroicKatora, image-rs team
     - title: Special thanks
-      content: !Verbatim Special thanks to all the contributors to the bevy and its thirdparty plugins and the bevy and rust communities.
+      content: !Verbatim |-
+        Special thanks to all the contributors to the bevy and its thirdparty plugins and
+        the bevy and rust communities.
