@@ -296,9 +296,9 @@ impl CreditsAsset {
     }
 }
 
-pub struct CreditPlugin;
+pub struct CreditsPlugin;
 
-impl Plugin for CreditPlugin {
+impl Plugin for CreditsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(YamlAssetPlugin::<CreditsAsset>::new(&["cds"]));
     }
