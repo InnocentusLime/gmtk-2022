@@ -29,7 +29,7 @@ iyes_loopless = "0.9"
 tiled = { workspace = true }
 bevy-inspector-egui = { workspace = true }
 bevy_pkv = "0.6"
-bevy_framepace = "0.9"
+bevy_framepace = "0.11"
 # Other deps
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
