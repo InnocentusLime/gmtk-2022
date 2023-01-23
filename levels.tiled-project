@@ -96,7 +96,8 @@
                 "Floor",
                 "Start",
                 "Exit",
-                "Spinner"
+                "Spinner",
+                "OnceButton"
             ],
             "valuesAsFlags": false
         },

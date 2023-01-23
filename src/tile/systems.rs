@@ -10,6 +10,7 @@ use anyhow::anyhow;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage};
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
+use std::ops::Deref;
 use std::time::Duration;
 
 pub fn tile_animation_setup(
@@ -141,7 +142,7 @@ pub fn special_tile_handler(
             let tile = tile_query.get_mut(e.tile_id)?;
             let (moveable, player_tag) = move_query.get_mut(e.moveable_id)?;
 
-            let (tile, mut moveable, is_player, moveable_id, _tile_id) = (
+            let (mut tile, mut moveable, is_player, moveable_id, _tile_id) = (
                 tile,
                 moveable,
                 player_tag.is_some(),
@@ -149,22 +150,21 @@ pub fn special_tile_handler(
                 e.tile_id,
             );
 
-            if !tile.is_active() {
-                return Ok(());
-            }
-
             match &tile.kind {
+                // Button logic
+                TileKind::OnceButton if is_player && !tile.is_active() =>
+                    *tile.state = TileState::Ready(true),
                 // Conveyor logic
-                TileKind::Conveyor => {
+                TileKind::Conveyor if tile.is_active() => {
                     moveable.slide(tile.direction(), Duration::from_millis(500));
                 },
                 // Frier logic
-                TileKind::Frier => commands.entity(moveable_id).despawn(),
+                TileKind::Frier if tile.is_active() => commands.entity(moveable_id).despawn(),
                 // Spinner logic
-                TileKind::Spinner => moveable
+                TileKind::Spinner if tile.is_active() => moveable
                     .rotate(tile.clock_wise(), Duration::from_millis(500)),
                 // Exit logic
-                TileKind::Exit if is_player => {
+                TileKind::Exit if is_player && tile.is_active() => {
                     commands
                         .entity(moveable_id)
                         .remove::<MoveableBundle>()

@@ -32,7 +32,7 @@ impl ActivationCondition {
 /// Describes how the tile should be animated, based off its state.
 #[derive(Inspectable, Debug, Default, Clone, Component, Deserialize)]
 #[serde(untagged)]
-pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> 
+pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>>
 where
     Anim: Default,
 {
@@ -92,6 +92,9 @@ impl Default for TileState {
 )]
 #[repr(u8)]
 pub enum TileKind {
+    /// Once button tiles are activated when interacted with by a player and stay activated
+    /// for the rest of the level.
+    OnceButton,
     /// Conveyor tiles push any moveable into the direction they are facing towards
     /// when they are active.
     Conveyor,

@@ -1,5 +1,6 @@
 mod components;
 mod systems;
+mod events;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimationPlugin;
