@@ -7,8 +7,8 @@ use bevy_ecs_tilemap_cpu_anim::CPUTileAnimationPlugin;
 use bevy_inspector_egui::{InspectableRegistry, RegisterInspectable};
 
 pub use components::*;
-
-use systems::*;
+pub use events::*;
+pub use systems::*;
 
 use crate::moveable::MoveableUpdateStage;
 
@@ -32,7 +32,8 @@ impl Plugin for TilePlugin {
                 .register_inspectable::<TileState>()
                 .register_inspectable::<TileKind>()
                 .register_inspectable::<ActivatableAnimating>()
-                .register_inspectable::<ActivationCondition>();
+                .register_inspectable::<ActivationCondition>()
+                .add_event::<TileEvent>();
         }
 
         app.add_plugin(CPUTileAnimationPlugin)

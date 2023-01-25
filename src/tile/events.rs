@@ -1,4 +1,7 @@
+use bevy::prelude::*;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TileEvent {
-    ButtonPressed,
+    ExitReached,
+    ButtonPressed { info_entity: Entity },
 }

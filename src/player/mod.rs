@@ -1,5 +1,4 @@
 mod components;
-mod events;
 mod resources;
 mod systems;
 
@@ -14,7 +13,6 @@ use crate::states::GameState;
 use crate::tile::{TileKind, TileUpdateStage};
 
 pub use components::*;
-pub use events::*;
 pub use resources::*;
 pub use systems::*;
 
@@ -28,7 +26,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PlayerEscapedEvent>()
+        app
             .add_stage_after(
                 TileUpdateStage,
                 PlayerInputStage,

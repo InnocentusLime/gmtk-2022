@@ -1,3 +1,4 @@
+use super::events::TileEvent;
 use super::{
     ActivatableAnimating, ActivationCondition, GraphicsTilemapTag,
     LogicTileQuery, LogicTilemapTag, TileKind, TileState,
@@ -5,12 +6,11 @@ use super::{
 use crate::moveable::{
     MoveableBundle, MoveableQuery, Side as MoveableSide, TileInteractionEvent,
 };
-use crate::player::{PlayerEscapedEvent, PlayerTag, PlayerWinnerTag};
+use crate::player::{PlayerTag, PlayerWinnerTag};
 use anyhow::anyhow;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage};
 use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
-use std::ops::Deref;
 use std::time::Duration;
 
 pub fn tile_animation_setup(
@@ -132,7 +132,7 @@ pub fn tile_state_switching(
 
 pub fn special_tile_handler(
     mut interactions: EventReader<TileInteractionEvent>,
-    mut escape_event: EventWriter<PlayerEscapedEvent>,
+    mut tile_events: EventWriter<TileEvent>,
     mut tile_query: Query<LogicTileQuery>,
     mut move_query: Query<(MoveableQuery, Option<&PlayerTag>)>,
     mut commands: Commands,
@@ -152,8 +152,10 @@ pub fn special_tile_handler(
 
             match &tile.kind {
                 // Button logic
-                TileKind::OnceButton if is_player && !tile.is_active() =>
-                    *tile.state = TileState::Ready(true),
+                TileKind::OnceButton if is_player && !tile.is_active() => {
+                    *tile.state = TileState::Ready(true);
+                    tile_events.send(TileEvent::ButtonPressed { info_entity: e.tile_id });
+                },
                 // Conveyor logic
                 TileKind::Conveyor if tile.is_active() => {
                     moveable.slide(tile.direction(), Duration::from_millis(500));
@@ -169,7 +171,8 @@ pub fn special_tile_handler(
                         .entity(moveable_id)
                         .remove::<MoveableBundle>()
                         .insert(PlayerWinnerTag::new());
-                    escape_event.send(PlayerEscapedEvent);
+                    // escape_event.send(PlayerEscapedEvent);
+                    tile_events.send(TileEvent::ExitReached);
                 }
                 _ => (),
             };

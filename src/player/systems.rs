@@ -3,14 +3,19 @@ use cube_rot::MoveDirection;
 use std::time::Duration;
 use crate::GameplayCamera;
 use crate::moveable::{ MoveableQuery, MoveableQueryItem };
-use super::{ PlayerTag, PlayerWinnerTag, PlayerEscapedEvent, BasePlayerAssets };
+use crate::tile::TileEvent;
+use super::{ PlayerTag, PlayerWinnerTag, BasePlayerAssets };
 
 pub fn player_win_sound(
     audio: Res<Audio>,
     assets: Res<BasePlayerAssets>,
-    mut events: EventReader<PlayerEscapedEvent>,
+    mut tile_events: EventReader<TileEvent>,
 ) {
-    for _ in events.iter() {
+    if tile_events.iter().filter_map(|x| match x {
+            TileEvent::ExitReached => Some(()),
+            _ => None,
+        }).next().is_some()
+    {
         audio.play(assets.complete_sound.clone());
     }
 }
