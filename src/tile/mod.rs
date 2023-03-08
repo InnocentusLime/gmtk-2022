@@ -28,7 +28,6 @@ impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         if app.world.get_resource::<InspectableRegistry>().is_some() {
             app
-                //.register_inspectable::<Active>()
                 .register_inspectable::<TileState>()
                 .register_inspectable::<TileKind>()
                 .register_inspectable::<ActivatableAnimating>()
@@ -59,10 +58,6 @@ impl Plugin for TilePlugin {
                             .label(TileSystem::TileUpdate)
                             .after(TileSystem::StateSwitch)
                     ),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                tile_animation_setup
             );
     }
 }

@@ -94,13 +94,13 @@ impl ActivatableAnimating<TileAnimation> {
                 on_anim: acquire_asset(on_anim, "on_anim"),
             },
             ActivatableAnimating::Switch {
-                on_transition,
-                off_transition,
+                on_transit: on_transition,
+                off_transit: off_transition,
                 on_anim,
                 off_anim,
             } => ActivatableAnimating::Switch {
-                on_transition: acquire_asset(on_transition, "on_transition"),
-                off_transition: acquire_asset(off_transition, "off_transition"),
+                on_transit: acquire_asset(on_transition, "on_transition"),
+                off_transit: acquire_asset(off_transition, "off_transition"),
                 on_anim: acquire_asset(on_anim, "off_anim"),
                 off_anim: acquire_asset(off_anim, "on_anim"),
             }

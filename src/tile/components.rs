@@ -43,8 +43,8 @@ where
     /// playing a special transition animation when the state is about
     /// to switch.
     Switch {
-        on_transition: Anim,
-        off_transition: Anim,
+        on_transit: Anim,
+        off_transit: Anim,
         on_anim: Anim,
         off_anim: Anim,
     },
@@ -69,7 +69,7 @@ pub enum TileState {
 
 impl Default for TileState {
     fn default() -> Self {
-        TileState::Ready(true)
+        TileState::Ready(false)
     }
 }
 
@@ -160,7 +160,7 @@ impl<'a> LogicTileQueryItem<'a> {
     }
 
     /// Tells whether the tile is clock-wise or counter-clock-wise oriented.
-    pub fn clock_wise(&self) -> bool {
+    pub fn is_clock_wise(&self) -> bool {
         !(self.flip.x ^ self.flip.y ^ self.flip.d)
     }
 
