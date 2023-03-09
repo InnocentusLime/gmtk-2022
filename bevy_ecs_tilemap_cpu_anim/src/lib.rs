@@ -69,6 +69,7 @@ impl CPUTileAnimation {
 pub struct CPUAnimated {
     pub paused: bool,
     pub looping: bool,
+    is_done: bool,
     animation: Handle<CPUTileAnimation>,
     current_frame: usize,
     passed_time: Duration,
@@ -83,8 +84,9 @@ impl CPUAnimated {
         CPUAnimated {
             paused,
             looping,
+            is_done: false,
             animation,
-            passed_time: Duration::new(0, 0),
+            passed_time: Duration::ZERO,
             current_frame: 0,
         }
     }
@@ -92,17 +94,20 @@ impl CPUAnimated {
     fn update(&mut self, dt: Duration, animation: &CPUTileAnimation) -> bool {
         if self.paused { return false; }
 
+        self.is_done = false;
         self.passed_time += dt;
 
         let old_frame = self.current_frame;
         while self.passed_time > animation.0[self.current_frame].duration {
             if self.current_frame == animation.0.len() - 1 && !self.looping {
                 self.passed_time = Duration::new(0, 0);
+                self.is_done = true;
                 break;
             }
             self.passed_time -= animation.0[self.current_frame].duration;
             self.current_frame = (self.current_frame + 1) % animation.0.len();
         }
+
         old_frame == self.current_frame
     }
 
@@ -113,23 +118,29 @@ impl CPUAnimated {
         paused: bool,
         looping: bool,
     ) {
-        self.paused = paused;
-        self.looping = looping;
-        self.animation = animation;
-        self.current_frame = 0;
-        self.passed_time = Duration::new(0, 0);
+        *self = Self::new(
+            animation,
+            looping,
+            paused,
+        );
+    }
+
+    pub fn animation(&self) -> &Handle<CPUTileAnimation> {
+        &self.animation
+    }
+
+    pub fn is_done(&self) -> bool {
+        self.is_done
     }
 }
 
 impl Default for CPUAnimated {
     fn default() -> Self {
-        CPUAnimated {
-            paused: false,
-            looping: false,
-            animation: default(),
-            current_frame: 0,
-            passed_time: Duration::ZERO,
-        }
+        CPUAnimated::new(
+            default(),
+            false,
+            false
+        )
     }
 }
 

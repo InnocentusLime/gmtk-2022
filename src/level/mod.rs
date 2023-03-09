@@ -67,7 +67,7 @@ impl TileAnimation {
     }
 }
 
-impl ActivatableAnimating<TileAnimation> {
+impl GraphicsAnimating<TileAnimation> {
     fn decode(
         self,
         tileset: usize,
@@ -75,7 +75,7 @@ impl ActivatableAnimating<TileAnimation> {
         assets: &mut Assets<CPUTileAnimation>,
         map_path: Option<&Path>,
         indexing: &TilesetIndexing,
-    ) -> ActivatableAnimating {
+    ) -> GraphicsAnimating {
         let mut acquire_asset = |anim, tag: &'static str| {
             let asset = TileAnimation::decode(anim, indexing);
             debug!("anim{tileset:}_{tile:}_{tag:}\n{asset:?}");
@@ -88,22 +88,11 @@ impl ActivatableAnimating<TileAnimation> {
             }
         };
 
-        match self {
-            ActivatableAnimating::None => ActivatableAnimating::None,
-            ActivatableAnimating::Pause { on_anim } => ActivatableAnimating::Pause {
-                on_anim: acquire_asset(on_anim, "on_anim"),
-            },
-            ActivatableAnimating::Switch {
-                on_transit: on_transition,
-                off_transit: off_transition,
-                on_anim,
-                off_anim,
-            } => ActivatableAnimating::Switch {
-                on_transit: acquire_asset(on_transition, "on_transition"),
-                off_transit: acquire_asset(off_transition, "off_transition"),
-                on_anim: acquire_asset(on_anim, "off_anim"),
-                off_anim: acquire_asset(off_anim, "on_anim"),
-            }
+        GraphicsAnimating {
+            on_transit: acquire_asset(self.on_transit, "on_transition"),
+            off_transit: acquire_asset(self.off_transit, "off_transition"),
+            on_anim: acquire_asset(self.on_anim, "off_anim"),
+            off_anim: acquire_asset(self.off_anim, "on_anim"),
         }
     }
 }

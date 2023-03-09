@@ -10,7 +10,7 @@ use iyes_loopless::prelude::*;
 use crate::level::tile_pos_to_world_pos;
 use crate::moveable::{MoveableBundle, MoveableTilemapTag, self};
 use crate::states::GameState;
-use crate::tile::{TileKind, TileUpdateStage};
+use crate::tile::{LogicKind, TileUpdateStage};
 
 pub use components::*;
 pub use resources::*;
@@ -53,10 +53,10 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-fn find_start_pos(start_q: Query<(&TilePos, &TileKind)>) -> Option<TilePos> {
+fn find_start_pos(start_q: Query<(&TilePos, &LogicKind)>) -> Option<TilePos> {
     if start_q
         .iter()
-        .filter(|(_, kind)| matches!(kind, TileKind::Start))
+        .filter(|(_, kind)| matches!(kind, LogicKind::Start))
         .count()
         > 1
     {
@@ -65,13 +65,13 @@ fn find_start_pos(start_q: Query<(&TilePos, &TileKind)>) -> Option<TilePos> {
 
     start_q
         .iter()
-        .find(|(_, kind)| matches!(kind, TileKind::Start))
+        .find(|(_, kind)| matches!(kind, LogicKind::Start))
         .map(|(pos, _)| *pos)
 }
 
 pub fn spawn_player(
     mut commands: Commands,
-    start_q: Query<(&TilePos, &TileKind)>,
+    start_q: Query<(&TilePos, &LogicKind)>,
     map_q: Query<(&Transform, &TilemapGridSize), With<MoveableTilemapTag>>,
     generated_assets: Res<GeneratedPlayerAssets>,
 ) {
