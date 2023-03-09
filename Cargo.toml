@@ -54,6 +54,6 @@ serde = "1"
 anyhow = "1"
 bevy = "0.9"
 bevy_ecs_tilemap = "0.9"
-bevy-inspector-egui = "0.15"
+bevy-inspector-egui = "0.17"
 tiled = { version = "0.10", default-features = false }
 bevy_asset_loader = { version = "0.14", features = ["standard_dynamic_assets", "stageless"] }

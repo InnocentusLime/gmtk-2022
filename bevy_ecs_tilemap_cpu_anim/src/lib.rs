@@ -1,7 +1,6 @@
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
+use bevy::reflect::{TypeUuid, Reflect };
 use bevy_ecs_tilemap::prelude::*;
-use bevy_inspector_egui::{Inspectable, RegisterInspectable, InspectableRegistry};
 
 use std::time::Duration;
 
@@ -13,12 +12,9 @@ pub struct CPUTileAnimationPlugin;
 
 impl Plugin for CPUTileAnimationPlugin {
     fn build(&self, app: &mut App) {
-        if app.world.get_resource::<InspectableRegistry>().is_some() {
-            app
-                .register_inspectable::<CPUTileAnimation>();
-        }
-
         app
+            .register_type::<Frame>()
+            .register_type::<CPUAnimated>()
             .add_asset::<CPUTileAnimation>()
             .add_stage_before(
                 CoreStage::PostUpdate,
@@ -30,20 +26,18 @@ impl Plugin for CPUTileAnimationPlugin {
 }
 
 /// An animation frame.
-#[derive(Default, Clone, Copy, Debug, Inspectable)]
+#[derive(Default, Clone, Copy, Debug, Reflect, FromReflect)]
 pub struct Frame {
     /// Texture ID (the bevy_ecs_tilemap one)
-    #[inspectable(read_only)]
     pub texture_id: u32,
     /// Duration of the frame
-    #[inspectable(read_only)]
     pub duration: Duration,
 }
 
 /// The animation asset.
-#[derive(Default, Clone, Debug, TypeUuid, Inspectable)]
+#[derive(Default, Clone, Debug, TypeUuid, Reflect, FromReflect)]
 #[uuid = "deabdd26-c64a-4edb-85d6-f167c53a840a"]
-pub struct CPUTileAnimation(#[inspectable(read_only)] Vec<Frame>);
+pub struct CPUTileAnimation(Vec<Frame>);
 
 impl CPUTileAnimation {
     pub fn new(it: impl IntoIterator<Item = Frame>) -> Self {
@@ -65,7 +59,7 @@ impl CPUTileAnimation {
 /// The default value of this component is carefully crafted to
 /// not update the texture of the tile it's attached to, while also
 /// not referencing any valid assets.
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, Reflect, FromReflect)]
 pub struct CPUAnimated {
     pub paused: bool,
     pub looping: bool,

@@ -12,7 +12,7 @@ use states::setup_states;
 use bevy::{prelude::*};
 use bevy::window::WindowDescriptor;
 use bevy_pkv::PkvStore;
-use bevy_inspector_egui::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_common_assets::json::JsonAssetPlugin;
 
 use moveable::MoveablePlugin;
@@ -62,7 +62,7 @@ pub fn app(params: LaunchParams) -> App {
 
     // Init or not init inspector (DO IT BEFORE THE GAME PLUGINS)
     if params.inspector {
-        app.add_plugin(WorldInspectorPlugin::new());
+        app.add_plugin(WorldInspectorPlugin);
     }
 
     // Game plugins

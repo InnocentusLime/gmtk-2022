@@ -1,8 +1,6 @@
 use bevy::{ecs::query::WorldQuery, prelude::*};
 use bevy_ecs_tilemap::tiles::TileFlip;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimation;
-use bevy_inspector_egui::Inspectable;
-use bevy_tiled::deserailize_from_json_str;
 use cube_rot::MoveDirection;
 use serde::Deserialize;
 
@@ -18,7 +16,7 @@ impl ButtonCondition {
 }
 
 /// Describes a trigger that will activate based off player's side
-#[derive(Clone, Copy, Debug, Component, Deserialize, Inspectable)]
+#[derive(Clone, Copy, Debug, Component, Deserialize, Reflect)]
 pub enum SideCondition {
     /// The tile is expecting an odd number to be player's uppser side
     OnOddSide,
@@ -36,19 +34,16 @@ impl SideCondition {
 }
 
 /// Describes how the tile should be animated, based off its state.
-#[derive(Inspectable, Debug, Default, Clone, Component, Deserialize)]
-pub struct GraphicsAnimating<Anim = Handle<CPUTileAnimation>>
-where
-    Anim: Default,
-{
-    pub on_transit: Anim,
-    pub off_transit: Anim,
-    pub on_anim: Anim,
-    pub off_anim: Anim,
+#[derive(Reflect, Debug, Default, Clone, Component)]
+pub struct GraphicsAnimating {
+    pub on_transit: Handle<CPUTileAnimation>,
+    pub off_transit: Handle<CPUTileAnimation>,
+    pub on_anim: Handle<CPUTileAnimation>,
+    pub off_anim: Handle<CPUTileAnimation>,
 }
 
 /// Tile state. Determines what the tile would do when someone interacts with it.
-#[derive(Clone, Copy, Default, Debug, Component, Inspectable, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Debug, Component, Reflect, PartialEq, Eq)]
 pub struct LogicState(pub bool);
 
 /// The tile kind. This data type is mapped directly to the ones you can see in the
@@ -62,7 +57,7 @@ pub struct LogicState(pub bool);
     Default,
     Debug,
     Component,
-    Inspectable,
+    Reflect,
     PartialEq,
     Eq,
     Hash,
@@ -106,16 +101,9 @@ pub struct TriggerTileBundle {
 }
 
 /// A bundle to quickly construct a graphics tile.
-#[derive(Clone, Bundle, Deserialize)]
-pub struct GraphicsTileBundle<Anim = Handle<CPUTileAnimation>>
-where
-    Anim: 'static + Send + Sync + Default,
-{
-    #[serde(
-        bound = "Anim: Deserialize<'de>",
-        deserialize_with = "deserailize_from_json_str"
-    )]
-    pub animating: GraphicsAnimating<Anim>,
+#[derive(Clone, Bundle)]
+pub struct GraphicsTileBundle {
+    pub animating: GraphicsAnimating,
 }
 
 /// A custom query type for exposing an easier to use tile API.
