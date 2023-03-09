@@ -15,7 +15,8 @@ pub fn tile_animation_switch(
     mut graphics_q: Query<(Option<&mut CPUAnimated>, &ActivatableAnimating)>,
 ) {
     logic_q.for_each(|(state, tile_pos)| {
-        let mut try_switch_animation = |entity| match graphics_q.get_mut(entity) {
+        // Redefine the function locally for easier usage
+        let mut switch_animation = |entity| match graphics_q.get_mut(entity) {
             Ok((
                 animated,
                 animating,
@@ -30,7 +31,7 @@ pub fn tile_animation_switch(
 
         graphics_map_q.iter()
             .filter_map(|storage| storage.get(tile_pos))
-            .for_each(&mut try_switch_animation)
+            .for_each(&mut switch_animation)
     });
 }
 
@@ -100,7 +101,9 @@ pub fn tile_state_switching(
         (Ok(x), Ok(y)) => (x, y),
         _ => return,
     };
-    let mut try_update_tile_state = |pos, cond, entity| {
+
+    // Redefine the function locally for easier usage
+    let mut update_tile_state = |pos, cond, entity| {
         match logic_tile_q.get_mut(entity) {
             Ok(mut tile_state) => update_tile_state(player_side, cond, &mut tile_state),
             Err(e) => error!("Stale logic tile for {pos:?}: {e}"),
@@ -111,7 +114,7 @@ pub fn tile_state_switching(
         .filter_map(|(cond, pos)|
             logic_tilemap.get(pos).map(|entity| (pos, cond, entity))
         )
-        .for_each(|(pos, cond, entity)| try_update_tile_state(pos, cond, entity))
+        .for_each(|(pos, cond, entity)| update_tile_state(pos, cond, entity))
 }
 
 fn update_tile_state(
