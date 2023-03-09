@@ -96,17 +96,16 @@ pub fn handle_button_triggers(
         }
     };
 
-    for ev in tile_events.iter() {
-        let button_id = if let TileEvent::ButtonPressed { button_id } = ev {
-            button_id
-        } else {
-            continue
-        };
-
-        trigger_q.iter()
-            .filter_map(|(cond, pos)| logic_tilemap.get(pos).map(|entity| (pos, cond, entity)))
-            .for_each(|(pos, cond, entity)| apply_button_trigger(pos, cond, *button_id, entity))
-    }
+    tile_events.iter()
+        .filter_map(|ev| match ev {
+            TileEvent::ButtonPressed { button_id } => Some(*button_id),
+            _ => None,
+        })
+        .for_each(|button_id| {
+            trigger_q.iter()
+                .filter_map(|(cond, pos)| logic_tilemap.get(pos).map(|entity| (pos, cond, entity)))
+                .for_each(|(pos, cond, entity)| apply_button_trigger(pos, cond, button_id, entity))
+        })
 }
 
 fn apply_button_trigger(
