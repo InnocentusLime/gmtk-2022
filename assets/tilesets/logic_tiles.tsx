@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.8" tiledversion="1.9.2" name="logic_tiles" tilewidth="32" tileheight="32" tilecount="6" columns="0">
+<tileset version="1.8" tiledversion="1.9.2" name="logic_tiles" tilewidth="32" tileheight="32" tilecount="7" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="0" type="LogicTileBundle">
   <properties>
@@ -36,5 +36,11 @@
    <property name="ty" propertytype="LevelTileType" value="Start"/>
   </properties>
   <image width="32" height="32" source="../tiles/logic_start.png"/>
+ </tile>
+ <tile id="6" type="LogicTileBundle">
+  <properties>
+   <property name="ty" propertytype="LevelTileType" value="OnceButton"/>
+  </properties>
+  <image width="32" height="32" source="../tiles/logic_once_button.png"/>
  </tile>
 </tileset>

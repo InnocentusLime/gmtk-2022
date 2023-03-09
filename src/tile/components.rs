@@ -6,70 +6,54 @@ use bevy_tiled::deserailize_from_json_str;
 use cube_rot::MoveDirection;
 use serde::Deserialize;
 
-// TODO this either needs a different named or should have the docs adjusted
-/// Describes when a tile should be active, depending on what
-/// number in on player's upper side. To actually have any effect,
-/// the tile needs to have [Active] attached.
-#[derive(Clone, Copy, Debug, Component, Deserialize, Inspectable)]
-pub enum ActivationCondition {
-    /// The tile is expecting an odd number
-    Odd,
-    /// The tile is expecting an even number
-    Even,
+/// Describes a trigger that will activate when a button activates
+#[derive(Clone, Copy, Debug, Component, Deserialize)]
+#[repr(transparent)]
+pub struct ButtonCondition(pub u8);
+
+impl ButtonCondition {
+    pub fn is_active(self, button_id: u8) -> bool {
+        self.0 == button_id
+    }
 }
 
-impl ActivationCondition {
-    /// Tell whether the tile is active or not, assuming player
-    /// has `upper_side` number on their upper side.
+/// Describes a trigger that will activate based off player's side
+#[derive(Clone, Copy, Debug, Component, Deserialize, Inspectable)]
+pub enum SideCondition {
+    /// The tile is expecting an odd number to be player's uppser side
+    OnOddSide,
+    /// The tile is expecting an even number to be player's upper side
+    OnEvenSide,
+}
+
+impl SideCondition {
     pub fn is_active(self, upper_side: u8) -> bool {
         match self {
-            ActivationCondition::Odd => upper_side % 2 == 1,
-            ActivationCondition::Even => upper_side % 2 == 0,
+            SideCondition::OnOddSide => upper_side % 2 == 1,
+            SideCondition::OnEvenSide => upper_side % 2 == 0,
         }
     }
 }
 
 /// Describes how the tile should be animated, based off its state.
 #[derive(Inspectable, Debug, Default, Clone, Component, Deserialize)]
-#[serde(untagged)]
-pub enum ActivatableAnimating<Anim = Handle<CPUTileAnimation>> 
+pub struct GraphicsAnimating<Anim = Handle<CPUTileAnimation>>
 where
     Anim: Default,
 {
-    /// The tile has no animation by activation
-    #[default]
-    None,
-    /// The tile will switch between two different animatons, also
-    /// playing a special transition animation when the state is about
-    /// to switch.
-    Switch {
-        on_transition: Anim,
-        off_transition: Anim,
-        on_anim: Anim,
-        off_anim: Anim,
-    },
-    /// The tile will simply pause its animation when it gets deactivated
-    /// and will unpause it when it gets activated.
-    Pause { on_anim: Anim },
+    pub on_transit: Anim,
+    pub off_transit: Anim,
+    pub on_anim: Anim,
+    pub off_anim: Anim,
 }
 
 /// Tile state. Determines what the tile would do when someone interacts with it.
 #[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq)]
-pub enum TileState {
-    /// The tile has a ready state. The bool field tells whether the tile is turned
-    /// on or not.
-    Ready(bool),
-    /// The tile is in process of changing its state. The state will then be changed
-    /// to `Ready(to)`
-    Changing {
-        /// The state the tile is transitioning to.
-        to: bool,
-    },
-}
+pub struct LogicState(pub bool);
 
-impl Default for TileState {
+impl Default for LogicState {
     fn default() -> Self {
-        TileState::Ready(true)
+        LogicState(false)
     }
 }
 
@@ -90,8 +74,11 @@ impl Default for TileState {
     Hash,
     Deserialize,
 )]
-#[repr(u8)]
-pub enum TileKind {
+#[repr(u16)]
+pub enum LogicKind {
+    /// Once button tiles are activated when interacted with by a player and stay activated
+    /// for the rest of the level.
+    OnceButton(u8),
     /// Conveyor tiles push any moveable into the direction they are facing towards
     /// when they are active.
     Conveyor,
@@ -113,15 +100,15 @@ pub enum TileKind {
 /// A bundle to quickly construct a logical tile.
 #[derive(Clone, Default, Bundle, Deserialize)]
 pub struct LogicTileBundle {
-    pub ty: TileKind,
+    pub ty: LogicKind,
     #[serde(skip)]
-    pub state: TileState,
+    pub state: LogicState,
 }
 
 /// A bundle to quickly construct a trigger tile.
 #[derive(Clone, Bundle, Deserialize)]
 pub struct TriggerTileBundle {
-    pub active: ActivationCondition,
+    pub active: SideCondition,
 }
 
 /// A bundle to quickly construct a graphics tile.
@@ -134,15 +121,15 @@ where
         bound = "Anim: Deserialize<'de>",
         deserialize_with = "deserailize_from_json_str"
     )]
-    pub animating: ActivatableAnimating<Anim>,
+    pub animating: GraphicsAnimating<Anim>,
 }
 
 /// A custom query type for exposing an easier to use tile API.
 #[derive(WorldQuery, Debug)]
 #[world_query(mutable)]
 pub struct LogicTileQuery {
-    pub(super) kind: &'static TileKind,
-    pub(super) state: &'static mut TileState,
+    pub(super) kind: &'static LogicKind,
+    pub(super) state: &'static mut LogicState,
     pub(super) flip: &'static TileFlip,
 }
 
@@ -157,13 +144,13 @@ impl<'a> LogicTileQueryItem<'a> {
     }
 
     /// Tells whether the tile is clock-wise or counter-clock-wise oriented.
-    pub fn clock_wise(&self) -> bool {
+    pub fn is_clock_wise(&self) -> bool {
         !(self.flip.x ^ self.flip.y ^ self.flip.d)
     }
 
     /// Tells whether the tile is active or not.
     pub fn is_active(&self) -> bool {
-        matches!(&*self.state, TileState::Ready(true))
+        self.state.0
     }
 }
 

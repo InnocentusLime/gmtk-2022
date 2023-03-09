@@ -7,7 +7,8 @@ use super::GameState;
 use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::player::{ PlayerTag, PlayerEscapedEvent };
+use crate::player::{ PlayerTag };
+use crate::tile::TileEvent;
 use crate::{GameplayCamera, LaunchParams};
 
 #[derive(Resource)]
@@ -33,9 +34,13 @@ fn death_system_testing_level(mut writer: EventWriter<bevy::app::AppExit>, playe
 
 fn beat_system(
     mut commands: Commands,
-    mut escape_event: EventReader<PlayerEscapedEvent>,
+    mut tile_events: EventReader<TileEvent>,
 ) {
-    for _ in escape_event.iter() {
+    if tile_events.iter().filter_map(|x| match x {
+            TileEvent::ExitReached => Some(()),
+            _ => None,
+        }).next().is_some()
+    {
         info!("You win");
         commands.insert_resource(LevelCompleteCountdown(Timer::from_seconds(2.0f32, TimerMode::Once)));
     }
