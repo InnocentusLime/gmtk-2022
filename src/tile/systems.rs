@@ -111,9 +111,7 @@ pub fn tile_state_switching(
     };
 
     trigger_q.iter()
-        .filter_map(|(cond, pos)|
-            logic_tilemap.get(pos).map(|entity| (pos, cond, entity))
-        )
+        .filter_map(|(cond, pos)| logic_tilemap.get(pos).map(|entity| (pos, cond, entity)))
         .for_each(|(pos, cond, entity)| update_tile_state(pos, cond, entity))
 }
 
@@ -150,12 +148,8 @@ pub fn special_tile_handler(
     mut commands: Commands,
 ) {
     let mut try_handle_interaction = |interaction: &TileInteractionEvent| {
-        let (moveable, player_tag) = move_query.get_mut(
-            interaction.moveable_id
-        ).context("Fetching moveable")?;
-        let tile = tile_query.get_mut(
-            interaction.tile_id
-        ).context("Fetching tile")?;
+        let (moveable, player_tag) = move_query.get_mut(interaction.moveable_id).context("Fetching moveable")?;
+        let tile = tile_query.get_mut(interaction.tile_id).context("Fetching tile")?;
 
         handle_interaction(
             &mut commands,
