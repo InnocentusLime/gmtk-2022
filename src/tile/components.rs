@@ -48,14 +48,8 @@ where
 }
 
 /// Tile state. Determines what the tile would do when someone interacts with it.
-#[derive(Clone, Copy, Debug, Component, Inspectable, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Debug, Component, Inspectable, PartialEq, Eq)]
 pub struct LogicState(pub bool);
-
-impl Default for LogicState {
-    fn default() -> Self {
-        LogicState(false)
-    }
-}
 
 /// The tile kind. This data type is mapped directly to the ones you can see in the
 /// level editor.
