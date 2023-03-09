@@ -182,14 +182,14 @@ fn handle_interaction(
     tile_events: &mut EventWriter<TileEvent>,
     mut tile: LogicTileQueryItem,
     mut moveable: MoveableQueryItem,
-    moveable_is_player: bool,
+    is_moveable_player: bool,
     moveable_id: Entity,
     tile_id: Entity,
 ) {
     use std::time::Duration;
 
     match &tile.kind {
-        TileKind::OnceButton => if moveable_is_player && !tile.is_active() {
+        TileKind::OnceButton => if is_moveable_player && !tile.is_active() {
             *tile.state = TileState::Ready(true);
             tile_events.send(TileEvent::ButtonPressed { tile_id });
         },
@@ -202,7 +202,7 @@ fn handle_interaction(
         TileKind::Spinner => if tile.is_active() {
             moveable.rotate(tile.is_clock_wise(), Duration::from_millis(500));
         },
-        TileKind::Exit => if moveable_is_player && tile.is_active() {
+        TileKind::Exit => if is_moveable_player && tile.is_active() {
             commands
                 .entity(moveable_id)
                 .remove::<MoveableBundle>()
