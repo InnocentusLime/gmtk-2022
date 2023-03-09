@@ -40,7 +40,7 @@ pub fn tile_state_animation_switch(
             Ok((
                 animated,
                 animating,
-            )) => switch_animation_opt(
+            )) => switch_animation(
                 commands.entity(entity),
                 state,
                 animating,
@@ -55,38 +55,27 @@ pub fn tile_state_animation_switch(
     });
 }
 
-fn switch_animation_opt(
+fn switch_animation(
     mut commands: EntityCommands,
-    state: &LogicState,
+    LogicState(logic_state): &LogicState,
     animating: &GraphicsAnimating,
     mut animated: Option<Mut<CPUAnimated>>,
 ) {
     // Animated that we will use (and later insert) if the entity doesn't have one already
     let mut new_animated = CPUAnimated::new(default(), false, false);
-
-    switch_animation(
-        state,
-        animating,
-        animated.as_deref_mut().unwrap_or(&mut new_animated)
-    );
-
-    if animated.is_none() {
-        commands.insert(new_animated);
-    }
-}
-
-fn switch_animation(
-    LogicState(logic_state): &LogicState,
-    animating: &GraphicsAnimating,
-    animated: &mut CPUAnimated,
-) {
     let animation = if *logic_state {
         animating.on_transit.clone()
     } else {
         animating.off_transit.clone()
     };
 
-    animated.set_animation(animation, false, false)
+    animated.as_deref_mut()
+        .unwrap_or(&mut new_animated)
+        .set_animation(animation, false, false);
+
+    if animated.is_none() {
+        commands.insert(new_animated);
+    }
 }
 
 pub fn handle_button_triggers(
