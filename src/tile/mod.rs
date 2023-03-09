@@ -4,7 +4,6 @@ mod events;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimationPlugin;
-use bevy_inspector_egui::{InspectableRegistry, RegisterInspectable};
 
 pub use components::*;
 pub use events::*;
@@ -27,16 +26,13 @@ enum TileSystem {
 
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
-        if app.world.get_resource::<InspectableRegistry>().is_some() {
-            app
-                .register_inspectable::<LogicState>()
-                .register_inspectable::<LogicKind>()
-                .register_inspectable::<GraphicsAnimating>()
-                .register_inspectable::<SideCondition>()
-                .add_event::<TileEvent>();
-        }
-
-        app.add_plugin(CPUTileAnimationPlugin)
+        app
+            .add_plugin(CPUTileAnimationPlugin)
+            .register_type::<LogicState>()
+            .register_type::<LogicKind>()
+            .register_type::<GraphicsAnimating>()
+            .register_type::<SideCondition>()
+            .add_event::<TileEvent>()
             .add_stage_after(
                 MoveableUpdateStage,
                 TileUpdateStage,
