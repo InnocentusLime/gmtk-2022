@@ -90,11 +90,11 @@ impl Default for TileState {
     Hash,
     Deserialize,
 )]
-#[repr(u8)]
+#[repr(u16)]
 pub enum TileKind {
     /// Once button tiles are activated when interacted with by a player and stay activated
     /// for the rest of the level.
-    OnceButton,
+    OnceButton(u8),
     /// Conveyor tiles push any moveable into the direction they are facing towards
     /// when they are active.
     Conveyor,

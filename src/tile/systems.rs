@@ -158,7 +158,6 @@ pub fn special_tile_handler(
             moveable,
             player_tag.is_some(),
             interaction.moveable_id,
-            interaction.tile_id,
         );
 
         anyhow::Ok(())
@@ -178,14 +177,13 @@ fn handle_interaction(
     mut moveable: MoveableQueryItem,
     is_moveable_player: bool,
     moveable_id: Entity,
-    tile_id: Entity,
 ) {
     use std::time::Duration;
 
     match &tile.kind {
-        TileKind::OnceButton => if is_moveable_player && !tile.is_active() {
+        TileKind::OnceButton(button_id) => if is_moveable_player && !tile.is_active() {
             *tile.state = TileState::Ready(true);
-            tile_events.send(TileEvent::ButtonPressed { tile_id });
+            tile_events.send(TileEvent::ButtonPressed { button_id: *button_id });
         },
         TileKind::Conveyor => if tile.is_active() {
             moveable.slide(tile.direction(), Duration::from_millis(500));
