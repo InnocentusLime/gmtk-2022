@@ -3,9 +3,8 @@ use bevy_asset_loader::loading_state::*;
 use iyes_loopless::prelude::*;
 
 use super::{ GameState, jump_to_state };
-use bevy_tiled::tileset_indexing;
 use crate::LaunchParams;
-use crate::level::{ BaseLevelAssets, spawn_level, get_level_map };
+use crate::level::{ spawn_level };
 use crate::player::{ GeneratedPlayerAssets, BasePlayerAssets, spawn_player };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -22,7 +21,6 @@ pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     app
         .add_loading_state(LoadingState::new(LoadingLevel::BaseAssets)
             .with_collection::<BasePlayerAssets>()
-            .with_collection::<BaseLevelAssets>()
             .init_resource::<GeneratedPlayerAssets>()
             .continue_to_state(LoadingLevel::LevelEntity)
         );
@@ -32,7 +30,7 @@ pub fn setup_states(app: &mut App, _params: &LaunchParams) {
         LoadingLevel::LevelEntity,
         SystemSet::new()
             .with_system(
-                get_level_map.pipe(tileset_indexing).pipe(spawn_level)
+                spawn_level
             )
             .with_system(jump_to_state(LoadingLevel::PlayerEntity))
     );

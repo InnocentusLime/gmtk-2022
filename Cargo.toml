@@ -8,7 +8,6 @@ members = [
     "launchers/wasm",
     "launchers/native",
     "bevy_ecs_tilemap_cpu_anim",
-    "bevy_tiled",
     "cube_rot",
 ]
 
@@ -34,7 +33,6 @@ bevy_framepace = "0.11"
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 # Internal deps
-bevy_tiled = { path = "bevy_tiled" }
 bevy_ecs_tilemap_cpu_anim = { path = "bevy_ecs_tilemap_cpu_anim" }
 cube_rot = { path = "cube_rot" }
 

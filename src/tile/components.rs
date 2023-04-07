@@ -86,26 +86,6 @@ pub enum LogicKind {
     Floor,
 }
 
-/// A bundle to quickly construct a logical tile.
-#[derive(Clone, Default, Bundle, Deserialize)]
-pub struct LogicTileBundle {
-    pub ty: LogicKind,
-    #[serde(skip)]
-    pub state: LogicState,
-}
-
-/// A bundle to quickly construct a trigger tile.
-#[derive(Clone, Bundle, Deserialize)]
-pub struct TriggerTileBundle {
-    pub active: SideCondition,
-}
-
-/// A bundle to quickly construct a graphics tile.
-#[derive(Clone, Bundle)]
-pub struct GraphicsTileBundle {
-    pub animating: GraphicsAnimating,
-}
-
 /// A custom query type for exposing an easier to use tile API.
 #[derive(WorldQuery, Debug)]
 #[world_query(mutable)]
@@ -135,12 +115,3 @@ impl<'a> LogicTileQueryItem<'a> {
         self.state.0
     }
 }
-
-#[derive(Component, Clone, Copy, Default)]
-pub struct GraphicsTilemapTag;
-
-#[derive(Component, Clone, Copy, Default)]
-pub struct LogicTilemapTag;
-
-#[derive(Component, Clone, Copy, Default)]
-pub struct TriggerTilemapTag;
