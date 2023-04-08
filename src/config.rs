@@ -1,6 +1,6 @@
 pub struct LaunchParams<'a> {
     pub logging: bool,
-    pub inspector: bool,
+    pub editor: bool,
     pub level_file: Option<&'a str>,
 }
 
@@ -9,7 +9,7 @@ impl Default for LaunchParams<'static> {
     fn default() -> Self {
         LaunchParams {
             logging: cfg!(debug_assertions),
-            inspector: cfg!(debug_assertions),
+            editor: cfg!(debug_assertions),
             level_file: None,
         }
     }

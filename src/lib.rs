@@ -8,11 +8,11 @@ mod level_info;
 mod config;
 
 use bevy::render::camera::{WindowOrigin, ScalingMode};
+use bevy_editor_pls::EditorPlugin;
 use states::setup_states;
 use bevy::{prelude::*};
 use bevy::window::WindowDescriptor;
 use bevy_pkv::PkvStore;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_common_assets::json::JsonAssetPlugin;
 
 use moveable::MoveablePlugin;
@@ -61,8 +61,8 @@ pub fn app(params: LaunchParams) -> App {
         .add_plugin(FramepacePlugin);
 
     // Init or not init inspector (DO IT BEFORE THE GAME PLUGINS)
-    if params.inspector {
-        app.add_plugin(WorldInspectorPlugin);
+    if params.editor {
+        app.add_plugin(EditorPlugin);
     }
 
     // Game plugins

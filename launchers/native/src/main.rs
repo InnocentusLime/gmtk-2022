@@ -59,7 +59,6 @@ enum Commands {
         )]
         debugging: bool,
     },
-    Schedule,
 }
 
 fn main() {
@@ -70,27 +69,20 @@ fn main() {
         None => game_lib::app(default())
             .add_startup_system(set_window_icon)
             .run(),
-        Some(Commands::Run { 
-            level_file, 
-            logging, 
-            inspector, 
-            debugging 
+        Some(Commands::Run {
+            level_file,
+            logging,
+            inspector,
+            debugging
         }) => {
             let params = LaunchParams {
                 logging: logging || debugging,
-                inspector: inspector || debugging,
+                editor: inspector || debugging,
                 level_file: level_file.as_deref(),
             };
             game_lib::app(params)
                 .add_startup_system(set_window_icon)
                 .run();
         },
-        Some(Commands::Schedule) => bevy_mod_debugdump::print_schedule(
-            &mut game_lib::app(LaunchParams { 
-                logging: false, 
-                inspector: false, 
-                level_file: None, 
-            })
-        ),
     }
 }

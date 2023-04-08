@@ -9,4 +9,3 @@ edition = "2021"
 # Bevy deps
 bevy = { workspace = true }
 bevy_ecs_tilemap = { workspace = true }
-bevy-inspector-egui = { workspace = true }

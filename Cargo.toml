@@ -23,10 +23,9 @@ path="launchers/native/src/main.rs"
 bevy = { workspace = true }
 bevy_ecs_tilemap = { workspace = true }
 bevy_common_assets = { version = "0.4", features = ["json"] }
-bevy_asset_loader = { workspace = true }
+bevy_asset_loader = { version = "0.14", features = ["standard_dynamic_assets", "stageless"] }
 iyes_loopless = "0.9"
-tiled = { workspace = true }
-bevy-inspector-egui = { workspace = true }
+bevy_editor_pls = "0.2"
 bevy_pkv = "0.6"
 bevy_framepace = "0.11"
 # Other deps
@@ -43,7 +42,6 @@ cube_rot = { path = "cube_rot" }
 # either not needed will blow up the size too much
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 clap = { version = "4", features = ["cargo", "derive"] }
-bevy_mod_debugdump = "0.6"
 winit = { version = "0.27", default-features = false }
 image = "0.24.5"
 
@@ -52,6 +50,3 @@ serde = "1"
 anyhow = "1"
 bevy = "0.9"
 bevy_ecs_tilemap = "0.9"
-bevy-inspector-egui = "0.17"
-tiled = { version = "0.10", default-features = false }
-bevy_asset_loader = { version = "0.14", features = ["standard_dynamic_assets", "stageless"] }
