@@ -2,11 +2,11 @@ use bevy::{ecs::query::WorldQuery, prelude::*};
 use bevy_ecs_tilemap::tiles::TileFlip;
 use bevy_ecs_tilemap_cpu_anim::CPUTileAnimation;
 use cube_rot::MoveDirection;
-use serde::Deserialize;
 
 /// Describes a trigger that will activate when a button activates
-#[derive(Clone, Copy, Debug, Component, Deserialize)]
+#[derive(Clone, Copy, Debug, Component, Default, Reflect)]
 #[repr(transparent)]
+#[reflect(Component)]
 pub struct ButtonCondition(pub u8);
 
 impl ButtonCondition {
@@ -16,9 +16,11 @@ impl ButtonCondition {
 }
 
 /// Describes a trigger that will activate based off player's side
-#[derive(Clone, Copy, Debug, Component, Deserialize, Reflect)]
+#[derive(Clone, Copy, Debug, Component, Default, Reflect)]
+#[reflect(Component)]
 pub enum SideCondition {
     /// The tile is expecting an odd number to be player's uppser side
+    #[default]
     OnOddSide,
     /// The tile is expecting an even number to be player's upper side
     OnEvenSide,
@@ -35,6 +37,7 @@ impl SideCondition {
 
 /// Describes how the tile should be animated, based off its state.
 #[derive(Reflect, Debug, Default, Clone, Component)]
+#[reflect(Component)]
 pub struct GraphicsAnimating {
     pub on_transit: Handle<CPUTileAnimation>,
     pub off_transit: Handle<CPUTileAnimation>,
@@ -44,6 +47,7 @@ pub struct GraphicsAnimating {
 
 /// Tile state. Determines what the tile would do when someone interacts with it.
 #[derive(Clone, Copy, Default, Debug, Component, Reflect, PartialEq, Eq)]
+#[reflect(Component)]
 pub struct LogicState(pub bool);
 
 /// The tile kind. This data type is mapped directly to the ones you can see in the
@@ -61,9 +65,9 @@ pub struct LogicState(pub bool);
     PartialEq,
     Eq,
     Hash,
-    Deserialize,
 )]
 #[repr(u16)]
+#[reflect(Component)]
 pub enum LogicKind {
     /// Once button tiles are activated when interacted with by a player and stay activated
     /// for the rest of the level.

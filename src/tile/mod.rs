@@ -28,6 +28,8 @@ impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugin(CPUTileAnimationPlugin)
+            .register_type::<ButtonCondition>()
+            .register_type::<GraphicsAnimating>()
             .register_type::<LogicState>()
             .register_type::<LogicKind>()
             .register_type::<GraphicsAnimating>()

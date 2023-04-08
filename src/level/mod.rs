@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 pub use resources::*;
 
-use crate::tile::*;
+use crate::{tile::*, moveable::MoveableTilemapTag};
 
 #[derive(Default)]
 pub struct LevelPlugin;
@@ -31,113 +31,38 @@ pub fn tile_pos_to_world_pos(
     ).truncate()
 }
 
-// #[derive(Default, Clone, Copy, Debug, Deserialize)]
-// struct TileAnimationFrame {
-//     id: u32,
-//     dur: u64,
-// }
-
-// #[derive(Default, Debug, Deserialize)]
-// struct TileAnimation(Vec<TileAnimationFrame>);
-
-// impl TileAnimation {
-//     fn decode(self, indexing: &TilesetIndexing) -> CPUTileAnimation {
-//         CPUTileAnimation::new(
-//             self.0.into_iter()
-//                 .map(|frame| Frame {
-//                     texture_id: indexing.dispatch(frame.id),
-//                     duration: Duration::from_millis(frame.dur),
-//                 })
-//         )
-//     }
-// }
-
-// impl GraphicsAnimating<TileAnimation> {
-//     fn decode(
-//         self,
-//         tileset: usize,
-//         tile: u32,
-//         assets: &mut Assets<CPUTileAnimation>,
-//         map_path: Option<&Path>,
-//         indexing: &TilesetIndexing,
-//     ) -> GraphicsAnimating {
-//         let mut acquire_asset = |anim, tag: &'static str| {
-//             let asset = TileAnimation::decode(anim, indexing);
-//             debug!("anim{tileset:}_{tile:}_{tag:}\n{asset:?}");
-
-//             match map_path {
-//                 Some(path) => assets.set(AssetPath::new_ref(
-//                     path, Some(&format!("anim{tileset:}_{tile:}_{tag:}"))
-//                 ), asset),
-//                 None => assets.add(asset),
-//             }
-//         };
-
-//         GraphicsAnimating {
-//             on_transit: acquire_asset(self.on_transit, "on_transition"),
-//             off_transit: acquire_asset(self.off_transit, "off_transition"),
-//             on_anim: acquire_asset(self.on_anim, "off_anim"),
-//             off_anim: acquire_asset(self.off_anim, "on_anim"),
-//         }
-//     }
-// }
-
-// struct GraphicsTileBuilder<'a> {
-//     map_path: Option<&'a Path>,
-//     anims: &'a mut Assets<CPUTileAnimation>,
-//     deserialized_props: HashMap<(usize, u32), GraphicsTileBundle>,
-// }
-
-// impl<'a> TileBuilder for GraphicsTileBuilder<'a> {
-//     fn process_tileset(
-//         &mut self,
-//         set_id: usize,
-//         tileset: &tiled::Tileset,
-//         indexing: &TilesetIndexing,
-//     ) -> anyhow::Result<()> {
-//         self.deserialized_props.reserve(tileset.tilecount as usize);
-
-//         for (id, tile) in tileset.tiles() {
-//             let props: GraphicsTileBundle<TileAnimation> = tile.properties()?;
-//             self.deserialized_props.insert(
-//                 (set_id, id),
-//                 GraphicsTileBundle {
-//                     animating: props.animating.decode(
-//                         set_id,
-//                         id,
-//                         self.anims,
-//                         self.map_path,
-//                         indexing
-//                     ),
-//                 }
-//             );
-//         }
-
-//         Ok(())
-//     }
-
-//     fn build(
-//         &mut self,
-//         set_id: usize,
-//         id: u32,
-//         cmds: &mut bevy::ecs::system::EntityCommands,
-//     ) -> anyhow::Result<()> {
-//         cmds.insert(self.deserialized_props[&(set_id, id)].clone());
-
-//         Ok(())
-//     }
-
-//     fn finish_layer(
-//         &mut self,
-//         _set_id: usize,
-//         cmds: &mut bevy::ecs::system::EntityCommands,
-//     ) -> anyhow::Result<()> {
-//         cmds.insert(GraphicsTilemapTag);
-
-//         Ok(())
-//     }
-// }
-
 // NOTE I don't think I can do anything here to satisfy clippy.
 // Maybe some further investigation will prove me wrong.
-pub fn spawn_level() {}
+pub fn spawn_level(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    let texture_handle: Handle<Image> = asset_server.load("assets/tiles/atlas.png");
+    let mut storage = TileStorage::empty(TilemapSize { x: 3, y: 3 });
+
+    let tilemap_id = commands.spawn_empty().id();
+    let tile = commands.spawn((
+        TileBundle {
+            tilemap_id: TilemapId(tilemap_id),
+            ..default()
+        },
+        LogicKind::Start,
+    ))
+    .id();
+    storage.set(
+        &TilePos { x: 0, y: 0 },
+        tile,
+    );
+    commands.entity(tilemap_id).insert((
+        Name::new("Level"),
+        TilemapBundle {
+            storage,
+            texture: TilemapTexture::Single(texture_handle),
+            grid_size: TilemapTileSize { x: 32.0, y: 32.0 }.into(),
+            tile_size: TilemapTileSize { x: 32.0, y: 32.0 },
+            ..TilemapBundle::default()
+        },
+        MoveableTilemapTag,
+    ))
+    .add_child(tile);
+}

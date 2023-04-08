@@ -18,10 +18,6 @@ pub enum LoadingLevel {
     Done,
 }
 
-pub fn spawn_game_world(mut commands: Commands) {
-    commands.spawn((Name::new("GameWorld"), GameWorldTag));
-}
-
 pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     // Loading base assets
     app
@@ -35,7 +31,6 @@ pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     app.add_enter_system_set(
         LoadingLevel::GameWorld,
         SystemSet::new()
-            .with_system(spawn_game_world)
             .with_system(jump_to_state(LoadingLevel::LevelEntity))
     );
 

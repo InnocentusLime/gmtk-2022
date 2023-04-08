@@ -1,11 +1,16 @@
 use bevy::prelude::*;
 
-#[derive(Clone, Copy, Debug, Component)]
+#[derive(Clone, Copy, Default, Debug, Component, Reflect)]
+#[reflect(Component)]
 pub struct PlayerTag;
 
-#[derive(Clone, Debug, Component)]
+#[derive(Clone, Debug, Component, Reflect)]
 pub struct PlayerWinnerTag {
     pub(super) timer: Timer,
+}
+
+impl Default for PlayerWinnerTag {
+    fn default() -> Self { Self::new() }
 }
 
 impl PlayerWinnerTag {

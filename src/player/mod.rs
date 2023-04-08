@@ -27,6 +27,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
+            .register_type::<PlayerTag>()
+            .register_type::<PlayerWinnerTag>()
             .add_stage_after(
                 TileUpdateStage,
                 PlayerInputStage,

@@ -4,6 +4,8 @@ mod main_menu;
 mod loading;
 mod splash_screen;
 
+pub use ingame::GameWorldTag;
+
 use bevy::prelude::*;
 use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::* };
 use iyes_loopless::prelude::*;
@@ -13,7 +15,7 @@ use crate::LaunchParams;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameState {
-    // The booting state loads the assets for 
+    // The booting state loads the assets for
     // splash screen and main menu.
     Booting,
     // Shows a sequence of logos related to the
@@ -39,7 +41,7 @@ pub fn enter_level(level_path: String, commands: &mut Commands, asset_keys: &mut
 
 pub fn setup_states(app: &mut App, params: &LaunchParams) {
     app.add_loopless_state(GameState::Booting);
-    app.add_loopless_state(LoadingLevel::Done); 
+    app.add_loopless_state(LoadingLevel::Done);
 
     booting::setup_states(app, params);
     splash_screen::setup_states(app, params);
