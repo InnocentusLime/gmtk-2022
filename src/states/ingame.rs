@@ -7,9 +7,12 @@ use super::GameState;
 use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::player::{ PlayerTag };
+use crate::player::PlayerTag;
 use crate::tile::TileEvent;
-use crate::{GameplayCamera, LaunchParams};
+use crate::{LaunchParams, GameplayCamera};
+
+#[derive(Clone, Copy, Component, Debug, Default)]
+pub struct GameWorldTag;
 
 #[derive(Resource)]
 struct LevelCompleteCountdown(Timer);
@@ -90,14 +93,14 @@ fn level_complete_system_testing_level(
 fn exit(
     mut commands: Commands,
     mut cam: Query<&mut Transform, With<GameplayCamera>>,
-    to_del: Query<Entity, Without<GameplayCamera>>,
+    game_world_q: Query<Entity, With<GameWorldTag>>,
 ) {
     info!("Exited ingame state");
-    for mut tf in cam.iter_mut() { tf.translation = Vec3::new(0.0f32, 0.0f32, 50.0f32); }
-
-    for e in to_del.iter() {
-        commands.entity(e).despawn_recursive();
+    for mut tf in cam.iter_mut() {
+        tf.translation = Vec3::new(0.0f32, 0.0f32, 50.0f32);
     }
+
+    game_world_q.for_each(|e| commands.entity(e).despawn_recursive());
 }
 
 pub fn setup_states(app: &mut App, params: &LaunchParams) {

@@ -6,7 +6,7 @@ use iyes_loopless::prelude::*;
 use super::{ GameState, enter_level };
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::{GameplayCamera, LaunchParams};
+use crate::LaunchParams;
 
 #[derive(Resource, AssetCollection)]
 pub struct MenuAssets {
@@ -16,6 +16,8 @@ pub struct MenuAssets {
     pub level_info: Handle<LevelInfo>,
 }
 
+#[derive(Clone, Copy, Component, Debug, Default)]
+pub struct MainMenuTag;
 
 #[derive(Clone, Copy, Component)]
 enum MainMenuButton {
@@ -25,7 +27,7 @@ enum MainMenuButton {
     Quit,
 }
 
-fn spawn_text(
+fn spawn_menu(
     commands: &mut Commands,
     save: &Save,
     menu_assets: &MenuAssets,
@@ -162,9 +164,9 @@ fn spawn_text(
                             spawn_button("Quit", MainMenuButton::Quit);
                         });
                 });
-        });
+        })
+        .insert(MainMenuTag);
 }
-
 
 fn enter(
     mut commands: Commands,
@@ -173,7 +175,7 @@ fn enter(
 ) {
     info!("Entered main menu state");
     let save = pkv.get::<Save>("save").unwrap_or_else(|_| Save::new());
-    spawn_text(&mut commands, &save, &menu_assets);
+    spawn_menu(&mut commands, &save, &menu_assets);
 
     commands.insert_resource(save);
 }
@@ -202,13 +204,11 @@ fn tick(
 
 fn exit(
     mut commands: Commands,
-    elems_query: Query<Entity, Without<GameplayCamera>>,
+    main_menu_q: Query<Entity, With<MainMenuTag>>,
 ) {
     info!("Exited main menu state");
 
-    for e in elems_query.iter() {
-        commands.entity(e).despawn_recursive();
-    }
+    main_menu_q.for_each(|e| commands.entity(e).despawn_recursive());
 }
 
 pub fn setup_states(app: &mut App, _params: &LaunchParams) {
