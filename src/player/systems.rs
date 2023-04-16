@@ -6,39 +6,25 @@ use crate::moveable::{ MoveableQuery, MoveableQueryItem };
 use crate::tile::TileEvent;
 use super::{ PlayerTag, PlayerWinnerTag, BasePlayerAssets };
 
-pub fn player_win_sound(
-    audio: Res<Audio>,
-    assets: Res<BasePlayerAssets>,
-    mut tile_events: EventReader<TileEvent>,
-) {
-    if tile_events.iter().filter_map(|x| match x {
-            TileEvent::ExitReached => Some(()),
-            _ => None,
-        }).next().is_some()
-    {
-        audio.play(assets.complete_sound.clone());
-    }
-}
+// pub fn player_win_anim(
+//     time: Res<Time>,
+//     mut col_mats: ResMut<Assets<ColorMaterial>>,
+//     mut player_q: Query<(&mut Transform, &mut PlayerWinnerTag, &Handle<ColorMaterial>), With<PlayerTag>>,
+// ) {
+//     player_q.for_each_mut(|(mut tf, mut win_tag, mat_handle)| {
+//         win_tag.timer.tick(time.delta());
+//         let t = win_tag.timer.percent_left();
 
-pub fn player_win_anim(
-    time: Res<Time>,
-    mut col_mats: ResMut<Assets<ColorMaterial>>,
-    mut player_q: Query<(&mut Transform, &mut PlayerWinnerTag, &Handle<ColorMaterial>), With<PlayerTag>>,
-) {
-    player_q.for_each_mut(|(mut tf, mut win_tag, mat_handle)| {
-        win_tag.timer.tick(time.delta());
-        let t = win_tag.timer.percent_left();
-
-        // TODO hardcoded player size
-        tf.scale = Vec3::new(25.0f32, 25.0f32, 25.0f32) * t;
-        col_mats.get_mut(mat_handle).unwrap().color = Color::Rgba {
-            red: t,
-            green: t,
-            blue: t,
-            alpha: 1.0,
-        };
-    });
-}
+//         // TODO hardcoded player size
+//         tf.scale = Vec3::new(25.0f32, 25.0f32, 25.0f32) * t;
+//         col_mats.get_mut(mat_handle).unwrap().color = Color::Rgba {
+//             red: t,
+//             green: t,
+//             blue: t,
+//             alpha: 1.0,
+//         };
+//     });
+// }
 
 pub fn player_camera(
     player_q: Query<&mut Transform, (With<PlayerTag>, Without<GameplayCamera>)>,

@@ -35,7 +35,7 @@ impl Plugin for PlayerPlugin {
                 .run_if(in_state(GameState::InGame))
             )
             .add_systems(
-                (player_camera, player_win_anim, /* player_win_sound */)
+                (player_camera,)
                 .in_base_set(CoreSet::PostUpdate)
                 .in_set(PlayerSystems::PostUpdate)
                 .distributive_run_if(in_state(GameState::InGame))
