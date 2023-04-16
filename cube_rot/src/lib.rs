@@ -2,7 +2,7 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, Reflect, FromReflect)]
 #[repr(u8)]
 pub enum MoveDirection {
     #[default]
@@ -126,7 +126,7 @@ impl FlatRotation {
 }
 */
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Reflect, Clone, Copy, Debug, Default, FromReflect)]
 #[repr(u8)]
 enum BoxSide {
     Up = 0,
@@ -153,7 +153,7 @@ impl BoxSide {
 
 /// Represents object rotation using integers, assuming it's always going
 /// to be rotated by 90 degreees.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Reflect, Debug, Clone, Copy, Default, FromReflect)]
 pub struct DecomposedRotation {
     ortho_rot: u8, // Orthogonal rotation clock-wise. Gets applied first
     flat_rot: BoxSide, // Flat rotation. Gets applied second

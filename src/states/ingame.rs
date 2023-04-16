@@ -1,13 +1,12 @@
 use bevy::prelude::*;
 use bevy_pkv::PkvStore;
-use iyes_loopless::prelude::*;
 
 use super::GameState;
 
 use crate::states::main_menu::MenuAssets;
 use crate::save::Save;
 use crate::level_info::LevelInfo;
-use crate::player::PlayerTag;
+use crate::player::{PlayerTag, BasePlayerAssets};
 use crate::tile::TileEvent;
 use crate::{LaunchParams, GameplayCamera};
 
@@ -21,14 +20,20 @@ fn enter() {
     info!("Entered ingame state");
 }
 
-fn death_system_normal(mut commands: Commands, player_q: Query<(), With<PlayerTag>>) {
+fn death_system_normal(
+    mut game_st: ResMut<NextState<GameState>>,
+    player_q: Query<(), With<PlayerTag>>,
+) {
     if player_q.is_empty() {
         info!("You are dead");
-        commands.insert_resource(NextState(GameState::MainMenu));
+        game_st.0 = Some(GameState::MainMenu);
     }
 }
 
-fn death_system_testing_level(mut writer: EventWriter<bevy::app::AppExit>, player_q: Query<(), With<PlayerTag>>) {
+fn death_system_testing_level(
+    mut writer: EventWriter<bevy::app::AppExit>,
+    player_q: Query<(), With<PlayerTag>>,
+) {
     if player_q.is_empty() {
         info!("You are dead");
         writer.send(bevy::app::AppExit);
@@ -50,6 +55,7 @@ fn beat_system(
 }
 
 fn level_complete_system_normal(
+    mut game_st: ResMut<NextState<GameState>>,
     mut commands: Commands,
     mut timer: Option<ResMut<LevelCompleteCountdown>>,
     mut save: ResMut<Save>,
@@ -72,7 +78,7 @@ fn level_complete_system_normal(
             }
 
             commands.remove_resource::<LevelCompleteCountdown>();
-            commands.insert_resource(NextState(GameState::MainMenu));
+            game_st.0 = Some(GameState::MainMenu);
         }
     }
 }
@@ -105,17 +111,24 @@ fn exit(
 
 pub fn setup_states(app: &mut App, params: &LaunchParams) {
     app
-        .add_enter_system(GameState::InGame, enter)
-        .add_system(beat_system.run_in_state(GameState::InGame))
-        .add_exit_system(GameState::InGame, exit);
+        .add_system((|res: Option<Res<BasePlayerAssets>>| {
+            info!("Have: {}", res.is_some());
+        }).run_if(in_state(GameState::InGame)))
+        .add_system(enter.in_schedule(OnEnter(GameState::InGame)))
+        .add_system(beat_system.run_if(in_state(GameState::InGame)))
+        .add_system(exit.in_schedule(OnExit(GameState::InGame)));
 
-    if params.level_file.is_some() {
-        app
-            .add_system(level_complete_system_testing_level.run_in_state(GameState::InGame))
-            .add_system(death_system_testing_level.run_in_state(GameState::InGame));
-    } else {
-        app
-            .add_system(level_complete_system_normal.run_in_state(GameState::InGame))
-            .add_system(death_system_normal.run_in_state(GameState::InGame));
-    }
+    // if params.level_file.is_some() {
+    //     app
+    //         .add_system(level_complete_system_testing_level
+    //             .run_if(in_state(GameState::InGame)))
+    //         .add_system(death_system_testing_level
+    //             .run_if(in_state(GameState::InGame)));
+    // } else {
+    //     app
+    //         .add_system(level_complete_system_normal
+    //             .run_if(in_state(GameState::InGame)))
+    //         .add_system(death_system_normal
+    //             .run_if(in_state(GameState::InGame)));
+    // }
 }

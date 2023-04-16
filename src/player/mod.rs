@@ -5,22 +5,21 @@ mod systems;
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_ecs_tilemap::prelude::*;
-use iyes_loopless::prelude::*;
 
 use crate::level::tile_pos_to_world_pos;
 use crate::moveable::{MoveableBundle, MoveableTilemapTag, self};
 use crate::states::GameState;
-use crate::tile::{LogicKind, TileUpdateStage};
+use crate::tile::{LogicKind, TileSystems};
 
 pub use components::*;
 pub use resources::*;
 pub use systems::*;
 
-#[derive(StageLabel, Debug, PartialEq, Eq, Hash, Clone)]
-pub struct PlayerInputStage;
-
-#[derive(StageLabel, Debug, PartialEq, Eq, Hash, Clone)]
-pub struct PlayerPostStage;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]
+pub enum PlayerSystems {
+    Controls,
+    PostUpdate,
+}
 
 pub struct PlayerPlugin;
 
@@ -29,28 +28,17 @@ impl Plugin for PlayerPlugin {
         app
             .register_type::<PlayerTag>()
             .register_type::<PlayerWinnerTag>()
-            .add_stage_after(
-                TileUpdateStage,
-                PlayerInputStage,
-                SystemStage::parallel(),
+            .add_system(
+                player_controls
+                .in_set(PlayerSystems::Controls)
+                .after(TileSystems::InteractionHandler)
+                .run_if(in_state(GameState::InGame))
             )
-            .add_stage_before(
-                CoreStage::PostUpdate,
-                PlayerPostStage,
-                SystemStage::parallel(),
-            )
-            .add_system_to_stage(
-                PlayerInputStage,
-                player_controls.run_in_state(GameState::InGame),
-            )
-            .add_system_set_to_stage(
-                PlayerPostStage,
-                ConditionSet::new()
-                    .run_in_state(GameState::InGame)
-                    .with_system(player_camera)
-                    .with_system(player_win_anim)
-                    .with_system(player_win_sound)
-                    .into(),
+            .add_systems(
+                (player_camera, player_win_anim, /* player_win_sound */)
+                .in_base_set(CoreSet::PostUpdate)
+                .in_set(PlayerSystems::PostUpdate)
+                .distributive_run_if(in_state(GameState::InGame))
             );
     }
 }
@@ -75,7 +63,7 @@ pub fn spawn_player(
     mut commands: Commands,
     start_q: Query<(&TilePos, &LogicKind)>,
     map_q: Query<(&Transform, &TilemapGridSize), With<MoveableTilemapTag>>,
-    generated_assets: Res<GeneratedPlayerAssets>,
+    //generated_assets: Res<GeneratedPlayerAssets>,
 ) {
     let (map_tf, map_grid) = match map_q.get_single() {
         Ok(x) => x,
@@ -95,21 +83,22 @@ pub fn spawn_player(
 
     let start_world_pos = tile_pos_to_world_pos(start_pos, map_tf, map_grid);
 
+    info!("Spawning player at {start_pos:?}");
     commands
         .spawn((
             PlayerTag,
             Name::new("Player"),
             MoveableBundle::new(start_pos),
-            MaterialMesh2dBundle {
-                mesh: generated_assets.model.clone(),
-                material: generated_assets.material.clone(),
-                // TODO hardcoded player size
-                // FIXME feels weird to double-set player's pos
-                transform: Transform::from_translation(
-                    start_world_pos.extend(moveable::MOVEABLE_Z_POS),
-                )
-                .with_scale(Vec3::new(16.0f32, 16.0f32, 16.0f32)),
-                ..default()
-            }
+            // MaterialMesh2dBundle {
+            //     mesh: generated_assets.model.clone(),
+            //     material: generated_assets.material.clone(),
+            //     // TODO hardcoded player size
+            //     // FIXME feels weird to double-set player's pos
+            //     transform: Transform::from_translation(
+            //         start_world_pos.extend(moveable::MOVEABLE_Z_POS),
+            //     )
+            //     .with_scale(Vec3::new(16.0f32, 16.0f32, 16.0f32)),
+            //     ..default()
+            // }
         ));
 }

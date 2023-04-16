@@ -7,11 +7,11 @@ mod tile;
 mod level_info;
 mod config;
 
-use bevy::render::camera::{WindowOrigin, ScalingMode};
+use bevy::render::camera::ScalingMode;
 use bevy_editor_pls::EditorPlugin;
 use states::setup_states;
 use bevy::{prelude::*};
-use bevy::window::WindowDescriptor;
+use bevy::window::{Window, WindowResolution};
 use bevy_pkv::PkvStore;
 use bevy_common_assets::json::JsonAssetPlugin;
 
@@ -27,12 +27,14 @@ pub use config::*;
 #[derive(Clone, Copy, Component)]
 pub struct GameplayCamera;
 
-fn window_descriptor() -> WindowDescriptor {
-    WindowDescriptor {
+fn game_window() -> Window {
+    Window {
         title: LAUNCHER_TITLE.to_owned(),
         resizable: false,
-        width: WINDOW_WIDTH,
-        height: WINDOW_HEIGHT,
+        resolution: WindowResolution::new(
+            WINDOW_WIDTH,
+            WINDOW_HEIGHT,
+        ),
         canvas: Some("#bevy".to_string()),
         fit_canvas_to_parent: true,
         ..Default::default()
@@ -50,7 +52,7 @@ pub fn app(params: LaunchParams) -> App {
     // Load bevy's core
     DefaultPlugins
         .set(WindowPlugin {
-            window: window_descriptor(),
+            primary_window: Some(game_window()),
             ..default()
         })
         .finish(&mut app);
@@ -62,7 +64,7 @@ pub fn app(params: LaunchParams) -> App {
 
     // Init or not init inspector (DO IT BEFORE THE GAME PLUGINS)
     if params.editor {
-        app.add_plugin(EditorPlugin);
+        app.add_plugin(EditorPlugin::default());
     }
 
     // Game plugins
@@ -75,13 +77,13 @@ pub fn app(params: LaunchParams) -> App {
 
     let camera_bundle = Camera2dBundle {
         projection: OrthographicProjection {
-            left: -300f32,
-            right: 300f32,
-            top: 300f32,
-            bottom: -300f32,
+            area: Rect {
+                min: Vec2::new(-300f32, -300f32),
+                max: Vec2::new(-300f32, -300f32),
+            },
             far: 1000f32,
             near: 0.0f32,
-            window_origin: WindowOrigin::Center,
+            viewport_origin: Vec2::ZERO,
             scaling_mode: ScalingMode::FixedHorizontal(600f32),
             scale: 1.0f32,
         },

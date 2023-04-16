@@ -4,9 +4,9 @@ use bevy_ecs_tilemap::prelude::*;
 
 use std::time::Duration;
 
-#[derive(StageLabel)]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct CPUTileAnimateStage;
+// #[derive(StageLabel)]
+// #[derive(Debug, PartialEq, Eq, Hash, Clone)]
+// pub struct CPUTileAnimateStage;
 
 pub struct CPUTileAnimationPlugin;
 
@@ -16,12 +16,10 @@ impl Plugin for CPUTileAnimationPlugin {
             .register_type::<Frame>()
             .register_type::<CPUAnimated>()
             .add_asset::<CPUTileAnimation>()
-            .add_stage_before(
-                CoreStage::PostUpdate,
-                CPUTileAnimateStage,
-                SystemStage::parallel()
-            )
-            .add_system_to_stage(CPUTileAnimateStage, update_animation_frames);
+            .add_system(
+                update_animation_frames
+                .in_base_set(CoreSet::PostUpdate)
+            );
     }
 }
 
@@ -145,7 +143,8 @@ pub fn update_animation_frames(
 ) {
     let dt = time.delta();
 
-    animated_tile_q.par_for_each_mut(10, |(mut state, mut tile)| {
+    animated_tile_q.par_iter_mut()
+    .for_each_mut(|(mut state, mut tile)| {
         let animation = match animations.get(&state.animation) {
             Some(x) => x,
             None => return,

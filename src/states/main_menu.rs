@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy_pkv::PkvStore;
 use bevy_asset_loader::{ asset_collection::*, dynamic_asset::* };
-use iyes_loopless::prelude::*;
 
+use super::loading::LoadingLevel;
 use super::{ GameState, enter_level };
 use crate::save::Save;
 use crate::level_info::LevelInfo;
@@ -93,7 +93,7 @@ fn spawn_menu(
                                     font_size: 60.0f32,
                                     color: Color::WHITE,
                                 },
-                            ).with_alignment(TextAlignment::CENTER_LEFT),
+                            ).with_alignment(TextAlignment::Center),
                             ..default()
                         });
 
@@ -152,7 +152,7 @@ fn spawn_menu(
                                                         font_size: 35.0f32,
                                                         color: Color::WHITE,
                                                     },
-                                                ).with_alignment(TextAlignment::CENTER),
+                                                ).with_alignment(TextAlignment::Center),
                                                 ..default()
                                             });
                                     });
@@ -182,9 +182,10 @@ fn enter(
 
 fn tick(
     button_q: Query<(&Interaction, &MainMenuButton)>,
-    mut commands: Commands,
     save: Option<Res<Save>>,
     mut asset_keys: ResMut<DynamicAssets>,
+    mut load_lvl_st: ResMut<NextState<LoadingLevel>>,
+    mut game_st: ResMut<NextState<GameState>>,
 ) {
     for (interaction, button) in button_q.iter() {
         if *interaction != Interaction::Clicked { break; }
@@ -192,7 +193,12 @@ fn tick(
             MainMenuButton::PickLevel => {
                 if let Some(save) = save.as_ref() {
                     let (world, level) = save.world_level();
-                    enter_level(format!("maps/level{}-{}.tmx", world, level), &mut commands, &mut asset_keys);
+                    enter_level(
+                        format!("maps/level{}-{}.tmx", world, level),
+                        &mut asset_keys,
+                        &mut load_lvl_st,
+                        &mut game_st,
+                    );
                 }
             },
             MainMenuButton::Achievements => (),
@@ -213,7 +219,7 @@ fn exit(
 
 pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     app
-        .add_enter_system(GameState::MainMenu, enter)
-        .add_system(tick.run_in_state(GameState::MainMenu))
-        .add_exit_system(GameState::MainMenu, exit);
+        .add_system(enter.in_schedule(OnEnter(GameState::MainMenu)))
+        .add_system(tick.run_if(in_state(GameState::MainMenu)))
+        .add_system(exit.in_schedule(OnExit(GameState::MainMenu)));
 }

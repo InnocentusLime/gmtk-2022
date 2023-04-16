@@ -7,18 +7,6 @@ pub use components::*;
 
 pub use systems::*;
 use bevy::prelude::*;
-//use bevy_inspector_egui::{ RegisterInspectable, InspectableRegistry };
-
-#[derive(StageLabel)]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub struct MoveableUpdateStage;
-
-#[derive(SystemLabel)]
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
-enum MoveableSystem {
-    Tick,
-    Animate,
-}
 
 #[derive(Clone, Copy, Default)]
 pub struct MoveablePlugin;
@@ -26,9 +14,18 @@ pub struct MoveablePlugin;
 impl Plugin for MoveablePlugin {
     fn build(&self, app: &mut App) {
         app
+            .register_type::<MoveableState>()
+            .register_type::<Side>()
+            .register_type::<Position>()
+            .register_type::<Rotation>()
             .add_event::<TileInteractionEvent>()
-            .add_stage_after(CoreStage::Update, MoveableUpdateStage, SystemStage::parallel())
-            .add_system_to_stage(MoveableUpdateStage, moveable_animation.label(MoveableSystem::Animate))
-            .add_system_to_stage(MoveableUpdateStage, moveable_tick.label(MoveableSystem::Tick).before(MoveableSystem::Animate));
+            .add_system(
+                moveable_tick
+                    .in_base_set(CoreSet::Update)
+            )
+            .add_system(
+                moveable_animation
+                    .in_base_set(CoreSet::PostUpdate)
+            );
     }
 }

@@ -3,26 +3,21 @@ mod systems;
 mod events;
 
 use bevy::prelude::*;
-use bevy_ecs_tilemap_cpu_anim::CPUTileAnimationPlugin;
+use bevy_ecs_tilemap_cpu_anim::{CPUTileAnimationPlugin, update_animation_frames};
 
 pub use components::*;
 pub use events::*;
 pub use systems::*;
 
-use crate::moveable::MoveableUpdateStage;
+use crate::moveable::moveable_tick;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, StageLabel)]
-pub struct TileUpdateStage;
+#[derive(Clone, Copy, Debug, SystemSet, PartialEq, Eq, Hash)]
+pub enum TileSystems {
+    Triggers,
+    InteractionHandler,
+}
 
 pub struct TilePlugin;
-
-#[derive(Clone, Copy, SystemLabel)]
-enum TileSystem {
-    TileUpdate,
-    SideTrigger,
-    ButtonTrigger,
-    AnimationSwitch,
-}
 
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
@@ -35,38 +30,26 @@ impl Plugin for TilePlugin {
             .register_type::<GraphicsAnimating>()
             .register_type::<SideCondition>()
             .add_event::<TileEvent>()
-            .add_stage_after(
-                MoveableUpdateStage,
-                TileUpdateStage,
-                SystemStage::parallel(),
+            .add_systems(
+                (
+                    handle_button_triggers,
+                    handle_player_side_triggers,
+                )
+                .after(moveable_tick)
+                .in_set(TileSystems::Triggers)
             )
-            .add_system_set_to_stage(
-                TileUpdateStage,
-                SystemSet::new()
-                    .with_system(
-                        handle_player_side_triggers
-                            .label(TileSystem::SideTrigger),
-                    )
-                    .with_system(
-                        handle_button_triggers
-                            .label(TileSystem::ButtonTrigger),
-                    )
-                    .with_system(
-                        special_tile_handler
-                            .label(TileSystem::TileUpdate)
-                            .after(TileSystem::SideTrigger)
-                            .after(TileSystem::ButtonTrigger),
-                    )
-                    .with_system(
-                        tile_state_animation_switch
-                            .label(TileSystem::AnimationSwitch)
-                            .after(TileSystem::SideTrigger)
-                            .after(TileSystem::ButtonTrigger),
-                    )
-                    .with_system(
-                        tile_transition_anim_switch
-                            .after(TileSystem::AnimationSwitch),
-                    ),
+            .add_system(
+                special_tile_handler
+                .in_set(TileSystems::InteractionHandler)
+                .after(TileSystems::Triggers)
+            )
+            .add_systems(
+                (
+                    tile_state_animation_switch,
+                    tile_transition_anim_switch,
+                )
+                .in_base_set(CoreSet::PostUpdate)
+                .before(update_animation_frames)
             );
     }
 }

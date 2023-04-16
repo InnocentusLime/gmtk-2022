@@ -20,6 +20,8 @@ pub struct GeneratedPlayerAssets {
 
 impl FromWorld for GeneratedPlayerAssets {
     fn from_world(world: &mut World) -> Self {
+        info!("Initting generated assets");
+
         let assets = world.resource::<BasePlayerAssets>();
         let gltfs = world.resource::<Assets<bevy::gltf::Gltf>>();
         let gltf_meshes = world.resource::<Assets<bevy::gltf::GltfMesh>>();
@@ -36,6 +38,8 @@ impl FromWorld for GeneratedPlayerAssets {
                 .unwrap().base_color_texture.to_owned(),
         };
         let material = world.resource_mut::<Assets<ColorMaterial>>().add(material);
+
+        info!("Generated player resources are ready");
 
         GeneratedPlayerAssets { material, model }
     }

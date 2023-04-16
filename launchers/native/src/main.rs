@@ -1,13 +1,17 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem="windows")]
 
 use std::io::Cursor;
-use bevy::{prelude::*, window::WindowId, winit::WinitWindows};
+use bevy::{prelude::*, winit::WinitWindows, window::PrimaryWindow};
 use game_lib::LaunchParams;
 use winit::window::Icon;
 use clap::{ Parser, Subcommand };
 
-fn set_window_icon(windows: NonSend<WinitWindows>) {
-    let primary = windows.get_window(WindowId::primary()).unwrap();
+fn set_window_icon(
+    windows: NonSend<WinitWindows>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
+) {
+    let primary_window = primary_window.single();
+    let primary = windows.get_window(primary_window).unwrap();
 
     let (icon_rgba, icon_width, icon_height) = {
         let icon_buf = Cursor::new(include_bytes!("../../../assets/bevy.png"));

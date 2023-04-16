@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_asset_loader::asset_collection::*;
-use iyes_loopless::prelude::*;
 
 use crate::LaunchParams;
 
@@ -45,7 +44,7 @@ fn enter(mut commands: Commands, assets: Res<ScreenAssets>) {
 }
 
 fn tick(
-    mut commands: Commands,
+    mut game_st: ResMut<NextState<GameState>>,
     mut state: ResMut<SplashScreenState>,
     mut logo_query: Query<&mut Sprite, With<LogoTag>>,
     time: Res<Time>,
@@ -58,7 +57,7 @@ fn tick(
 
     // Transition when done
     if state.team_card_anim_timer.finished() {
-        commands.insert_resource(NextState(GameState::MainMenu));
+        game_st.0 = Some(GameState::MainMenu);
     }
 }
 
@@ -74,7 +73,7 @@ fn exit(
 
 pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     app
-        .add_enter_system(GameState::SplashScreen, enter)
-        .add_system(tick.run_in_state(GameState::SplashScreen))
-        .add_exit_system(GameState::SplashScreen, exit);
+        .add_system(enter.in_schedule(OnEnter(GameState::SplashScreen)))
+        .add_system(tick.run_if(in_state(GameState::SplashScreen)))
+        .add_system(exit.in_schedule(OnExit(GameState::SplashScreen)));
 }

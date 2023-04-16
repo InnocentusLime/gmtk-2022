@@ -8,15 +8,15 @@ pub use ingame::GameWorldTag;
 
 use bevy::prelude::*;
 use bevy_asset_loader::{ standard_dynamic_asset::*, dynamic_asset::* };
-use iyes_loopless::prelude::*;
 use loading::LoadingLevel;
 
 use crate::LaunchParams;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, States)]
 pub enum GameState {
     // The booting state loads the assets for
     // splash screen and main menu.
+    #[default]
     Booting,
     // Shows a sequence of logos related to the
     // game
@@ -29,19 +29,24 @@ pub enum GameState {
     InGame,
 }
 
-pub fn jump_to_state<T: bevy::ecs::schedule::StateData>(state: T) -> impl Fn(Commands) {
-    move |mut commands: Commands| commands.insert_resource(NextState(state.clone()))
+pub fn jump_to_state<T: States>(state: T) -> impl Fn(ResMut<NextState<T>>) {
+    move |mut next| next.0 = Some(state.clone())
 }
 
-pub fn enter_level(level_path: String, commands: &mut Commands, asset_keys: &mut DynamicAssets) {
+pub fn enter_level(
+    level_path: String,
+    asset_keys: &mut DynamicAssets,
+    load_lvl_st: &mut NextState<LoadingLevel>,
+    game_st: &mut NextState<GameState>,
+) {
     asset_keys.register_asset("map", Box::new(StandardDynamicAsset::File { path: level_path }));
-    commands.insert_resource(NextState(GameState::LoadingLevel));
-    commands.insert_resource(NextState(LoadingLevel::BaseAssets));
+    game_st.0 = Some(GameState::LoadingLevel);
+    load_lvl_st.0 = Some(LoadingLevel::BaseAssets);
 }
 
 pub fn setup_states(app: &mut App, params: &LaunchParams) {
-    app.add_loopless_state(GameState::Booting);
-    app.add_loopless_state(LoadingLevel::Done);
+    app.add_state::<GameState>();
+    app.add_state::<LoadingLevel>();
 
     booting::setup_states(app, params);
     splash_screen::setup_states(app, params);

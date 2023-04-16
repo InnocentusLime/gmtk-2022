@@ -6,18 +6,20 @@ pub use cube_rot::*;
 
 /// Tracks moveable's rotation. This component has not public
 /// API and is used by the systems internally.
-#[derive(Debug, Clone, Copy, Default, Component)]
+#[derive(Debug, Clone, Copy, Default, Component, Reflect)]
 #[repr(transparent)]
+#[reflect(Component)]
 pub struct Rotation(pub (super) DecomposedRotation);
 
 /// Tracks moveable's position. This component has not public
 /// API and is used by the systems internally.
-#[derive(Debug, Clone, Copy, Default, Component)]
+#[derive(Debug, Clone, Copy, Default, Component, Reflect)]
 #[repr(transparent)]
+#[reflect(Component)]
 pub struct Position(pub (super) TilePos);
 
 /// The type of the move.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Reflect, FromReflect)]
 pub enum MoveTy {
     /// The object will move into some direction, potentially also
     /// changing its side.
@@ -31,10 +33,20 @@ pub enum MoveTy {
     }
 }
 
+impl Default for MoveTy {
+    fn default() -> Self {
+        Self::Slide {
+            dir: MoveDirection::default(),
+            next_pos: TilePos::default(),
+        }
+    }
+}
+
 /// Moveables current state. While the fields of that component are
 /// exposed, it is not recommened to change the data of this component
 /// directly and instead use the API provided by [MoveableQuery].
-#[derive(Debug, Clone, Default, Component)]
+#[derive(Debug, Clone, Default, Component, Reflect)]
+#[reflect(Component)]
 pub enum MoveableState {
     #[default]
     Idle,
@@ -47,7 +59,8 @@ pub enum MoveableState {
 /// Public-API component for tracking the upper side of a moveable.
 /// This component triggers the `Changed<..>` filter **only** when the
 /// side of the moveable actually changes.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Component)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Component, Reflect)]
+#[reflect(Component)]
 pub enum Side {
     /// The moveable isn't changing its side. The number is encoding
     /// the ID of that number.
@@ -85,7 +98,8 @@ impl MoveableBundle {
 }
 
 /// Tag for tilemap, which moveables are intended to traverse.
-#[derive(Default, Clone, Copy, Debug, Component)]
+#[derive(Reflect, Default, Clone, Copy, Debug, Component)]
+#[reflect(Component)]
 pub struct MoveableTilemapTag;
 
 /// A wrapper-query type, which exposes an easy-to-use API for

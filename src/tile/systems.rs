@@ -9,7 +9,8 @@ use bevy_ecs_tilemap_cpu_anim::CPUAnimated;
 pub fn tile_transition_anim_switch(
     mut graphics_q: Query<(&mut CPUAnimated, &GraphicsAnimating)>,
 ) {
-    graphics_q.par_for_each_mut(10, |(mut animated, animating)| {
+    graphics_q.par_iter_mut()
+    .for_each_mut(|(mut animated, animating)| {
         if !animated.is_done() {
             return;
         }
