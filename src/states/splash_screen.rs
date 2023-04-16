@@ -51,7 +51,7 @@ fn tick(
     mut logo_query: Query<&mut Sprite, With<LogoTag>>,
     time: Res<Time>,
 ) {
-    //state.team_card_anim_timer.tick(time.delta());
+    state.team_card_anim_timer.tick(time.delta());
 
     // Play team card animation
     let t = state.team_card_anim_timer.percent_left();
