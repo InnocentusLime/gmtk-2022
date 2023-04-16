@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use crate::level_info::LevelInfo;
 
-#[derive(Resource, Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Save {
     achievements: HashSet<String>,
     world: u8, // The world player has yet to beat

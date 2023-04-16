@@ -27,10 +27,18 @@ enum MainMenuButton {
 }
 
 fn spawn_menu(
-    commands: &mut Commands,
-    save: &Save,
-    menu_assets: &MenuAssets,
+    mut commands: Commands,
+    pkv: Res<PkvStore>,
+    menu_assets: Res<MenuAssets>,
 ) {
+    let save = match pkv.get::<Save>("save") {
+        Ok(x) => x,
+        Err(e) => {
+            warn!("Failed to acquire the save: {e}");
+            return;
+        },
+    };
+
     let (_world, _level) = save.world_level();
     let font = menu_assets.main_font.clone();
 
@@ -167,21 +175,9 @@ fn spawn_menu(
         .insert(MainMenuTag);
 }
 
-fn enter(
-    mut commands: Commands,
-    menu_assets: Res<MenuAssets>,
-    pkv: Res<PkvStore>,
-) {
-    info!("Entered main menu state");
-    let save = pkv.get::<Save>("save").unwrap_or_else(|_| Save::new());
-    spawn_menu(&mut commands, &save, &menu_assets);
-
-    commands.insert_resource(save);
-}
-
 fn tick(
     button_q: Query<(&Interaction, &MainMenuButton)>,
-    save: Option<Res<Save>>,
+    pkv: Res<PkvStore>,
     mut asset_keys: ResMut<DynamicAssets>,
     mut game_st: ResMut<NextState<GameState>>,
 ) {
@@ -189,7 +185,7 @@ fn tick(
         if *interaction != Interaction::Clicked { break; }
         match button {
             MainMenuButton::PickLevel => {
-                if let Some(save) = save.as_ref() {
+                if let Ok(save) = pkv.get::<Save>("save") {
                     let (world, level) = save.world_level();
                     enter_level(
                         format!("maps/level{}-{}.tmx", world, level),
@@ -205,18 +201,16 @@ fn tick(
     }
 }
 
-fn exit(
+fn despawn_menu(
     mut commands: Commands,
     main_menu_q: Query<Entity, With<MainMenuTag>>,
 ) {
-    info!("Exited main menu state");
-
     main_menu_q.for_each(|e| commands.entity(e).despawn_recursive());
 }
 
 pub fn setup_states(app: &mut App, _params: &LaunchParams) {
     app
-        .add_system(enter.in_schedule(OnEnter(GameState::MainMenu)))
-        .add_system(tick.run_if(in_state(GameState::MainMenu)))
-        .add_system(exit.in_schedule(OnExit(GameState::MainMenu)));
+        .add_system(spawn_menu.in_schedule(OnEnter(GameState::MainMenu)))
+        .add_system(tick.in_set(OnUpdate(GameState::MainMenu)))
+        .add_system(despawn_menu.in_schedule(OnExit(GameState::MainMenu)));
 }

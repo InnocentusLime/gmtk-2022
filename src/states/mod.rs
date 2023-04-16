@@ -28,10 +28,6 @@ pub enum GameState {
     InGame,
 }
 
-pub fn jump_to_state<T: States>(state: T) -> impl Fn(ResMut<NextState<T>>) {
-    move |mut next| next.0 = Some(state.clone())
-}
-
 pub fn enter_level(
     level_path: String,
     asset_keys: &mut DynamicAssets,

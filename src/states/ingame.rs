@@ -16,10 +16,6 @@ pub struct GameWorldTag;
 // #[derive(Resource)]
 // struct LevelCompleteCountdown(Timer);
 
-fn enter() {
-    info!("Entered ingame state");
-}
-
 // fn beat_system(
 //     mut commands: Commands,
 //     mut tile_events: EventReader<TileEvent>,
@@ -63,21 +59,7 @@ fn enter() {
 //     }
 // }
 
-fn exit(
-    mut commands: Commands,
-    mut cam: Query<&mut Transform, With<GameplayCamera>>,
-) {
-    info!("Exited ingame state");
-    for mut tf in cam.iter_mut() {
-        tf.translation = Vec3::new(0.0f32, 0.0f32, 50.0f32);
-    }
-}
-
 pub fn setup_states(app: &mut App, _params: &LaunchParams) {
-    app
-        .add_system(enter.in_schedule(OnEnter(GameState::InGame)))
-        .add_system(exit.in_schedule(OnExit(GameState::InGame)));
-
     // if params.level_file.is_some() {
     //     app
     //         .add_system(level_complete_system_testing_level
