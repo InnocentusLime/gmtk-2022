@@ -7,6 +7,8 @@ use super::GameState;
 
 #[derive(Resource, AssetCollection)]
 pub struct ScreenAssets {
+    // #[asset(path = "screen_align.png")]
+    // #[asset(path = "tiles/atlas.png")]
     #[asset(path = "splash/team.png")]
     team_card: Handle<Image>,
 }
@@ -30,7 +32,7 @@ fn enter(mut commands: Commands, assets: Res<ScreenAssets>) {
                 color: Color::WHITE,
                 ..default()
             },
-            transform: Transform::from_scale(Vec3::new(0.5f32, 0.5f32, 1.0f32)),
+            //transform: Transform::from_xyz(512.0 - 480.0, -512.0 + 240.0, 0.0),
             texture: assets.team_card.clone(),
             ..default()
         },
@@ -49,7 +51,7 @@ fn tick(
     mut logo_query: Query<&mut Sprite, With<LogoTag>>,
     time: Res<Time>,
 ) {
-    state.team_card_anim_timer.tick(time.delta());
+    //state.team_card_anim_timer.tick(time.delta());
 
     // Play team card animation
     let t = state.team_card_anim_timer.percent_left();

@@ -77,15 +77,11 @@ pub fn app(params: LaunchParams) -> App {
 
     let camera_bundle = Camera2dBundle {
         projection: OrthographicProjection {
-            area: Rect {
-                min: Vec2::new(-300f32, -300f32),
-                max: Vec2::new(-300f32, -300f32),
+            scaling_mode: ScalingMode::Fixed {
+                width: WORLD_WIDTH,
+                height: WORLD_HEIGHT,
             },
-            far: 1000f32,
-            near: 0.0f32,
-            viewport_origin: Vec2::ZERO,
-            scaling_mode: ScalingMode::FixedHorizontal(600f32),
-            scale: 1.0f32,
+            ..default()
         },
         ..default()
     };

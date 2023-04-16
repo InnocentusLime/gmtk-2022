@@ -1,3 +1,4 @@
+use crate::tile::LEVEL_TILE_SIZE;
 pub struct LaunchParams<'a> {
     pub logging: bool,
     pub editor: bool,
@@ -17,7 +18,11 @@ impl Default for LaunchParams<'static> {
 
 pub const WINDOW_HEIGHT: f32 = 600.0;
 pub const WINDOW_WIDTH: f32 = 1150.0;
-//const ASPECT_RATIO: f32 = WINDOW_WIDTH / WINDOW_HEIGHT;
+
+pub const TILE_IN_SCREEN_HORIZ: f32 = 30.0;
+pub const TILE_IN_SCREEN_VERT: f32 = 15.0;
+pub const WORLD_WIDTH: f32 = LEVEL_TILE_SIZE * TILE_IN_SCREEN_HORIZ;
+pub const WORLD_HEIGHT: f32 = LEVEL_TILE_SIZE * TILE_IN_SCREEN_VERT;
 
 /// A macro to generate the strings for the game
 macro_rules! game_strings {

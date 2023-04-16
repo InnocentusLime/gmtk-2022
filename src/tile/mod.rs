@@ -17,6 +17,7 @@ pub enum TileSystems {
     InteractionHandler,
 }
 
+pub const LEVEL_TILE_SIZE: f32 = 32.0;
 pub struct TilePlugin;
 
 impl Plugin for TilePlugin {
