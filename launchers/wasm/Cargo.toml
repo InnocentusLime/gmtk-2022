@@ -8,5 +8,5 @@ workspace = "../.."
 game-lib = { package = "game-lib", path = "../.." }
 bevy = { workspace = true }
 web-sys = { version="0.3.61", features=["Document", "Window"] }
-yew = "0.19.3"
+yew = "0.21.0"
 stylist = { version= "0.10.1", features=["yew_integration"] }
