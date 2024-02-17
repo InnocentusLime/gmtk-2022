@@ -17,13 +17,13 @@ jobs:
       - name: Get tagged version
         id: version-tag
         run: echo "::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}"
-      
+
   build:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         include:
-          - app-ext: 
+          - app-ext:
           - os: windows-latest
             app-ext: .exe
     needs: setup
@@ -40,6 +40,7 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
+      - uses: dtolnay/rust-toolchain@stable
       - name: Install alsa and udev
         run: sudo apt-get update --fix-missing; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
         if: runner.os == 'linux'

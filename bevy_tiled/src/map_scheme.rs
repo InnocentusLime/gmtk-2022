@@ -223,7 +223,7 @@ where
                 layer_cmds.with_children(|child_builder| {
 
                     let local_res = group.layers()
-                    .map(|layer| {
+                    .try_for_each(|layer| {
                         let mut layer_cmds = child_builder.spawn((
                             TransformBundle::default(),
                             VisibilityBundle::default(),
@@ -237,12 +237,10 @@ where
                             tilemap_texture_data,
                             layer,
                         )
-                    })
-                    .collect::<Result<(), _>>();
+                    });
 
                     if local_res.is_err() {
                         result = local_res;
-                        return;
                     }
                 });
 
@@ -286,8 +284,8 @@ where
                 tiles.get_tile_data(x as i32, y as i32)
                 .map(|data| (x, y, data))
             )
-            .map(|(x, y, tile)|
-                Self::spawn_tile(
+            .try_for_each(|(x, y, tile)| {
+                let (pos, e) = Self::spawn_tile(
                     state,
                     (x, tiles.map().height - 1 - y),
                     parent_id,
@@ -297,14 +295,15 @@ where
                     builder,
                     provider
                 )
-                .context(format!("Error while spawning tile ({x}, {y})"))
-                .map(|(pos, e)| storage.set(&pos, e))
-            )
-            .collect::<Result<(), _>>();
+                .context(format!("Error while spawning tile ({x}, {y})"))?;
+
+                storage.set(&pos, e);
+
+                Ok(())
+            });
 
             if local_res.is_err() {
                 result = local_res;
-                return;
             }
         })
         .insert(TilemapBundle {
@@ -329,6 +328,7 @@ where
         result
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn spawn_tile(
         _state: &mut ParserState,
         (x, y): (u32, u32),
