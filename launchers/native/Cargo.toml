@@ -8,6 +8,6 @@ workspace = "../.."
 game-lib = { package = "game-lib", path = "../.." }
 bevy = { workspace = true }
 image = "0.24.5"
-winit = { version = "0.27", default-features = false }
+winit = { version = "0.30", default-features = false }
 clap = { version = "4", features = ["cargo", "derive"] }
 bevy_mod_debugdump = "0.6"
